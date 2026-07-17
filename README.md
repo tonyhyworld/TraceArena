@@ -231,6 +231,16 @@ investment advice. Use `--locale zh-CN` for Chinese presentation text.
 Open `frontend/public_viewer/index.html` directly in a modern browser to
 inspect `run_manifest.json` and `replay_deterministic.json` offline.
 
+### Full AI World frontend
+
+The repository also includes the full Vue/Vite frontend from the local AI World
+application in [`frontend/`](frontend/). It contains the authenticated operator
+console, audience renderer, scenario factory, run archive, analysis views,
+bilingual UI, and WebSocket presentation layer. It is distinct from the
+no-key static replay demo above and requires the full TraceArena OS backend on
+port 8001. See [`frontend/README.md`](frontend/README.md) for setup and the
+backend/API contract.
+
 ### Local self-hosted developer console
 
 ```bash
