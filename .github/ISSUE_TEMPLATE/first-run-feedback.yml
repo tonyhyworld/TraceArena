@@ -1,0 +1,50 @@
+name: First-run feedback
+description: Tell us what happened when you tried the public replay or live demo.
+title: "[First Run] "
+labels: [feedback]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This form is for adoption feedback, not a support contract. Please remove API keys, credentials, customer data, and private run archives before posting.
+  - type: dropdown
+    id: path
+    attributes:
+      label: Which path did you try?
+      options:
+        - Local no-key Market Replay
+        - Live browser demo
+        - Scenario-pack development
+        - Agent-evaluation pilot
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What happened?
+      description: Tell us whether you reached a visible result, where you stopped, and what you expected to see.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, Python version, Node/npm version, and the TraceArena commit or release if relevant.
+      placeholder: "macOS 15 · Python 3.12 · Node 22 · v0.1.3"
+    validations:
+      required: true
+  - type: input
+    id: time_to_value
+    attributes:
+      label: Time to first result
+      description: Approximately how long from opening the README to seeing the first replay or world result?
+      placeholder: "About 4 minutes"
+    validations:
+      required: true
+  - type: textarea
+    id: next_step
+    attributes:
+      label: What would make you continue?
+      description: Name the next feature, scenario, integration, or documentation change that would make TraceArena useful to you.
+    validations:
+      required: true
