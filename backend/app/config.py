@@ -105,7 +105,7 @@ class FrameworkConfig(BaseModel):
     """完整框架配置"""
     # 场景包路径（换场景只改这一行）
     scenario_path: str = "./scenarios/example"
-    scenario_locale: str = "zh-CN"
+    scenario_locale: str = "zh-CN"  # BCP 47; presentation text only
 
     # Agent 插槽列表（可插拔，数量由场景包声明支持多少）
     agents: List[AgentSlotConfig] = Field(default_factory=list)

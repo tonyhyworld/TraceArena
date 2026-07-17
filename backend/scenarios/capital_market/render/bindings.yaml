@@ -27,3 +27,5 @@ bindings:
     metric_portfolio_return: metric_portfolio_return_render
   outcomes:
     portfolio_marked_to_market: outcome_portfolio_marked_render
+    order_rejected: outcome_order_rejected_render
+    trade_executed: outcome_order_filled_render

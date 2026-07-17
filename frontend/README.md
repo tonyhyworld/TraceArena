@@ -7,10 +7,27 @@ presentation—not the small static marketing demo in `frontend/public_demo`.
 
 ## Run locally
 
-The full frontend expects the TraceArena OS backend to be running on port 8001.
-The backend must provide the authenticated API and WebSocket routes used by the
-console (`/auth/*`, `/api/*`, and `/ws`). The static public demo remains
-available separately and does not require an API key or broker connection.
+The repository now includes the TraceArena OS backend required by the full
+frontend. The static public demo remains available separately and does not
+require an API key or broker connection.
+
+For the complete local experience, use the root launcher after installation:
+
+```bash
+./scripts/start.sh
+```
+
+It starts the OS on port 8001 and this frontend on port 5173. The default
+checked-in `backend/framework.public.yaml` uses mock providers and disables
+external MCP/network access, so the first run needs no model or broker key.
+Create a local account in another terminal with:
+
+```bash
+cd backend && ../.venv/bin/python scripts/create_user.py
+```
+
+The backend provides the authenticated API and WebSocket routes used by the
+console (`/auth/*`, `/operator/*`, `/ws`, and related routes).
 
 ```bash
 cd frontend

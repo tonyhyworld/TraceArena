@@ -1,0 +1,23 @@
+# Public-safe example. Copy to framework.yaml for a local run, then adjust the
+# scenario and provider settings. Real API keys belong only in backend/.env.
+scenario_path: ./scenarios/capital_market
+scenario_locale: zh-CN
+runtime_mode: story
+tick_interval_sec: 10.0
+agent_timeout_sec: 8.0
+agents:
+  - id: investor_a
+    name: Agent A
+    provider: mock
+    model: mock
+  - id: investor_b
+    name: Agent B
+    provider: mock
+    model: mock
+director: {enabled: false, provider: mock, model: mock}
+judge: {enabled: false}
+sandbox: {enabled: true, allow_network: false, allow_package_install: false}
+mcp: {enabled: false, servers_path: ./mcp_servers.yaml}
+tts: {enabled: false}
+agent_loop: {enabled: false}
+log_dir: ./runs

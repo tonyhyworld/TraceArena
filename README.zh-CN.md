@@ -220,9 +220,9 @@ PYTHONPATH=backend python backend/scripts/market_replay.py \
 
 仓库中的 [`frontend/`](frontend/) 现在包含本地 AI World 使用的完整 Vue/Vite
 前端：登录与认证、运营控制台、观众端渲染、场景工厂、运行归档、分析视图、双语界面和
-WebSocket 呈现层。它与上面的无 Key 静态回放 Demo 是两套用途不同的前端；完整前端需要
-运行提供认证 API、业务 API 和 WebSocket 的 TraceArena OS 后端（默认端口 8001）。安装与
-启动方式见 [`frontend/README.md`](frontend/README.md)。
+WebSocket 呈现层；匹配的认证、业务 API 与 WebSocket 的 TraceArena OS 后端也已放在
+[`backend/`](backend/)。安装完成后运行 `./scripts/start.sh` 即可同时启动前后端；账号创建和
+接口说明见 [`frontend/README.md`](frontend/README.md)。
 
 ### 本地 Self-hosted 开发者控制台
 

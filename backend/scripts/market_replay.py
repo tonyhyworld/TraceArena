@@ -18,25 +18,18 @@ from app.config import AgentSlotConfig, FrameworkConfig  # noqa: E402
 from app.engine.main import EngineOS  # noqa: E402
 from app.engine.scenario_boot.loader import ScenarioBootKernel  # noqa: E402
 
-
-SUPPORTED_LOCALES = {"en-US", "zh-CN"}
 TEXT = {
     "en-US": {
         "title": "TraceArena Market Replay",
-        "replay_action": "Replay decision",
-        "fixed_action": "Execute the recorded and verified replay action only.",
+        "action": "Replay decision",
         "monologue": "I execute only recorded and verified actions.",
-        "summary_disclaimer": (
-            "This is a deterministic synthetic replay for evaluation and education; "
-            "it is not financial advice and does not imply future returns."
-        ),
+        "disclaimer": "This is a deterministic synthetic replay for evaluation and education; it is not financial advice and does not imply future returns.",
     },
     "zh-CN": {
         "title": "TraceArena 市场回放",
-        "replay_action": "回放决策",
-        "fixed_action": "仅执行已记录并核验过的固定回放动作。",
+        "action": "回放决策",
         "monologue": "我只执行已记录并核验过的动作。",
-        "summary_disclaimer": "这是用于评测和教学的确定性合成回放，不构成投资建议，也不代表未来收益。",
+        "disclaimer": "这是用于评测和教学的确定性合成回放，不构成投资建议，也不代表未来收益。",
     },
 }
 
@@ -68,12 +61,6 @@ def _observation(item: Dict[str, Any], agent_id: str, asset: str) -> Dict[str, A
     }
 
 
-def _localized_reason(item: Dict[str, Any], locale: str) -> str:
-    if locale == "en-US":
-        return str(item.get("reason_en") or item.get("reason") or TEXT[locale]["fixed_action"])
-    return str(item.get("reason") or item.get("reason_en") or TEXT[locale]["fixed_action"])
-
-
 def _actions(agent_id: str, spec: Dict[str, Any], asset: str, locale: str) -> List[Dict[str, Any]]:
     observations = [
         _observation(item, agent_id, asset)
@@ -92,13 +79,12 @@ def _actions(agent_id: str, spec: Dict[str, Any], asset: str, locale: str) -> Li
             }
         if not result:
             parameters["harness_observations"] = observations
-        reason = _localized_reason(item, locale)
         result.append({
             "action_id": action_id,
-            "action_name": TEXT[locale]["replay_action"],
+            "action_name": TEXT[locale]["action"],
             "target_object_id": "portfolio_book",
-            "plan": reason,
-            "public_reasoning_summary": reason,
+            "plan": str(item.get("reason") or "执行固定回放动作"),
+            "public_reasoning_summary": str(item.get("reason") or "执行固定回放动作"),
             "character_monologue": TEXT[locale]["monologue"],
             "evidence_refs": refs,
             "parameters": parameters,
@@ -108,8 +94,6 @@ def _actions(agent_id: str, spec: Dict[str, Any], asset: str, locale: str) -> Li
 
 async def _run(args: argparse.Namespace) -> int:
     locale = str(args.locale)
-    if locale not in SUPPORTED_LOCALES:
-        raise ValueError(f"unsupported locale: {locale}")
     fixture_path = Path(args.fixture).resolve()
     fixture = _load_fixture(fixture_path)
     scenario_path = Path(args.scenario).resolve()
@@ -198,7 +182,7 @@ async def _run(args: argparse.Namespace) -> int:
         "- brokerage: disabled\n"
         "- network: disabled\n"
         f"- canonical replay SHA-256: `{digest}`\n\n"
-        f"{TEXT[locale]['summary_disclaimer']}\n",
+        f"{TEXT[locale]['disclaimer']}\n",
         encoding="utf-8",
     )
     print(TEXT[locale]["title"])
@@ -217,7 +201,9 @@ def main() -> int:
     parser.add_argument("--fixture", default=str(ROOT / "examples/market_replay/fixture.json"))
     parser.add_argument("--scenario", default=str(BACKEND / "scenarios/capital_market"))
     parser.add_argument("--output", default=str(ROOT / "runs/market_replay_demo"))
-    parser.add_argument("--locale", choices=sorted(SUPPORTED_LOCALES), default="en-US")
+    # Kept for compatibility with the public replay server and CLI docs. The
+    # authoritative replay data remains deterministic regardless of locale.
+    parser.add_argument("--locale", choices=("en-US", "zh-CN"), default="en-US")
     return asyncio.run(_run(parser.parse_args()))
 
 

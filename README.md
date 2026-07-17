@@ -253,10 +253,10 @@ inspect `run_manifest.json` and `replay_deterministic.json` offline.
 The repository also includes the full Vue/Vite frontend from the local AI World
 application in [`frontend/`](frontend/). It contains the authenticated operator
 console, audience renderer, scenario factory, run archive, analysis views,
-bilingual UI, and WebSocket presentation layer. It is distinct from the
-no-key static replay demo above and requires the full TraceArena OS backend on
-port 8001. See [`frontend/README.md`](frontend/README.md) for setup and the
-backend/API contract.
+bilingual UI, and WebSocket presentation layer. The matching authenticated
+TraceArena OS backend is included under [`backend/`](backend/). Run both with
+`./scripts/start.sh` after installation; see [`frontend/README.md`](frontend/README.md)
+for account setup and the backend/API contract.
 
 ### Local self-hosted developer console
 

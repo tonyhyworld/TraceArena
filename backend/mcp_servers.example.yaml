@@ -1,0 +1,43 @@
+# MCP Server 注册表示例 — 复制为 mcp_servers.yaml 并按环境修改（勿提交密钥）
+#
+# 需要 Python >= 3.10 且: pip install "mcp>=1.27,<2"
+
+servers:
+  # 本地文件系统（stdio 子进程）
+  - id: filesystem
+    transport: stdio
+    command: npx
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-filesystem"
+      - "/tmp/aiworld-sandbox"
+    enabled: false
+    timeout_sec: 20
+
+  # 远程 HTTP MCP（A-PR1 尚未实现，预留）
+  - id: web_search
+    transport: http
+    endpoint: "http://localhost:9200/mcp"
+    auth:
+      type: bearer
+      token_env: MCP_WEBSEARCH_TOKEN
+    enabled: false
+    timeout_sec: 20
+
+  # A/H 股深度投研：结构化财报、个股新闻、宏观与行业供需（公开数据，无密钥）
+  - id: china_market_research
+    transport: stdio
+    command: .venv/bin/python
+    args:
+      - ./scripts/china_market_research_mcp_server.py
+    enabled: true
+    timeout_sec: 30
+
+  # 长桥只读行情与市场微观结构（需要在 .env 配置长桥 API 凭证）
+  - id: longport
+    transport: stdio
+    command: .venv/bin/python
+    args:
+      - ./scripts/longport_mcp_server.py
+    enabled: true
+    timeout_sec: 25

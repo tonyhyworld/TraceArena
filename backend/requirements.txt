@@ -1,0 +1,16 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-dotenv>=1.0       # 读取 backend/.env 里的 API key
+openai>=1.40             # DeepSeek / MiniMax / GPT 等 OpenAI 兼容厂商
+socksio>=1.0             # httpx/httpcore 使用 SOCKS 代理时必需
+PyYAML>=6.0              # 场景包/配置 YAML 解析（framework.yaml、scenarios/*.yaml）
+pydantic>=2.0            # 全框架数据契约（config、interfaces、benchmark models）
+# anthropic>=0.39        # 接 Claude 时再装
+pytest>=7.0
+pytest-asyncio>=0.21
+PyJWT>=2.8               # 账户体系:JWT bearer token
+bcrypt>=4.1              # 账户体系:密码哈希
+cryptography>=42.0       # 账户体系:BYOK API Key 落盘静态加密（Fernet）
+python-multipart>=0.0.9  # 账户体系:场景包 zip 上传(FastAPI UploadFile)
+mcp>=1.27,<2; python_version >= "3.10"  # MCP 外部工具（Agent OS 轨道 A，需 Python 3.10+）
+akshare>=1.18             # A/H 股财报、新闻、宏观与行业供需公开数据

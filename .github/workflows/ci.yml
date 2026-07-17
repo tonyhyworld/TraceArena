@@ -55,6 +55,17 @@ jobs:
       - name: Compile public runtime
         run: PYTHONPATH=backend uv run python -m compileall -q backend/app backend/scripts
 
+      - name: Smoke test full authenticated OS startup
+        run: |
+          PYTHONPATH=backend AIWORLD_CONFIG=backend/framework.public.yaml uv run python - <<'PY'
+          from fastapi.testclient import TestClient
+          from app.main import app
+          with TestClient(app) as client:
+              response = client.get("/")
+              assert response.status_code == 200, response.text
+              assert response.json()["status"] == "ok"
+          PY
+
       - name: Run public candidate test suite
         run: |
           PYTHONPATH=backend uv run pytest -q \

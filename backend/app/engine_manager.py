@@ -128,7 +128,9 @@ class EngineManager:
     async def _build_context(self, user_id: str, scenario_path: Optional[str] = None) -> UserEngineContext:
         # Always resolve through scenario runtime profile (see _load_scenario_cfg).
         cfg = self._load_scenario_cfg(scenario_path)
-        scenario = ScenarioBootKernel.load(cfg.scenario_path, locale=cfg.scenario_locale)
+        scenario = ScenarioBootKernel.load(
+            cfg.scenario_path, locale=cfg.scenario_locale
+        )
         self._assemble_agent_slots(cfg, scenario)
         # 每用户独立落盘目录：engine/main.py 内部写盘逻辑零改动，
         # 只靠 log_dir / persistent_memory_root 指向不同路径就实现了数据隔离。

@@ -85,6 +85,8 @@ prompt_contract:
     - 禁止「现金闲着 / 单价低能多买几股」作为唯一买入理由；本金有限时，买不起目标标的就观望或腾挪，不要风格错配凑单。
     - 仅在 A 股开盘/盘中交易窗口可成交；非交易时段下单会被拒。
     - 下单必须提交 parameters.asset_id 与 quantity；有已验证行情证据时提交 price_evidence_ref 并放入 evidence_refs。
+    - 买卖单还必须提交 parameters.asset_name（与行情返回的公司名一致）和 parameters.expected_price（与已验证现价一致）；名称或价格对不上会被拒单或降级观望。
+    - 数量必须按已验证行情现价估算，禁止沿用过期记忆价或张冠李戴的另一家公司价格。
     - 交易代码用 A 股/港股格式：如 600036.SH、000858.SZ、00700.HK。
     - 能力边界：允许发现并使用行情、财报、新闻、风险计算类 MCP/技能/沙箱代码；禁止编造数据源结果。
   required_fields:

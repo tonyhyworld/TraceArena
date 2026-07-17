@@ -20,7 +20,9 @@ actions:
       required: [asset_id, quantity]
       properties:
         asset_id: {type: string, description: 真实交易代码，例如 600036.SH 或 00700.HK}
-        quantity: {type: number, description: 买入数量，必须大于 0}
+        asset_name: {type: string, description: 与代码对应的公司中文名称，必须与已验证行情名称一致}
+        quantity: {type: number, description: 买入数量，必须大于 0，且按已验证行情现价估算}
+        expected_price: {type: number, description: 下单时依据的已验证行情现价，用于身份一致性校验}
         price_evidence_ref: {type: string, description: 已验证行情证据 ID；如留空，结算层会尝试使用有效期内该标的最近一次已验证价格}
 
   - id: sell_asset
@@ -44,7 +46,9 @@ actions:
       required: [asset_id, quantity]
       properties:
         asset_id: {type: string, description: 已持有标的的真实交易代码，例如 600036.SH}
+        asset_name: {type: string, description: 与代码对应的公司中文名称，必须与已验证行情名称一致}
         quantity: {type: number, description: 卖出数量，必须大于 0 且不超过持仓}
+        expected_price: {type: number, description: 下单时依据的已验证行情现价，用于身份一致性校验}
         price_evidence_ref: {type: string, description: 已验证行情证据 ID；如留空，结算层会尝试使用有效期内该标的最近一次已验证价格}
 
   - id: wait_and_review

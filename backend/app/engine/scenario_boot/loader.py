@@ -876,7 +876,12 @@ class ScenarioBootKernel:
 
     @staticmethod
     def _apply_locale_overlay(scenario: LoadedScenario, locale: str) -> None:
-        """Apply optional presentation text without changing scenario semantics."""
+        """Apply optional presentation text without changing scenario semantics.
+
+        A language pack lives at ``locales/<BCP47>.yaml``.  It may override
+        user-facing labels and prose only; stable IDs, action intent, metric
+        values, provider configuration and settlement rules stay canonical.
+        """
         if locale == "zh-CN":
             return
         path = scenario.scenario_dir / "locales" / f"{locale}.yaml"
@@ -886,33 +891,46 @@ class ScenarioBootKernel:
         raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
         if not isinstance(raw, dict):
             raise ScenarioLoadError(f"场景语言包必须是对象: {path}")
+
         manifest = raw.get("manifest") or {}
         if isinstance(manifest, dict):
             for field in ("name", "description"):
-                if isinstance(manifest.get(field), str): setattr(scenario.manifest, field, manifest[field])
+                if isinstance(manifest.get(field), str):
+                    setattr(scenario.manifest, field, manifest[field])
         for field in ("intro", "goal_text", "background_text"):
-            if isinstance(raw.get(field), str): setattr(scenario, field, raw[field])
-        roles = raw.get("roles") or {}
-        if isinstance(roles, dict):
+            if isinstance(raw.get(field), str):
+                setattr(scenario, field, raw[field])
+
+        role_text = raw.get("roles") or {}
+        if isinstance(role_text, dict):
             for role in scenario.agent_roles:
-                values = roles.get(role.agent_slot_id)
+                values = role_text.get(role.agent_slot_id)
                 if isinstance(values, dict):
                     for field in ("display_name", "role_title", "public_persona", "hidden_goal", "system_prompt_extra"):
-                        if isinstance(values.get(field), str): setattr(role, field, values[field])
-        labels = raw.get("actions") or {}
-        if isinstance(labels, dict):
-            for item in scenario.actions_cfg:
-                values = labels.get(str(item.get("id") or ""))
-                if isinstance(values, dict):
-                    for field in ("name", "description"):
-                        if isinstance(values.get(field), str): item[field] = values[field]
+                        if isinstance(values.get(field), str):
+                            setattr(role, field, values[field])
+
+        for items, key in ((scenario.actions_cfg, "actions"),):
+            labels = raw.get(key) or {}
+            if isinstance(labels, dict):
+                for item in items:
+                    values = labels.get(str(item.get("id") or ""))
+                    if isinstance(values, dict):
+                        for field in ("name", "description"):
+                            if isinstance(values.get(field), str):
+                                item[field] = values[field]
         metrics = raw.get("metrics") or {}
-        if isinstance(metrics, dict) and isinstance(scenario.metrics_cfg, dict):
-            for item in scenario.metrics_cfg.get("metrics", []):
+        if isinstance(metrics, dict):
+            for item in scenario.metrics_cfg.get("metrics", []) if isinstance(scenario.metrics_cfg, dict) else []:
                 value = metrics.get(str(item.get("id") or ""))
-                if isinstance(value, str): item["name"] = value
+                if isinstance(value, str):
+                    item["name"] = value
+
         ui_text = raw.get("ui_text") or {}
-        if isinstance(ui_text, dict): scenario.presentation.ui_text.update({key: value for key, value in ui_text.items() if isinstance(value, str)})
+        if isinstance(ui_text, dict):
+            scenario.presentation.ui_text.update({
+                key: value for key, value in ui_text.items() if isinstance(value, str)
+            })
         logger.info("[L0] applied scenario locale %s from %s", locale, path)
 
     # 通用 Agent 能力维度，仅用于校验场景声明。

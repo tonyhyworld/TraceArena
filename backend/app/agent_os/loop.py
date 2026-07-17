@@ -310,10 +310,16 @@ class AgentLoopRunner:
                 productive_steps += 1
                 continue
 
+            self._backfill_trade_fields_from_text(parsed)
+            if self._missing_research_categories(parsed, brief, session):
+                self._degrade_trade_for_missing_research(parsed, brief, session)
+            if self._trade_identity_mismatch(parsed, brief, session):
+                self._degrade_trade_for_identity_mismatch(
+                    parsed, brief, session,
+                )
             action = build_action_from_parsed(
                 parsed, agent_id, brief, last_raw, partial=False,
             )
-            self._backfill_trade_fields_from_text(parsed)
             # 同步回写到已构建的 ActionPack parameters
             if isinstance(parsed.get("parameters"), dict) and getattr(action, "parameters", None) is not None:
                 for key, value in parsed["parameters"].items():
@@ -362,6 +368,10 @@ class AgentLoopRunner:
             self._sanitize_incomplete_trade_final(parsed)
             if self._missing_research_categories(parsed, brief, session):
                 self._degrade_trade_for_missing_research(parsed, brief, session)
+            if self._trade_identity_mismatch(parsed, brief, session):
+                self._degrade_trade_for_identity_mismatch(
+                    parsed, brief, session,
+                )
             action = build_action_from_parsed(
                 parsed, agent_id, brief, last_raw, partial=False,
             )
@@ -572,11 +582,25 @@ class AgentLoopRunner:
                 "当前交易研究仍缺少：" + "、".join(names)
                 + "。必须调用对应外部工具取得可验证结果，不能只重复查行情。"
             )
+        identity_code = AgentLoopRunner._trade_identity_mismatch(
+            parsed or {}, brief, session,
+        )
+        identity_hint = ""
+        if identity_code == "asset_identity_mismatch":
+            identity_hint = (
+                "订单公司名称与已验证行情不一致，请核对代码与名称，"
+                "并按行情返回的真实公司名重新下单。"
+            )
+        elif identity_code == "asset_price_identity_mismatch":
+            identity_hint = (
+                "订单参考价与已验证行情偏差过大，请按最新现价重新估算数量。"
+            )
         return (
             failure_text
             + attempt_text
             + sandbox_hint
             + missing_hint
+            + identity_hint
             +
             "当前还没有可信的外部事实，不能结束研究。发现能力只说明工具存在，"
             "不等于已经取得行情、新闻或验证结果；沙箱自行假设的数据也不能替代现实来源。"
@@ -633,11 +657,77 @@ class AgentLoopRunner:
     def _has_quote_evidence(cls, brief: AgentBrief, session: AgentLoopSession) -> bool:
         return any(cls._step_looks_like_quote(step, brief) for step in session.steps)
 
+    @staticmethod
+    def _normalize_ticker(code: object) -> Tuple[str, str]:
+        s = str(code or "").strip().upper()
+        if not s:
+            return ("", "")
+        num, _, suf = s.partition(".")
+        num = num.lstrip("0") or "0"
+        market = {"SS": "SH", "SH": "SH", "SZ": "SZ", "HK": "HK"}.get(suf, suf)
+        return (num, market)
+
+    @classmethod
+    def _ticker_matches(cls, a: object, b: object) -> bool:
+        (na, ma), (nb, mb) = cls._normalize_ticker(a), cls._normalize_ticker(b)
+        if not na or not nb or na != nb:
+            return False
+        if ma and mb and ma != mb:
+            return False
+        return True
+
+    @classmethod
+    def _result_assets(cls, result: Dict[str, Any]) -> set[str]:
+        """从工具结果抽出标的代码（含无后缀与带后缀）。"""
+        values: List[Any] = []
+        for output in result.get("outputs") or []:
+            if not isinstance(output, dict):
+                continue
+            values.extend([
+                output.get("subject_id"),
+                output.get("symbol"),
+                output.get("asset_id"),
+            ])
+            values.extend(output.get("symbols") or [])
+            for row in output.get("quotes") or []:
+                if isinstance(row, dict):
+                    values.extend([row.get("symbol"), row.get("asset_id")])
+        args = result.get("arguments") or result.get("request_parameters") or {}
+        if isinstance(args, dict):
+            values.append(args.get("symbol"))
+            values.extend(args.get("symbols") or [])
+        return {
+            str(item).strip().upper()
+            for item in values
+            if item not in (None, "")
+        }
+
+    @classmethod
+    def _result_matches_asset(
+        cls, result: Dict[str, Any], asset_id: str,
+    ) -> bool:
+        """结果未声明代码时视为通用证据；声明了则必须与订单标的软匹配。"""
+        if not asset_id:
+            return True
+        assets = cls._result_assets(result)
+        if not assets:
+            return True
+        return any(cls._ticker_matches(item, asset_id) for item in assets)
+
+    @classmethod
+    def _ordered_asset_id(cls, parsed: Dict[str, Any]) -> str:
+        params = parsed.get("parameters") if isinstance(
+            parsed.get("parameters"), dict,
+        ) else {}
+        return str(params.get("asset_id") or "").strip().upper()
+
     @classmethod
     def _research_categories_from_result(
         cls,
         result: Dict[str, Any],
         brief: AgentBrief,
+        *,
+        asset_id: str = "",
     ) -> set[str]:
         """Classify a verified tool result into scenario-declared research domains."""
         if not isinstance(result, dict) or not result.get("ok"):
@@ -645,6 +735,8 @@ class AgentLoopRunner:
         if str(result.get("source") or "") not in {
             "mcp", "external_reality", "verified_external",
         }:
+            return set()
+        if asset_id and not cls._result_matches_asset(result, asset_id):
             return set()
         policy = dict((brief.raw_context or {}).get("harness_policy", {}) or {})
         token_map = dict(policy.get("research_category_tokens") or {})
@@ -675,21 +767,50 @@ class AgentLoopRunner:
         cls,
         brief: AgentBrief,
         session: AgentLoopSession,
+        *,
+        asset_id: str = "",
     ) -> set[str]:
         categories: set[str] = set()
         for step in session.steps:
             categories.update(
                 cls._research_categories_from_result(
-                    step.get("tool_result") or {}, brief,
+                    step.get("tool_result") or {}, brief, asset_id=asset_id,
                 )
             )
         policy = dict((brief.raw_context or {}).get("harness_policy", {}) or {})
         for observation in policy.get("prior_verified_observations") or []:
             if not isinstance(observation, dict):
                 continue
+            subject = str(observation.get("subject_id") or "").strip()
+            if (
+                asset_id
+                and subject
+                and not cls._ticker_matches(subject, asset_id)
+            ):
+                normalized = observation.get("normalized_value") or {}
+                obs_assets = set()
+                if isinstance(normalized, dict):
+                    obs_assets = {
+                        str(item).strip().upper()
+                        for item in (
+                            [normalized.get("symbol"), normalized.get("asset_id")]
+                            + list(normalized.get("symbols") or [])
+                        )
+                        if item not in (None, "")
+                    }
+                if obs_assets and not any(
+                    cls._ticker_matches(item, asset_id) for item in obs_assets
+                ):
+                    continue
+                if not obs_assets and not cls._ticker_matches(subject, asset_id):
+                    continue
             raw = observation.get("raw_value")
             if isinstance(raw, dict):
-                categories.update(cls._research_categories_from_result(raw, brief))
+                categories.update(
+                    cls._research_categories_from_result(
+                        raw, brief, asset_id=asset_id,
+                    )
+                )
             normalized = observation.get("normalized_value") or {}
             if isinstance(normalized, dict):
                 declared = normalized.get("research_categories") or []
@@ -723,7 +844,10 @@ class AgentLoopRunner:
         )
         if action_id not in trade_actions:
             return []
-        categories = cls._research_categories(brief, session)
+        asset_id = cls._ordered_asset_id(parsed)
+        categories = cls._research_categories(
+            brief, session, asset_id=asset_id,
+        )
         missing: List[str] = []
         if requirements.get("require_quote") and "quote" not in categories:
             missing.append("quote")
@@ -760,14 +884,32 @@ class AgentLoopRunner:
         non_quote_results = 0
         for step in session.steps:
             result_categories = cls._research_categories_from_result(
-                step.get("tool_result") or {}, brief,
+                step.get("tool_result") or {}, brief, asset_id=asset_id,
             )
             if result_categories - {"quote"}:
                 non_quote_results += 1
         for observation in policy.get("prior_verified_observations") or []:
             if not isinstance(observation, dict):
                 continue
+            subject = str(observation.get("subject_id") or "").strip()
             normalized = observation.get("normalized_value") or {}
+            if asset_id and subject and not cls._ticker_matches(subject, asset_id):
+                obs_assets = set()
+                if isinstance(normalized, dict):
+                    obs_assets = {
+                        str(item).strip().upper()
+                        for item in (
+                            [normalized.get("symbol"), normalized.get("asset_id")]
+                            + list(normalized.get("symbols") or [])
+                        )
+                        if item not in (None, "")
+                    }
+                if obs_assets and not any(
+                    cls._ticker_matches(item, asset_id) for item in obs_assets
+                ):
+                    continue
+                if not obs_assets:
+                    continue
             declared = (
                 normalized.get("research_categories") or []
                 if isinstance(normalized, dict) else []
@@ -778,13 +920,176 @@ class AgentLoopRunner:
             prior_categories = set(str(item) for item in declared if str(item))
             if isinstance(raw, dict):
                 prior_categories.update(
-                    cls._research_categories_from_result(raw, brief)
+                    cls._research_categories_from_result(
+                        raw, brief, asset_id=asset_id,
+                    )
                 )
             if prior_categories - {"quote"}:
                 non_quote_results += 1
         if non_quote_results < minimum_results:
             missing.append(f"non_quote_results_{minimum_results}")
         return list(dict.fromkeys(missing))
+
+    @classmethod
+    def _verified_quote_identity(
+        cls,
+        brief: AgentBrief,
+        session: AgentLoopSession,
+        asset_id: str,
+    ) -> Dict[str, Any]:
+        """从本拍行情工具结果提取订单标的的名称与价格。"""
+        if not asset_id:
+            return {}
+        name = ""
+        price = None
+        for step in session.steps:
+            if not cls._step_looks_like_quote(step, brief):
+                continue
+            result = step.get("tool_result") or {}
+            if not cls._result_matches_asset(result, asset_id):
+                continue
+            for output in result.get("outputs") or []:
+                if not isinstance(output, dict):
+                    continue
+                rows = []
+                if isinstance(output.get("quotes"), list):
+                    rows.extend(
+                        row for row in output["quotes"] if isinstance(row, dict)
+                    )
+                rows.append(output)
+                for row in rows:
+                    sym = str(
+                        row.get("symbol") or row.get("asset_id") or ""
+                    ).strip()
+                    if sym and not cls._ticker_matches(sym, asset_id):
+                        continue
+                    for key in (
+                        "name_cn", "name_zh", "name", "name_en", "display_name",
+                    ):
+                        candidate = str(row.get(key) or "").strip()
+                        if candidate and not cls._ticker_matches(candidate, asset_id):
+                            name = candidate
+                            break
+                    for key in (
+                        "last_done", "price", "current_price",
+                        "regularMarketPrice", "close",
+                    ):
+                        raw = row.get(key)
+                        if raw in (None, ""):
+                            continue
+                        try:
+                            price = float(raw)
+                        except (TypeError, ValueError):
+                            continue
+                        break
+        out: Dict[str, Any] = {}
+        if name:
+            out["name"] = name
+        if price is not None:
+            out["price"] = price
+        return out
+
+    @classmethod
+    def _names_compatible(cls, claimed: object, verified: object) -> bool:
+        left = str(claimed or "").strip()
+        right = str(verified or "").strip()
+        if not left or not right:
+            return True
+        if left == right or left in right or right in left:
+            return True
+        suffixes = ("股份有限公司", "有限公司", "股份公司", "股份", "集团", "控股")
+        a, b = left, right
+        for suffix in suffixes:
+            if a.endswith(suffix):
+                a = a[: -len(suffix)]
+            if b.endswith(suffix):
+                b = b[: -len(suffix)]
+        a, b = a.strip(), b.strip()
+        if not a or not b:
+            return False
+        return a == b or a in b or b in a
+
+    @classmethod
+    def _trade_identity_mismatch(
+        cls,
+        parsed: Dict[str, Any],
+        brief: AgentBrief,
+        session: AgentLoopSession,
+    ) -> str:
+        """下单声称的名称/参考价与已验证行情不一致时返回原因码。"""
+        action_id = str(
+            parsed.get("action_id") or parsed.get("intent") or ""
+        ).strip()
+        if action_id not in {"buy_asset", "sell_asset"}:
+            return ""
+        params = parsed.get("parameters") if isinstance(
+            parsed.get("parameters"), dict,
+        ) else {}
+        asset_id = cls._ordered_asset_id(parsed)
+        if not asset_id:
+            return ""
+        quote = cls._verified_quote_identity(brief, session, asset_id)
+        claimed_name = ""
+        for key in (
+            "asset_name", "name", "name_cn", "display_name", "security_name",
+        ):
+            candidate = str(params.get(key) or "").strip()
+            if candidate:
+                claimed_name = candidate
+                break
+        verified_name = str(quote.get("name") or "").strip()
+        if (
+            claimed_name
+            and verified_name
+            and not cls._names_compatible(claimed_name, verified_name)
+        ):
+            return "asset_identity_mismatch"
+        expected_price = None
+        for key in ("expected_price", "limit_price", "reference_price"):
+            raw = params.get(key)
+            if raw in (None, ""):
+                continue
+            try:
+                expected_price = float(raw)
+            except (TypeError, ValueError):
+                continue
+            break
+        quote_price = quote.get("price")
+        if expected_price is not None and quote_price is not None:
+            try:
+                verified = float(quote_price)
+            except (TypeError, ValueError):
+                verified = 0.0
+            if verified > 0 and abs(expected_price - verified) / verified > 0.35:
+                return "asset_price_identity_mismatch"
+        return ""
+
+    @classmethod
+    def _degrade_trade_for_identity_mismatch(
+        cls,
+        parsed: Dict[str, Any],
+        brief: AgentBrief,
+        session: AgentLoopSession,
+    ) -> None:
+        reason_code = cls._trade_identity_mismatch(parsed, brief, session)
+        if not reason_code:
+            return
+        if reason_code == "asset_identity_mismatch":
+            reason = (
+                "本拍下单的公司名称与已验证行情不一致，"
+                "系统降级为观望，避免买错标的。"
+            )
+        else:
+            reason = (
+                "本拍下单参考价与已验证行情偏差过大，"
+                "系统降级为观望，请按最新行情重新估算数量。"
+            )
+        parsed["agent_loop_step"] = "final"
+        parsed["action_id"] = "wait_and_review"
+        parsed["intent"] = "wait_and_review"
+        parsed["text"] = reason
+        parsed["character_monologue"] = reason[:40]
+        parsed["plan"] = reason
 
     @classmethod
     def _ready_for_auto_quote(
@@ -883,6 +1188,8 @@ class AgentLoopRunner:
         ):
             return not is_continue_step(parsed)
         if cls._missing_research_categories(parsed, brief, session):
+            return not is_continue_step(parsed)
+        if cls._trade_identity_mismatch(parsed, brief, session):
             return not is_continue_step(parsed)
         return False
 
@@ -1088,6 +1395,62 @@ class AgentLoopRunner:
                 if code.endswith(".SS"):
                     code = code[:-3] + ".SH"
                 params["asset_id"] = code
+        if not params.get("asset_name"):
+            import re
+            name = ""
+            code_pat = r"(?:\d{5,6}\.(?:SH|SZ|SS|HK)|0?\d{3,4}\.HK)"
+            match = re.search(
+                rf"(?:买入|卖出|加仓|减仓|建仓)\s*([一-龥]{{2,8}})\s*[（(]\s*{code_pat}",
+                blob,
+                flags=re.IGNORECASE,
+            )
+            if match:
+                name = match.group(1).strip()
+            if not name:
+                match = re.search(
+                    rf"{code_pat}\s*[（(]\s*([一-龥]{{2,8}})",
+                    blob,
+                    flags=re.IGNORECASE,
+                )
+                if match:
+                    name = match.group(1).strip()
+            if not name:
+                match = re.search(
+                    rf"([一-龥]{{2,8}})\s*[（(]\s*{code_pat}",
+                    blob,
+                    flags=re.IGNORECASE,
+                )
+                if match:
+                    candidate = match.group(1).strip()
+                    banned = ("买入", "卖出", "加仓", "减仓", "建仓", "约", "按", "元", "股")
+                    if not any(token in candidate for token in banned):
+                        name = candidate
+            if not name:
+                match = re.search(
+                    r"(?:买入|卖出|加仓|减仓|建仓)\s*([一-龥]{2,8})",
+                    blob,
+                )
+                if match:
+                    name = match.group(1).strip()
+            for suffix in ("股票", "股份", "股"):
+                if name.endswith(suffix) and len(name) > len(suffix) + 1:
+                    name = name[: -len(suffix)]
+            if name:
+                params["asset_name"] = name
+        if params.get("expected_price") in (None, "") and params.get(
+            "limit_price"
+        ) in (None, ""):
+            import re
+            match = re.search(
+                r"(?:约|按|单价|现价|价格)\s*[：:]?\s*"
+                r"(\d+(?:\.\d+)?)\s*元",
+                blob,
+            )
+            if match:
+                try:
+                    params["expected_price"] = float(match.group(1))
+                except (TypeError, ValueError):
+                    pass
         if params.get("quantity") in (None, ""):
             import re
             match = re.search(

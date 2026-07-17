@@ -193,6 +193,11 @@ class CapitalMarketSettlementPlugin:
         if price is None:
             # 价格证据里没有能和下单代码对上的价格（多为代码格式不一致）
             return False, "price_lookup_failed"
+        identity_reason = self._asset_identity_mismatch(
+            parameters, selected_quote, asset_id,
+        )
+        if identity_reason:
+            return False, identity_reason
         try:
             signed_quantity = float(quantity)
         except (TypeError, ValueError):
@@ -375,7 +380,10 @@ class CapitalMarketSettlementPlugin:
                 observation, requirements,
             ) - {"quote"}
             assets = self._observation_assets(observation)
-            if requested not in assets:
+            # 研究工具常返回无后缀代码（002185），订单用 002185.SZ——必须软匹配
+            if assets and not any(
+                self._ticker_matches(item, requested) for item in assets
+            ):
                 found -= asset_bound
             if not found:
                 continue
@@ -527,7 +535,14 @@ class CapitalMarketSettlementPlugin:
         # 拒单详情只保留订单字段；harness 工具原文另有观测链路可追溯
         order = {
             key: raw_order.get(key)
-            for key in ("asset_id", "quantity", "price_evidence_ref")
+            for key in (
+                "asset_id",
+                "asset_name",
+                "quantity",
+                "expected_price",
+                "limit_price",
+                "price_evidence_ref",
+            )
             if key in raw_order
         }
         account = self._accounts.get(str(event.actor_id))
@@ -557,6 +572,14 @@ class CapitalMarketSettlementPlugin:
             ),
             "asset_market_not_allowed": (
                 "订单标的不在本场景允许的 A 股/港股交易范围内，订单未成交"
+            ),
+            "asset_identity_mismatch": (
+                f"订单声称的公司名称与代码 {req_code} 的已验证行情不一致，"
+                "请核对代码与名称后再下单"
+            ),
+            "asset_price_identity_mismatch": (
+                f"订单参考价与代码 {req_code} 的已验证行情偏差过大，"
+                "请按最新行情重新估算数量后再下单"
             ),
         }
         if reason.startswith("research_evidence_missing:"):
@@ -669,6 +692,74 @@ class CapitalMarketSettlementPlugin:
         if cls._ticker_matches(identity, requested_asset):
             return True
         return str(identity).strip().lower() == requested_asset.strip().lower()
+
+    @classmethod
+    def _names_compatible(cls, claimed: object, verified: object) -> bool:
+        """中文公司名是否同指一家（子串或去掉公司形态后缀后仍重合）。"""
+        left = str(claimed or "").strip()
+        right = str(verified or "").strip()
+        if not left or not right:
+            return True
+        if left == right or left in right or right in left:
+            return True
+        # 只剥公司形态后缀，保留「科技/光电/银行」等行业词以免误判
+        suffixes = ("股份有限公司", "有限公司", "股份公司", "股份", "集团", "控股")
+        a, b = left, right
+        for suffix in suffixes:
+            if a.endswith(suffix):
+                a = a[: -len(suffix)]
+            if b.endswith(suffix):
+                b = b[: -len(suffix)]
+        a, b = a.strip(), b.strip()
+        if not a or not b:
+            return False
+        return a == b or a in b or b in a
+
+    def _claimed_asset_name(self, parameters: Dict[str, Any]) -> str:
+        for key in (
+            "asset_name", "name", "name_cn", "display_name", "security_name",
+        ):
+            cleaned = self._clean_asset_name(parameters.get(key))
+            if cleaned:
+                return cleaned
+        return ""
+
+    def _asset_identity_mismatch(
+        self,
+        parameters: Dict[str, Any],
+        selected_quote: Dict[str, object],
+        asset_id: str,
+    ) -> str:
+        """订单声称的名称/预估价与已验证行情不一致时拒单。"""
+        verified_name = self._clean_asset_name(
+            selected_quote.get("name"), asset_id,
+        ) or self._lookup_asset_name(asset_id)
+        claimed_name = self._claimed_asset_name(parameters)
+        if (
+            claimed_name
+            and verified_name
+            and not self._names_compatible(claimed_name, verified_name)
+        ):
+            return "asset_identity_mismatch"
+        expected_price = None
+        for key in ("expected_price", "limit_price", "reference_price"):
+            raw = parameters.get(key)
+            if raw in (None, ""):
+                continue
+            try:
+                expected_price = float(raw)
+            except (TypeError, ValueError):
+                continue
+            break
+        quote_price = selected_quote.get("price")
+        if expected_price is not None and quote_price is not None:
+            try:
+                verified = float(quote_price)
+            except (TypeError, ValueError):
+                verified = 0.0
+            if verified > 0 and abs(expected_price - verified) / verified > 0.35:
+                return "asset_price_identity_mismatch"
+        return ""
 
     @classmethod
     def _extract_quotes(
