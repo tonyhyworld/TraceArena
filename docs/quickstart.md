@@ -13,6 +13,10 @@ the locked Vue frontend dependencies in one command:
 ./scripts/install.sh
 ```
 
+If `python3` points to an older or incomplete installation, select a compatible
+interpreter explicitly: `PYTHON_BIN=/path/to/python3.12 ./scripts/install.sh`.
+The interpreter must include the `venv`/`ensurepip` components.
+
 Windows PowerShell:
 
 ```powershell
