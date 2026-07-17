@@ -1,6 +1,7 @@
 FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    TRACEARENA_ROOT=/app
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md LICENSE ./
 COPY backend ./backend

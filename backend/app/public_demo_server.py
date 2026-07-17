@@ -26,7 +26,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(os.environ.get("TRACEARENA_ROOT", Path(__file__).resolve().parents[2])).resolve()
 WEB = ROOT / "frontend" / "public_demo"
 SCENARIO = ROOT / "backend" / "scenarios" / "capital_market"
 FIXTURE = ROOT / "examples" / "market_replay" / "fixture.json"

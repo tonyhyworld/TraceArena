@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -19,7 +20,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(os.environ.get("TRACEARENA_ROOT", Path(__file__).resolve().parents[2])).resolve()
 WEB = ROOT / "frontend" / "demo_web"
 SCENARIO = ROOT / "backend" / "scenarios" / "capital_market"
 
