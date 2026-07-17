@@ -1,0 +1,9 @@
+characters:
+  - id: investor_a
+    name: 陈稳 · 资深价值型基金经理
+    archetype: defensive_portfolio_manager
+    visual_style: cool_blue
+  - id: investor_b
+    name: 林锋 · 资深成长型基金经理
+    archetype: aggressive_portfolio_manager
+    visual_style: amber_momentum

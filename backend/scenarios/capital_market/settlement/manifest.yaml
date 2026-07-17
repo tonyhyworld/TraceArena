@@ -1,0 +1,138 @@
+evidence_validity_ticks: 3
+# 财报、新闻、宏观与供需证据不按 3 分钟行情时效失效；一小时局内可复用。
+research_evidence_validity_ticks: 60
+research_requirements:
+  enabled: true
+  apply_to_new_positions: true
+  minimum_non_quote_categories: 2
+  minimum_non_quote_results: 2
+  category_tokens:
+    quote: [longport_quote]
+    financials: [china_financial_statements]
+    cash_flow: [cash_flow]
+    valuation: [longport_calc_indexes, pe_ttm, pb_ratio]
+    news: [china_company_news]
+    catalyst: [china_company_news, longport_filings]
+    macro: [china_macro_indicators]
+    industry: [china_industry_supply_demand, pmi, futures_inventory]
+    supply_demand: [china_industry_supply_demand, futures_inventory]
+    fund_flow: [longport_capital_flow, longport_capital_distribution, longport_depth]
+  by_agent:
+    investor_a:
+      required: [financials]
+      any_of:
+        - [valuation, cash_flow]
+    investor_b:
+      required: [catalyst]
+      any_of:
+        - [fund_flow, industry]
+# 港股成交价为 HKD；组合账本以 CNY 计，用固定近似汇率折算（引擎注入结算上下文）。
+fx_rates:
+  HKD: 0.92
+# 交易标的白名单由结算层确定性执行，不能只依赖 Agent prompt。
+# 代码格式允许 .SH/.SS、港股前导零等同一标的的规范化变体。
+trading_universe:
+  allowed_markets: [SH, SZ, HK]
+  reject_reason: asset_market_not_allowed
+# 回合/市场阶段定义已迁移到 world/clock.yaml（RoundModel 契约）。
+# OS 用 RoundModel.phase_for_tick() 统一算当前阶段并注入 round_phase，
+# 本插件不再自己声明或对 tick 取模。
+portfolio_ledger:
+  currency: CNY
+  initial_cash: 1000
+  order_model: simulated_fill
+  fill_price_source: latest_verified_quote
+  description: 买入/卖出是 AI World 内部模拟成交，不会连接真实券商；现金、持仓、成交和盈亏全部由场景结算层维护。港股按 HKD→CNY 折算后记账。
+operator_trace:
+  title: 投资解释链
+  # OS 运营台左侧「本回合全过程」按此类型 ID 套用 hybrid 链路模型。
+  process_chain_type: hybrid
+  empty_hint: 开局后左栏按“注入 → 工具与代码 → 怎么想 → 输出 → 订单 → 成交 → 账本”展开；右栏解释本回合混合结算。
+  nodes:
+    - id: data_source
+      label: 数据来源
+      kind: observation
+      description: Agent 自己调用工具、代码或外部数据源拿到的行情、新闻和财报事实。
+      next_label: 支撑判断
+    - id: investment_thesis
+      label: 投资判断
+      kind: activity
+      description: Agent 基于数据形成买入、卖出、等待或风控理由。
+      next_label: 形成指令
+    - id: simulated_order
+      label: 模拟订单
+      kind: action
+      description: buy_asset / sell_asset / wait_and_review 等场景动作进入世界账本。
+      next_label: 组合账本处理
+    - id: fill
+      label: 成交/拒单
+      kind: settlement
+      outcomes: [order_rejected, portfolio_marked_to_market]
+      description: 结算层校验现金、持仓、交易窗口和价格证据，决定模拟订单是否成交。
+      next_label: 更新持仓
+    - id: portfolio
+      label: 持仓账本
+      kind: portfolio
+      description: 展示现金、持仓、市值和订单后的组合状态。
+      next_label: 计算盈亏
+    - id: pnl
+      label: 盈亏结果
+      kind: pnl
+      description: 根据成交价、当前估值价格和持仓数量计算收益率、回撤和终局排名。
+
+execution:
+  default:
+    mode: deterministic_verifier
+    provider_id: portfolio_order_validator
+  routes:
+    buy_asset:
+      mode: hybrid
+      provider_id: portfolio_mark_to_market
+    sell_asset:
+      mode: hybrid
+      provider_id: portfolio_mark_to_market
+
+providers:
+  - id: portfolio_order_validator
+    authority: deterministic_verifier
+    verifier_id: portfolio_order_validator
+    rule_version: capital_market.order_validation.v1
+    handles: [action_resolved]
+  - id: portfolio_mark_to_market
+    authority: hybrid
+    rule_version: capital_market.portfolio_mark_to_market.v1
+    component_modes: [external_reality, deterministic_verifier]
+    handles: [trade_executed, market_price_closed, action_resolved, finalize]
+  - id: portfolio_cash_ledger
+    authority: deterministic_verifier
+    verifier_id: portfolio_ledger
+    rule_version: capital_market.portfolio_mark_to_market.v1
+    handles: [finalize]
+victory:
+  provider_id: portfolio_mark_to_market
+  value: portfolio_value
+  order: descending
+  label: 终局组合总资产
+display_values:
+  portfolio_value: 组合总资产
+  pnl: 累计盈亏
+  return_pct: 收益率
+  cash: 可用现金
+  market_value: 持仓市值
+  position_count: 持仓数量
+  reward_total: 累计现金奖励
+  redeemed_total: 累计被赎回
+metric_bindings:
+  metric_portfolio_value: {value: portfolio_value, transform: identity}
+  metric_portfolio_pnl: {value: pnl, transform: identity}
+  metric_portfolio_return: {value: return_pct, transform: identity}
+resource_bindings:
+  cash: {value: cash}
+observations:
+  - id: verified_market_price
+    provider_id: market_data_provider
+    observation_type: market_price
+    registry_path: verified_market_prices
+    subject_field: asset_id
+    normalized_fields: [asset_id, price]
+    unit: quote_currency

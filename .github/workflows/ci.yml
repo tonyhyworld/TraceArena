@@ -1,0 +1,62 @@
+name: CI
+
+# Public candidate CI: the workflow intentionally exercises only the
+# allowlisted, no-key runtime and replay example.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  backend:
+    name: Public runtime smoke test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install uv
+          uv sync --locked --extra dev
+          echo "REPLAY_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Compile public runtime
+        run: PYTHONPATH=backend uv run python -m compileall -q backend/app backend/scripts
+
+      - name: Run public candidate test suite
+        run: |
+          PYTHONPATH=backend uv run pytest -q \
+            backend/tests/test_replay_provider.py \
+            backend/tests/test_market_replay_cli.py \
+            backend/tests/test_market_replay_pipeline.py \
+            backend/tests/test_public_asset_provenance.py \
+            backend/tests/test_scenario_locale.py \
+            backend/tests/test_demo_server.py
+
+      - name: Validate static frontends
+        run: |
+          node --check frontend/public_viewer/app.js
+          node --check frontend/demo_web/app.js
+
+      - name: Run deterministic no-key Market Replay
+        working-directory: .
+        run: |
+          PYTHONPATH=backend uv run python backend/scripts/market_replay.py \
+            --fixture examples/market_replay/fixture.json \
+            --output /tmp/tracearena-replay
+          elapsed=$(( $(date +%s) - REPLAY_START_EPOCH ))
+          echo "Dependency install through replay: ${elapsed}s"
+          test "$elapsed" -le 300

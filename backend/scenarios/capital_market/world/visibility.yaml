@@ -1,0 +1,7 @@
+visibility_rules:
+  - id: public_portfolio_metrics
+    scope: public
+    description: 组合总资产、盈亏与收益率对两位 Agent 同步可见。
+  - id: private_notes
+    scope: private
+    description: note_to_self、工具原始输出与私人备忘默认只对本人可见。

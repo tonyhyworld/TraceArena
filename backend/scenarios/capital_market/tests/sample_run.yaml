@@ -1,0 +1,13 @@
+sample_run:
+  agents:
+    - role_id: investor_a
+    - role_id: investor_b
+  reference_decision_paths:
+    - agent_id: investor_a
+      steps:
+        - {tick: 1, action_id: wait_and_review}
+        - {tick: 2, action_id: buy_asset, target_id: portfolio_book}
+    - agent_id: investor_b
+      steps:
+        - {tick: 1, action_id: wait_and_review}
+        - {tick: 2, action_id: sell_asset, target_id: portfolio_book}

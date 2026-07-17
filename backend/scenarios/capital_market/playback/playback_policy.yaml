@@ -1,0 +1,5 @@
+playback_policy:
+  mode: compact
+  # 实时局：演绎最多落后计算约 45 秒，避免午间仍积压数分钟。
+  max_buffer_seconds: 45
+  skip_empty_ticks: true

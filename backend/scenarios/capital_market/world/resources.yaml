@@ -1,0 +1,10 @@
+resources:
+  - id: cash
+    name: 现金
+    owner_type: agent
+    initial: 1000
+    min: 0
+    max: 1000000000
+    refresh_per_tick: 0
+    visible_to_owner: true
+    visible_to_others: true

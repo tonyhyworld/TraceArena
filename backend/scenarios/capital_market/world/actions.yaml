@@ -1,0 +1,58 @@
+actions:
+  - id: buy_asset
+    name: 买入建仓
+    category: portfolio_action
+    execution_semantics: reality_order
+    target_optional_for_settlement: true
+    followup_when_mentioned: true
+    intent_aliases: [买入, 建仓, 加仓, 仓位, 试探进攻, 进攻]
+    followup_on_settlement_outcomes: [order_rejected]
+    intent: improve
+    description: 基于已经获取并验证的数据提交买入订单；真实交易标的由 parameters.asset_id 指定，成交金额由组合账本按真实价格扣减现金。
+    requires_target: false
+    target_kind: object
+    target_types: [portfolio]
+    cost: {}
+    cooldown: 0
+    permissions_required: [trading_access]
+    parameters_schema:
+      type: object
+      required: [asset_id, quantity]
+      properties:
+        asset_id: {type: string, description: 真实交易代码，例如 600036.SH 或 00700.HK}
+        quantity: {type: number, description: 买入数量，必须大于 0}
+        price_evidence_ref: {type: string, description: 已验证行情证据 ID；如留空，结算层会尝试使用有效期内该标的最近一次已验证价格}
+
+  - id: sell_asset
+    name: 卖出减仓
+    category: portfolio_action
+    execution_semantics: reality_order
+    target_optional_for_settlement: true
+    followup_when_mentioned: true
+    intent_aliases: [卖出, 减仓, 止损, 兑现, 降低敞口, 防守]
+    followup_on_settlement_outcomes: [order_rejected]
+    intent: reduce
+    description: 基于已经获取并验证的数据提交卖出订单；真实交易标的由 parameters.asset_id 指定，用于降低敞口、兑现收益或止损。
+    requires_target: false
+    target_kind: object
+    target_types: [portfolio]
+    cost: {}
+    cooldown: 0
+    permissions_required: [trading_access]
+    parameters_schema:
+      type: object
+      required: [asset_id, quantity]
+      properties:
+        asset_id: {type: string, description: 已持有标的的真实交易代码，例如 600036.SH}
+        quantity: {type: number, description: 卖出数量，必须大于 0 且不超过持仓}
+        price_evidence_ref: {type: string, description: 已验证行情证据 ID；如留空，结算层会尝试使用有效期内该标的最近一次已验证价格}
+
+  - id: wait_and_review
+    name: 等待复盘
+    category: wait
+    intent: wait
+    description: 保持当前现金和持仓，复盘上一回合决策；不改变净值。
+    requires_target: false
+    cost: {}
+    cooldown: 0
+    permissions_required: [basic_access]

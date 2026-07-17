@@ -1,0 +1,33 @@
+# 回合 / 时钟模型（RoundModel 契约，见 backend/app/contracts/round_model.py）
+#
+# 资本市场：短交易实时局。一局 ≈ A股连续交易时段内的 1 小时真实时间。
+# 关键点由 OS 通用执行、场景只声明：
+#   1) pacing.wall_clock —— 相邻 tick 的起点至少间隔 tick_seconds 真实秒，
+#      让实时行情在 tick 之间真正发生变化（这是"实时数据驱动策略"的物理前提）。
+#   2) live_window —— 只约束「当前墙钟能否下单」，不约束开局时刻。
+#      允许 9:00 盘前开局做研究；到 9:30 后本局未关即可成交。
+#      午休/收盘时 RoundModel 把 tradable 置 false，结算层拒单。
+#   3) 单一"连续交易"阶段全程声明 tradable:true —— 实际能否成交再叠加 live_window。
+clock:
+  unit: real_minute
+  cycle_label: 交易时段
+  advance:
+    mode: every_tick
+  pacing:
+    mode: wall_clock
+    tick_seconds: 60          # 1 tick ≈ 1 真实分钟，行情在 tick 间真实变动
+  live_window:
+    timezone: Asia/Shanghai
+    weekdays: [1, 2, 3, 4, 5]
+    ranges: ["09:30-11:30", "13:00-15:00"]
+    closed_message: >-
+      当前非 A股连续竞价时段（周一至周五 9:30–11:30、13:00–15:00），
+      暂不可下单；可继续研究，开盘后本局即可提交订单。
+  phases:
+    - id: continuous_session
+      name: 连续交易
+      actors: all
+      flags: {tradable: true}
+      description: >-
+        可随时研究与准备下单；真正成交以当前是否处于 A股交易窗口为准。
+        盘前开局后，到开盘时刻即可建仓、调仓、止盈止损。

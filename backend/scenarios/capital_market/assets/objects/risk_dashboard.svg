@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="340" viewBox="0 0 560 340">
+  <defs>
+    <linearGradient id="heatA" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#68f7a5"/>
+      <stop offset=".52" stop-color="#ffd166"/>
+      <stop offset="1" stop-color="#ff647c"/>
+    </linearGradient>
+  </defs>
+  <rect width="560" height="340" rx="30" fill="#14111f" stroke="#ff647c" stroke-width="4"/>
+  <text x="38" y="60" fill="#ffe8a3" font-family="PingFang SC, Microsoft YaHei, Arial" font-size="30" font-weight="800">风险热力图</text>
+  <g transform="translate(46 92)">
+    <rect width="468" height="168" rx="18" fill="#0b0f19"/>
+    <g>
+      <rect x="18" y="18" width="88" height="54" rx="10" fill="#68f7a5" opacity=".82"/>
+      <rect x="118" y="18" width="88" height="54" rx="10" fill="#9ce986" opacity=".82"/>
+      <rect x="218" y="18" width="88" height="54" rx="10" fill="#ffd166" opacity=".84"/>
+      <rect x="318" y="18" width="132" height="54" rx="10" fill="#ff8a6b" opacity=".86"/>
+      <rect x="18" y="88" width="132" height="54" rx="10" fill="#5ee7ff" opacity=".74"/>
+      <rect x="162" y="88" width="88" height="54" rx="10" fill="#ffd166" opacity=".84"/>
+      <rect x="262" y="88" width="88" height="54" rx="10" fill="#ff647c" opacity=".9"/>
+      <rect x="362" y="88" width="88" height="54" rx="10" fill="#b85cff" opacity=".74"/>
+    </g>
+  </g>
+  <rect x="64" y="292" width="430" height="14" rx="7" fill="url(#heatA)"/>
+  <text x="64" y="282" fill="#9fb0c7" font-family="PingFang SC, Microsoft YaHei, Arial" font-size="16">低风险</text>
+  <text x="432" y="282" fill="#9fb0c7" font-family="PingFang SC, Microsoft YaHei, Arial" font-size="16">高风险</text>
+</svg>

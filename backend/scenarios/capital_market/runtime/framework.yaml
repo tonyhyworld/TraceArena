@@ -1,0 +1,59 @@
+scenario_path: ./scenarios/capital_market
+runtime_mode: story
+tick_interval_sec: 10.0
+agent_timeout_sec: 60.0
+provider_health_check: true
+agents:
+  - id: investor_a
+    name: 稳健基金
+    provider: minimax
+    model: MiniMax-M2.7-highspeed
+    color: "#4cc9f0"
+    extra:
+      temperature: 0.6
+      max_tokens: 2500
+  - id: investor_b
+    name: 进取基金
+    provider: minimax
+    model: MiniMax-M2.7-highspeed
+    color: "#ffbe0b"
+    extra:
+      temperature: 0.8
+      max_tokens: 2500
+director:
+  provider: minimax
+  model: MiniMax-M2.7-highspeed
+  enabled: true
+judge:
+  # 投资结果由真实行情 + 确定性组合账本结算，不评价动作“聪不聪明”。
+  enabled: false
+  max_tokens: 1200
+  timeout_seconds: 30
+sandbox:
+  enabled: true
+  timeout_sec: 5.0
+  max_artifacts_per_agent: 8
+  max_code_lines: 200
+  process_backend: auto
+  allow_network: true
+  allow_package_install: true
+  process_timeout_sec: 45.0
+  package_install_timeout_sec: 180.0
+mcp:
+  enabled: true
+  servers_path: ./mcp_servers.yaml
+tts:
+  enabled: true
+  voice_id: presenter_male
+  speed: 1.0
+  timeout_sec: 20.0
+log_dir: ./runs
+agent_loop:
+  enabled: true
+  max_steps: 12
+  # 实时局节拍预算：1 tick ≈ 1 真实分钟，单拍决策放任到 5 分钟会把节奏
+  # 拖成 3-5 分钟/拍。180s 已够 4-6 次带工具的推理步；连续策略驳回另有
+  # 3 次封顶（OS 层），不会再出现整拍 35 步撞墙。
+  session_timeout_sec: 180.0
+external_agent:
+  turn_timeout_ms: 180000

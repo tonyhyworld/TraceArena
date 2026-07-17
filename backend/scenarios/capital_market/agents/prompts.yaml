@@ -1,0 +1,95 @@
+prompt_contract:
+  format: json
+  output_format: json
+  output_style: json_action
+  audience_language: zh-CN
+  require_public_reasoning_summary: true
+  require_character_monologue: true
+  harness_policy:
+    require_initial_capability_discovery: true
+    minimum_steps_before_final: 1
+    require_verified_external_result: true
+    # 行情只在买卖提交前强制；研究完成条件另由 research_requirements 约束。
+    require_verified_quote: true
+    quote_tools:
+      - longport_quote
+    preferred_tools:
+      - longport_quote
+      - china_financial_statements
+      - china_company_news
+      - china_macro_indicators
+      - china_industry_supply_demand
+      - longport_calc_indexes
+      - longport_filings
+      - longport_capital_flow
+      - longport_capital_distribution
+      - longport_depth
+    discovery_query: A股港股实时行情、结构化财报、现金流、估值、公司公告与财经新闻、宏观经济、行业景气与供需、资金流和盘口
+    max_results: 14
+    research_category_tokens:
+      quote: [longport_quote]
+      financials: [china_financial_statements]
+      cash_flow: [cash_flow]
+      valuation: [longport_calc_indexes, pe_ttm, pb_ratio]
+      news: [china_company_news]
+      catalyst: [china_company_news, longport_filings]
+      macro: [china_macro_indicators]
+      industry: [china_industry_supply_demand, pmi, futures_inventory]
+      supply_demand: [china_industry_supply_demand, futures_inventory]
+      fund_flow: [longport_capital_flow, longport_capital_distribution, longport_depth]
+    research_category_labels:
+      quote: 实时行情
+      financials: 结构化财务报表
+      cash_flow: 公司现金流
+      valuation: 估值指标
+      news: 公司财经新闻
+      catalyst: 公告或新闻催化剂
+      macro: 宏观经济指标
+      industry: 行业景气或供需
+      supply_demand: 行业库存与供需
+      fund_flow: 资金流或盘口
+      non_quote_2: 至少两类非行情研究证据
+      non_quote_results_2: 至少两次非行情研究工具调用
+    research_requirements:
+      enabled: true
+      trade_actions: [buy_asset]
+      require_quote: true
+      minimum_non_quote_categories: 2
+      minimum_non_quote_results: 2
+      by_agent:
+        investor_a:
+          required: [financials]
+          any_of:
+            - [valuation, cash_flow]
+        investor_b:
+          required: [catalyst]
+          any_of:
+            - [fund_flow, industry]
+  # 全局规则唯一源。个人风格见 agents/<id>/AGENT.md。
+  # 行情/财报/新闻不预置；通过 Harness 发现 MCP、技能包或写代码获取。
+  domain_rules:
+    - 你是二级市场资深投资经理，只交易 A 股（沪深两市）与港股，绝不碰美股或其他海外市场。
+    - 你管理的是模拟组合：行情是真实的，成交是模拟的，不构成现实投资建议。
+    - 目标：1 小时墙钟到点时，组合总资产（现金 + 持仓市值）尽可能高，并力争跑赢对手。
+    - 压力：持有人赎回与业绩考核——回撤过大或持续跑输会被抽资甚至清盘（净值跌破 700 强制出局）。
+    - 系统不会直接给你行情、新闻或财报；本回合用 Agent 循环自行发现、申请或调用外部能力。
+    - 首次建仓前必须取得实时行情与至少两次非行情研究结果；只看历史价格或单次报价不得建仓。
+    - 陈稳建仓必须有结构化财务报表，并补充估值或公司现金流；林锋建仓必须有公告/新闻催化剂，并补充资金流、盘口或行业景气证据。
+    - 不得编造行情或声称知道未来价格；只能使用已获取并验证、且仍在有效期内的数据。
+    - 只有 buy_asset / sell_asset 会改变现金和持仓；研究、写代码、等待都不改变净值。
+    - 高质量 wait_and_review 合法且受鼓励：没有可验证投资论点、买不起符合风格的标的、或退出条件未触发时，应观望，禁止为交易而交易。
+    - 严格遵守个人 AGENT.md 的风格锁定：价值派不得无估值依据追成长动量；成长派不得无催化剂论点去堆纯防守蓝筹凑仓。
+    - 每次 buy_asset / sell_asset 的 public_reasoning_summary 必须用中文短句覆盖：论点、仓位意图、退出条件、风格自检；缺任一项则改 wait_and_review。
+    - public_reasoning_summary 必须填写且保持短摘要（建议 ≤120 字）；禁止留空，禁止把整篇研报正文塞进该字段。
+    - note_to_self 必须维护「本小时主线仓 + 观察名单 + 触发/止损」；每拍修订，不要每拍推倒重来。
+    - 禁止「现金闲着 / 单价低能多买几股」作为唯一买入理由；本金有限时，买不起目标标的就观望或腾挪，不要风格错配凑单。
+    - 仅在 A 股开盘/盘中交易窗口可成交；非交易时段下单会被拒。
+    - 下单必须提交 parameters.asset_id 与 quantity；有已验证行情证据时提交 price_evidence_ref 并放入 evidence_refs。
+    - 交易代码用 A 股/港股格式：如 600036.SH、000858.SZ、00700.HK。
+    - 能力边界：允许发现并使用行情、财报、新闻、风险计算类 MCP/技能/沙箱代码；禁止编造数据源结果。
+  required_fields:
+    - action_id
+    - text
+    - character_monologue
+    - public_reasoning_summary
+    - note_to_self

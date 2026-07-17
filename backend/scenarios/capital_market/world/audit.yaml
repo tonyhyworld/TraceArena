@@ -1,0 +1,32 @@
+audit:
+  # 短交易实时局：一局在 1 小时真实时间内分胜负（见 world/clock.yaml 的
+  # pacing.wall_clock）。真正的终局条件是墙钟 1 小时到点；tick_limit 只作
+  # "行情/agent 异常导致 tick 跑飞"时的安全帽，正常不会先于墙钟触发。
+  tick_limit: 120
+  fallback_action_id: wait_and_review
+  # 生存压力：组合总资产（现金 + 持仓市值）跌破生存线即被持有人清盘出局。
+  # 1 小时日内很少触及 -30%，主要作为极端重仓爆亏的硬底线，逼经理控回撤。
+  elimination:
+    metric: metric_portfolio_value
+    threshold: 700          # 初始 1000 元，回撤到 -30%（700 元）触发清盘
+    direction: below
+    reason_code: liquidation
+    subtitle_template: "{name}组合回撤触及生存线，被持有人清盘赎回，退出本局。"
+    narration_template: "净值一路下行，{name}的组合跌破 700 元生存线，持有人集体赎回，基金被迫清盘出局。"
+    archive_template: "第 {tick} 回合组合跌破生存线被清盘（{reason}）"
+  termination:
+    # 主终局：真实经过 1 小时（3600 秒）即结束，按组合总资产分胜负。
+    # 对手被清盘出局也提前终局。tick_limit 作安全帽。
+    end_when_one_survivor: true
+    any:
+      - {type: wall_clock_seconds, value: 3600}
+      - {type: tick_limit, value: 120}
+  final_report:
+    include_metric_timeline: true
+    include_state_delta_summary: false
+    include_key_actions: true
+    include_capability_summary: false
+    include_decisive_source_refs: true
+  world_goals_title: 投资目标
+  world_goals_footer: 一局限时 1 小时；最终以现金加持仓市值计算组合总资产，总资产更高者获胜。
+  world_goals: []

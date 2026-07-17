@@ -1,0 +1,151 @@
+tools:
+  - id: longport_quote
+    name: A/H 股实时报价
+    description: 获取目标标的当前价格、成交量与交易状态；只用于下单前价格确认。
+    type: mcp
+    mcp_server: longport
+    mcp_tool: longport_quote
+    timeout_sec: 25
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbols: {type: array, items: {type: string}}
+      required: [symbols]
+
+  - id: longport_calc_indexes
+    name: 估值与市场指标
+    description: 获取 PE、PB、股息率、换手率、量比、振幅等估值与交易指标。
+    type: mcp
+    mcp_server: longport
+    mcp_tool: longport_calc_indexes
+    timeout_sec: 25
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbols: {type: array, items: {type: string}}
+        indexes: {type: array, items: {type: string}}
+      required: [symbols]
+
+  - id: china_financial_statements
+    name: 结构化公司财务报表
+    description: 获取 A/H 股利润表、资产负债表或现金流量表，验证盈利质量、负债和现金流。
+    type: mcp
+    mcp_server: china_market_research
+    mcp_tool: china_financial_statements
+    timeout_sec: 30
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbol: {type: string}
+        statement: {type: string, enum: [income, balance, cash_flow]}
+        limit: {type: integer}
+      required: [symbol]
+
+  - id: china_company_news
+    name: 公司财经新闻与催化剂
+    description: 获取 A 股个股最新财经新闻、发布时间、来源及链接，核验事件催化剂。
+    type: mcp
+    mcp_server: china_market_research
+    mcp_tool: china_company_news
+    timeout_sec: 30
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbol: {type: string}
+        limit: {type: integer}
+      required: [symbol]
+
+  - id: china_macro_indicators
+    name: 中国宏观经济指标
+    description: 获取 GDP、CPI、PMI、货币供应量与社会消费品零售数据。
+    type: mcp
+    mcp_server: china_market_research
+    mcp_tool: china_macro_indicators
+    timeout_sec: 30
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        indicator:
+          type: string
+          enum: [gdp, cpi, pmi, money_supply, retail]
+        limit: {type: integer}
+      required: [indicator]
+
+  - id: china_industry_supply_demand
+    name: 行业景气与供需
+    description: 获取制造业 PMI、消费需求或商品期货库存，验证行业景气、库存和供需变化。
+    type: mcp
+    mcp_server: china_market_research
+    mcp_tool: china_industry_supply_demand
+    timeout_sec: 30
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        dataset:
+          type: string
+          enum: [pmi, retail, futures_inventory]
+        contract: {type: string}
+        limit: {type: integer}
+      required: [dataset]
+
+  - id: longport_filings
+    name: 公司公告与披露
+    description: 获取公司公告和财报披露列表，用于核验事件与公告催化剂。
+    type: mcp
+    mcp_server: longport
+    mcp_tool: longport_filings
+    timeout_sec: 25
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbol: {type: string}
+      required: [symbol]
+
+  - id: longport_capital_flow
+    name: 个股资金流
+    description: 获取个股资金流入流出时序，辅助判断资金供需方向。
+    type: mcp
+    mcp_server: longport
+    mcp_tool: longport_capital_flow
+    timeout_sec: 25
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbol: {type: string}
+      required: [symbol]
+
+  - id: longport_capital_distribution
+    name: 大中小单资金分布
+    description: 获取大单、中单和小单净流入分布，辅助判断资金结构。
+    type: mcp
+    mcp_server: longport
+    mcp_tool: longport_capital_distribution
+    timeout_sec: 25
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbol: {type: string}
+      required: [symbol]
+
+  - id: longport_depth
+    name: 盘口买卖档
+    description: 获取买卖盘深度，辅助判断短时市场供需和流动性。
+    type: mcp
+    mcp_server: longport
+    mcp_tool: longport_depth
+    timeout_sec: 25
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbol: {type: string}
+      required: [symbol]

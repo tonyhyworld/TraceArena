@@ -1,0 +1,19 @@
+name: Feature request
+description: Propose an improvement to the generic runtime, replay, or public tooling.
+title: "[Feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and users
+      description: What problem does this solve, and who needs it?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed design
+      description: Explain the public contract, alternatives, compatibility and tests.
+    validations:
+      required: true

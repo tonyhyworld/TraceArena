@@ -1,0 +1,41 @@
+manifest:
+  name: Capital Market Investment Simulation v0
+  description: Two investment agents research and trade with equal starting capital and tool access in a simulated portfolio contest.
+intro: >-
+  The opening bell rings. Two investment managers enter with equal capital and
+  the same tool access. The winner obtains verifiable evidence, forms a
+  defensible thesis, enters during a valid window, and controls drawdown.
+goal_text: >-
+  You are an experienced investment manager under performance and redemption
+  pressure. This one-hour simulation uses live research inputs and a simulated
+  portfolio ledger. The higher terminal portfolio value wins; value below 700
+  is liquidated. It is not investment advice.
+background_text: A timed capital-market simulation with evidence-linked settlement for evaluation only.
+roles:
+  investor_a: {display_name: Chen Wen, role_title: Senior Value Fund Manager, public_persona: A value investor focused on valuation and margin of safety., hidden_goal: Deliver a positive return and beat the opponent.}
+  investor_b: {display_name: Lin Feng, role_title: Senior Growth Fund Manager, public_persona: A growth investor focused on industry momentum and catalysts., hidden_goal: Deliver a positive return and beat the opponent.}
+actions:
+  buy_asset: {name: Buy / open position, description: Submit a buy order using acquired and verified evidence.}
+  sell_asset: {name: Sell / reduce position, description: Submit a sell order to reduce exposure, realize gains, or control losses.}
+  wait_and_review: {name: Wait and review, description: Keep cash and holdings unchanged while reviewing the prior decision.}
+metrics:
+  metric_portfolio_value: Total portfolio value
+  metric_portfolio_pnl: Cumulative profit and loss
+  metric_portfolio_return: Return
+ui_text:
+  title: TraceArena Capital Market · China / Hong Kong
+  subtitle: Two investment managers under the same constraints
+  notice_label: Market brief
+  notice_tooltip: View market rules and evaluation objective
+  narrative_title: Market narrative
+  thoughts_title: Trading rationale
+  thoughts_source: Manager monologue
+  strategy_title: Investment strategy
+  strategy_source: Reasoning trace
+  intervention_label: Market event
+  intervention_placeholder: Inject a market event and press Enter…
+  variables_label: Market variables
+  ranking_score_label: Total portfolio value
+  ranking_leading: Portfolio leader
+  ranking_gap_prefix: Behind by
+  ranking_eliminated: Eliminated

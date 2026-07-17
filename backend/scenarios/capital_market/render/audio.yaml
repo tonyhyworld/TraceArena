@@ -1,0 +1,19 @@
+files:
+  bgm:
+    idle: market_synth_wave.mp3
+    active_market: market_synth_wave.mp3
+    finale: {synth: {waveform: sine, frequency: 146}}
+  sfx:
+    market_scan: {synth: {waveform: sine, frequency: 620, end_frequency: 920, duration_ms: 260}}
+    order_filled: {synth: {waveform: square, frequency: 440, end_frequency: 660, duration_ms: 180}}
+    portfolio_settled: {synth: {waveform: sine, frequency: 520, end_frequency: 780, duration_ms: 360}}
+event_sfx:
+  terminal_settlement: portfolio_settled
+event_bgm:
+  game_started: active_market
+  terminal_settlement: finale
+  game_over: finale
+event_effects:
+  success: success_chime
+  invalid: backlash_hit
+  backlash: backlash_hit

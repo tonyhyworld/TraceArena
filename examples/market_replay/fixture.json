@@ -1,0 +1,36 @@
+{
+  "fixture_id": "value_catalyst_synthetic_v1",
+  "schema_version": "1.0",
+  "provenance_status": "internal_synthetic_pending_approval",
+  "license": "CC0-1.0 (pending maintainer confirmation)",
+  "source": {
+    "kind": "synthetic",
+    "description": "Small deterministic fixture for offline pipeline verification"
+  },
+  "asset": "600036.SH",
+  "ticks": 2,
+  "agents": {
+    "investor_a": {
+      "observations": [
+        {"run_id": "quote_a_t1", "categories": ["quote"], "price": 100.0},
+        {"run_id": "financials_a_t1", "categories": ["financials"]},
+        {"run_id": "valuation_a_t1", "categories": ["valuation"]}
+      ],
+      "actions": [
+        {"tick": 1, "action_id": "wait_and_review", "reason": "先完成可审计研究", "reason_en": "Complete the auditable research first."},
+        {"tick": 2, "action_id": "buy_asset", "quantity": 2, "price_evidence_ref": "quote_a_t1", "reason": "证据链完整，按回放规则执行", "reason_en": "The evidence chain is complete; execute the recorded replay action."}
+      ]
+    },
+    "investor_b": {
+      "observations": [
+        {"run_id": "quote_b_t1", "categories": ["quote"], "price": 100.0},
+        {"run_id": "catalyst_b_t1", "categories": ["catalyst"]},
+        {"run_id": "fund_flow_b_t1", "categories": ["fund_flow"]}
+      ],
+      "actions": [
+        {"tick": 1, "action_id": "wait_and_review", "reason": "先完成可审计研究", "reason_en": "Complete the auditable research first."},
+        {"tick": 2, "action_id": "wait_and_review", "reason": "保持记录中的现金状态", "reason_en": "Keep the recorded cash position."}
+      ]
+    }
+  }
+}

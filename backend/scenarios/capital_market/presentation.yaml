@@ -1,0 +1,59 @@
+# 演绎形态：数据仪表盘（两位经理各占一区，展示持仓/盈亏/操盘思路/投资策略），
+# 而非 3D 角色场景。OS 前端据此渲染，内容全部来自本场景包数据。
+render_mode: dashboard
+camera:
+  fov: 46
+stage:
+  background_color: '#030812'
+  width: 28
+  depth: 18
+ui_text:
+  title: AI 资本市场 · A股 / 港股
+  subtitle: 两位资深投资经理的实盘对决
+  notice_label: 市场说明
+  notice_tooltip: 查看市场规则与考核目标
+  narrative_title: 盘面演绎
+  thoughts_title: 操盘思路
+  thoughts_source: 经理独白
+  strategy_title: 投资策略
+  strategy_source: 思维链
+  intervention_label: 市场事件
+  intervention_placeholder: 注入一条市场突发事件，回车发送…
+  variables_label: 市场变量
+  ranking_score_label: 组合总资产
+  ranking_leading: 资产领先
+  ranking_gap_prefix: 少
+  ranking_eliminated: 已退出
+ui_theme:
+  accent_primary: '#4cc9f0'
+  accent_secondary: '#68f7a5'
+  director_color: '#ffbe0b'
+  error_color: '#ff647c'
+  success_color: '#68f7a5'
+  shell_background: 'radial-gradient(900px 520px at 38% -10%,rgba(76,201,240,.12),transparent 68%),linear-gradient(160deg,#02050b 0%,#07111d 52%,#041019 100%)'
+  shell_glow: 'radial-gradient(650px 420px at 25% 30%,rgba(76,201,240,.08),transparent 70%),radial-gradient(600px 380px at 78% 60%,rgba(104,247,165,.05),transparent 72%)'
+  panel_background: 'linear-gradient(180deg,rgba(4,12,22,.97),rgba(2,8,15,.99))'
+  panel_border: 'rgba(76,201,240,.14)'
+# dashboard 模式不依赖地点地图；保留字段仅为 PresentationConfig 兼容。
+location_marker:
+  idle_color: '#4cc9f0'
+  active_color: '#68f7a5'
+  idle_opacity: 0.07
+  active_opacity: 0.24
+environment:
+  sky_gradient: ['#02050c', '#06101d', '#0a1b2c', '#0b2534', '#103745']
+  fog_color: '#071522'
+  fog_density: 0.006
+  lighting:
+    - {type: hemisphere, sky_color: '#73ddff', ground_color: '#06111d', intensity: 1.35}
+    - {type: directional, color: '#d8f7ff', intensity: 2.2, position: [-10, 18, 20], cast_shadow: true}
+    - {type: point, color: '#4cc9f0', intensity: 45, distance: 34, decay: 2, position: [-8, 6, 12]}
+    - {type: point, color: '#68f7a5', intensity: 36, distance: 30, decay: 2, position: [9, 5, 9]}
+  ground:
+    shape: circle
+    radius: 42
+    color: '#07111f'
+    roughness: 0.72
+    metalness: 0.28
+  atmosphere:
+    stars: {count: 240, color: '#77ddff', size: 1.1}

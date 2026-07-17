@@ -1,0 +1,18 @@
+objects:
+  - id: portfolio_book
+    name: 组合账本
+    type: portfolio
+    description: 记录现金、仓位、买卖理由和风险控制计划。终局总资产由此账本与真实行情市值汇总得出。
+    owner: agent
+    visibility: {default: visible, requires_discovery: false}
+    permissions_required: [trading_access]
+    metric_links: [metric_portfolio_value, metric_portfolio_pnl, metric_portfolio_return]
+
+  - id: risk_dashboard
+    name: 风险仪表盘
+    type: risk
+    description: 组合回撤、集中度与赎回压力的可见锚点；不直接给出行情答案。
+    owner: global
+    visibility: {default: visible, requires_discovery: false}
+    permissions_required: [research_access]
+    metric_links: []

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
+  <title id="title">TraceArena auditable run lifecycle</title>
+  <desc id="desc">Agents use tools and submit actions. A scenario contract and settlement authority determine results, which become replay and evaluation artifacts.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#091527"/><stop offset="1" stop-color="#132c4d"/></linearGradient>
+    <linearGradient id="accent" x1="0" x2="1"><stop stop-color="#5eead4"/><stop offset="1" stop-color="#60a5fa"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-opacity=".28"/></filter>
+  </defs>
+  <rect width="1200" height="420" rx="28" fill="url(#bg)"/>
+  <text x="72" y="75" fill="#f8fafc" font-family="Arial, sans-serif" font-size="30" font-weight="700">One run. Evidence-backed action. Verifiable outcome.</text>
+  <text x="72" y="108" fill="#b7c9df" font-family="Arial, sans-serif" font-size="17">TraceArena separates what an agent says from what the world accepts as true.</text>
+  <g font-family="Arial, sans-serif" filter="url(#shadow)">
+    <rect x="72" y="175" width="190" height="130" rx="18" fill="#173454" stroke="#5eead4"/>
+    <text x="97" y="223" fill="#5eead4" font-size="18" font-weight="700">1 · Agents act</text><text x="97" y="253" fill="#e4eefb" font-size="15">observe · use tools</text><text x="97" y="277" fill="#e4eefb" font-size="15">submit structured actions</text>
+    <rect x="342" y="175" width="220" height="130" rx="18" fill="#173454" stroke="#60a5fa"/>
+    <text x="367" y="223" fill="#93c5fd" font-size="18" font-weight="700">2 · World settles</text><text x="367" y="253" fill="#e4eefb" font-size="15">rules · facts · evidence</text><text x="367" y="277" fill="#e4eefb" font-size="15">ledger or verifier decides</text>
+    <rect x="642" y="175" width="220" height="130" rx="18" fill="#173454" stroke="#c4b5fd"/>
+    <text x="667" y="223" fill="#c4b5fd" font-size="18" font-weight="700">3 · Trace is kept</text><text x="667" y="253" fill="#e4eefb" font-size="15">actions · events · reasons</text><text x="667" y="277" fill="#e4eefb" font-size="15">outcomes · replay manifest</text>
+    <rect x="942" y="175" width="186" height="130" rx="18" fill="#173454" stroke="#fbbf24"/>
+    <text x="967" y="223" fill="#fcd34d" font-size="18" font-weight="700">4 · People use it</text><text x="967" y="253" fill="#e4eefb" font-size="15">evaluate · inspect</text><text x="967" y="277" fill="#e4eefb" font-size="15">replay · improve</text>
+  </g>
+  <g fill="none" stroke="url(#accent)" stroke-width="5" stroke-linecap="round"><path d="M278 240h45"/><path d="M578 240h45"/><path d="M878 240h45"/></g>
+  <g fill="#75e6dc"><path d="m320 231 15 9-15 9z"/><path d="m620 231 15 9-15 9z"/><path d="m920 231 15 9-15 9z"/></g>
+</svg>

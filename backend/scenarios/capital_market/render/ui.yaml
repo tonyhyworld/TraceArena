@@ -1,0 +1,56 @@
+metrics:
+  primary: metric_portfolio_value
+  visible:
+    - metric_portfolio_value
+    - metric_portfolio_pnl
+    - metric_portfolio_return
+  labels:
+    metric_portfolio_value: 组合总资产
+    metric_portfolio_pnl: 浮动盈亏
+    metric_portfolio_return: 收益率
+resources:
+  primary: cash
+  labels:
+    cash: 可用现金
+panels:
+  left: ranking
+  center: market_chain
+  right: agent_detail
+market_panels:
+  portfolio:
+    title: 组合账本
+    fields: [cash, positions, market_value, pnl, return_pct]
+    empty: 尚未成交，组合仍全部为现金。
+  orders:
+    title: 模拟订单
+    fields: [side, asset_id, quantity, fill_price, notional]
+    empty: 尚无买卖订单。
+  evidence:
+    title: 市场依据
+    fields: [asset_id, price, source, observed_at]
+    empty: 等待 Agent 自己获取行情或研究材料。
+trace:
+  route_name: 投资解释链
+  route_steps:
+    - id: market_context
+      label: 市场信息
+      helper: Agent 本回合拿到了哪些行情、新闻或研究材料。
+    - id: thesis
+      label: 投资判断
+      helper: Agent 为什么认为该买、该卖或该继续等待。
+    - id: simulated_order
+      label: 模拟订单
+      helper: 系统只登记模拟买卖，不接入真实券商。
+    - id: fill
+      label: 成交记录
+      helper: 按本场景行情源价格写入组合账本。
+    - id: portfolio
+      label: 持仓变化
+      helper: 现金、股票数量和持仓市值如何变化。
+    - id: pnl
+      label: 盈亏结果
+      helper: 终局按组合总资产、收益率和回撤比较胜负。
+status_labels:
+  active: 运行中
+  inactive: 已停止
+  eliminated: 已退出市场

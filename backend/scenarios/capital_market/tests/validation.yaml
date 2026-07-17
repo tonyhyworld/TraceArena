@@ -1,0 +1,23 @@
+validation:
+  required_files:
+    - manifest.json
+    - agents/roles.yaml
+    - agents/prompts.yaml
+    - agents/investor_a/AGENT.md
+    - agents/investor_b/AGENT.md
+    - world/actions.yaml
+    - world/metrics.yaml
+    - world/audit.yaml
+    - settlement/manifest.yaml
+    - director/director.yaml
+    - director/skills.yaml
+  expected_ids:
+    locations: []
+    actions: [buy_asset, sell_asset, wait_and_review]
+    tools: []
+    metrics: [metric_portfolio_value, metric_portfolio_pnl, metric_portfolio_return]
+    objects: [portfolio_book, risk_dashboard]
+  minimum_counts:
+    actions: 3
+    objects: 2
+    metrics: 3

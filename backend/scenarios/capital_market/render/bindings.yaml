@@ -1,0 +1,29 @@
+bindings:
+  characters:
+    investor_a: investor_a_render
+    investor_b: investor_b_render
+  locations: {}
+  objects:
+    portfolio_book: portfolio_book_render
+    risk_dashboard: risk_dashboard_render
+  actions:
+    buy_asset: action_buy_asset_render
+    sell_asset: action_sell_asset_render
+    wait_and_review: action_wait_and_review_render
+  tools:
+    longport_quote: tool_market_quote_render
+    longport_calc_indexes: tool_valuation_render
+    china_financial_statements: tool_financial_statement_render
+    china_company_news: tool_company_news_render
+    china_macro_indicators: tool_macro_indicator_render
+    china_industry_supply_demand: tool_supply_demand_render
+    longport_filings: tool_company_filing_render
+    longport_capital_flow: tool_capital_flow_render
+    longport_capital_distribution: tool_capital_distribution_render
+    longport_depth: tool_market_depth_render
+  metrics:
+    metric_portfolio_value: metric_portfolio_value_render
+    metric_portfolio_pnl: metric_portfolio_pnl_render
+    metric_portfolio_return: metric_portfolio_return_render
+  outcomes:
+    portfolio_marked_to_market: outcome_portfolio_marked_render

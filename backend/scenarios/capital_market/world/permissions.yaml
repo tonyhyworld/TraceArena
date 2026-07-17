@@ -1,0 +1,9 @@
+permissions:
+  - id: basic_access
+    name: 基础访问
+  - id: market_data_access
+    name: 市场数据访问
+  - id: trading_access
+    name: 交易权限
+  - id: research_access
+    name: 研究权限

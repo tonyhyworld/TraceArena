@@ -1,0 +1,19 @@
+terminology:
+  investor_a: 稳健基金
+  investor_b: 进取基金
+  wait_and_review: 等待复盘
+  buy_asset: 买入建仓
+  sell_asset: 卖出减仓
+  portfolio_book: 组合账本
+  risk_dashboard: 风险仪表盘
+  portfolio_marked_to_market: 组合估值
+  order_rejected: 订单未成交
+  simulated_order: 模拟订单
+  fill_price: 成交价
+  portfolio_value: 组合总资产
+  pnl: 浮动盈亏
+  return_pct: 收益率
+  cash: 可用现金
+  position: 持仓
+  market_context: 市场信息
+  thesis: 投资判断
