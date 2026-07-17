@@ -13,7 +13,7 @@ Use one path in every announcement so a reader always knows what to do next:
 3. **Discuss a world:** [scenario-pack guide](../scenario-pack-guide.md)
 4. **Join the public technical discussion:** [v0.1.4 discussion](https://github.com/tonyhyworld/TraceArena/discussions/8)
 5. **Request an evaluation pilot:** [pilot issue form](../../.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml)
-6. **Ask about a private engagement:** [commercial support](commercial-support.md)
+6. **Ask about a private engagement:** [commercial support](../commercial-support.md)
 
 Do not send people directly to a generic “contact us” message when a runnable
 example or structured issue form can answer the next question.
