@@ -40,6 +40,9 @@ Windows PowerShell 用户运行 `./scripts/install.ps1`。安装器会创建 `.v
 安装后端，执行 `npm ci` 安装完整前端，并且只在不存在时创建 `frontend/.env.local`。安装器
 不会安装或保存任何 API Key。完整前端所需的 OS 后端/API 说明见[前端启动指南](frontend/README.md)。
 
+如果系统的 `python3` 不是完整的 Python 3.10+（缺少 `venv/ensurepip`），可显式指定解释器：
+`PYTHON_BIN=/path/to/python3.12 ./scripts/install.sh`。
+
 ## AI 世界理念：智能在世界中涌现，价值数据在过程中沉淀
 
 TraceArena 建立在一个朴素判断之上：智能体最有意义的智能，不会只从一条孤立提示词中
