@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #07111F; }
+      @font-face { font-family: "TraceSong"; src: local("Songti SC"); }
+      body { color: #E9DFC8; font-family: "Inter", sans-serif; }
+      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #07111F; }
+      .scene { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; background-color: #07111F; }
+      #scene-2, #scene-3, #scene-4, #scene-5, #scene-6, #scene-7 { opacity: 0; }
+      .scene-content { width: 100%; height: 100%; padding: 94px 124px 90px; display: flex; flex-direction: column; gap: 28px; box-sizing: border-box; }
+      .serif { font-family: "TraceSong", serif; font-weight: 700; }
+      .mono { font-family: "Inter", sans-serif; font-variant-numeric: tabular-nums; }
+      .eyebrow { color: #D6A84B; font-size: 20px; font-weight: 700; letter-spacing: .28em; text-transform: uppercase; }
+      .eyebrow span { color: #E9DFC8; opacity: .62; margin-left: 22px; font-weight: 400; letter-spacing: .16em; }
+      h1, h2, h3, p { margin: 0; }
+      h1 { font-size: 118px; line-height: 1.04; letter-spacing: -.045em; }
+      h2 { font-size: 74px; line-height: 1.12; letter-spacing: -.025em; }
+      .sub-en { color: #E9DFC8; opacity: .62; font-size: 25px; letter-spacing: .03em; line-height: 1.5; }
+      .gold { color: #D6A84B; }
+      .red { color: #B84A3A; }
+      .palace-frame { position: absolute; inset: 52px; border: 1px solid rgba(214,168,75,.24); pointer-events: none; }
+      .palace-frame::before, .palace-frame::after { content: ""; position: absolute; top: -1px; width: 138px; height: 5px; background: #D6A84B; }
+      .palace-frame::before { left: 70px; } .palace-frame::after { right: 70px; }
+      .world-lines { position: absolute; inset: 0; opacity: .28; background-image: linear-gradient(rgba(214,168,75,.12) 1px, rgba(214,168,75,0) 1px), linear-gradient(90deg, rgba(214,168,75,.08) 1px, rgba(214,168,75,0) 1px); background-size: 160px 160px; transform: perspective(780px) rotateX(68deg) scale(1.8) translateY(260px); transform-origin: center bottom; }
+      .glow { position: absolute; width: 850px; height: 850px; border-radius: 50%; background: radial-gradient(circle, rgba(214,168,75,.14) 0%, rgba(214,168,75,0) 68%); }
+      .seal { display: grid; place-items: center; width: 150px; height: 150px; border-radius: 50%; border: 2px solid #D6A84B; color: #D6A84B; font-size: 34px; font-weight: 800; box-shadow: 0 0 0 12px rgba(214,168,75,.05), 0 0 70px rgba(214,168,75,.18); background: #07111F; }
+      .seal::after { content: ""; position: absolute; width: 112px; height: 112px; border: 1px solid rgba(214,168,75,.35); transform: rotate(45deg); }
+      .divider { width: 100%; height: 1px; background: rgba(214,168,75,.28); transform-origin: left center; }
+
+      /* Scene 1 */
+      #scene-1 .scene-content { justify-content: center; padding-right: 690px; }
+      #scene-1 .glow { right: 90px; top: 100px; }
+      .world-orbit { position: absolute; right: 150px; top: 188px; width: 560px; height: 560px; border: 1px solid rgba(214,168,75,.28); border-radius: 50%; }
+      .world-orbit::before, .world-orbit::after { content: ""; position: absolute; inset: 86px; border: 1px solid rgba(233,223,200,.12); border-radius: 50%; transform: rotateX(66deg); }
+      .world-orbit::after { inset: 170px 30px; transform: rotate(28deg); }
+      .world-core { position: absolute; inset: 185px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #D6A84B; color: #E9DFC8; font-size: 26px; letter-spacing: .18em; background: #10253C; box-shadow: 0 0 90px rgba(214,168,75,.18); }
+      .orbit-node { position: absolute; width: 34px; height: 34px; border-radius: 50%; background: #B84A3A; border: 5px solid #07111F; box-shadow: 0 0 0 1px #D6A84B; }
+      .node-a { left: 56px; top: 114px; } .node-b { right: 40px; top: 240px; } .node-c { left: 238px; bottom: -17px; }
+      .thesis { margin-top: 18px; font-size: 31px; line-height: 1.65; color: #E9DFC8; max-width: 980px; }
+
+      /* Scene 2 */
+      #scene-2 .scene-content { justify-content: space-between; }
+      .arena-board { position: relative; flex: 1; display: grid; grid-template-columns: 1fr 330px 1fr; align-items: center; gap: 70px; }
+      .agent-side { display: flex; flex-direction: column; gap: 20px; }
+      .agent-side.right { align-items: flex-end; text-align: right; }
+      .agent-name { font-size: 32px; font-weight: 800; }
+      .agent-meta { font-size: 19px; color: rgba(233,223,200,.62); letter-spacing: .08em; }
+      .resource-bar { width: 390px; height: 9px; background: #10253C; border: 1px solid rgba(214,168,75,.28); }
+      .resource-bar b { display: block; height: 100%; background: #D6A84B; }
+      .resource-bar.risk b { background: #B84A3A; }
+      .world-state { position: relative; display: grid; place-items: center; width: 330px; height: 330px; border-radius: 50%; border: 2px solid #D6A84B; background: #10253C; box-shadow: 0 0 90px rgba(214,168,75,.12); }
+      .world-state::before { content: ""; position: absolute; inset: 24px; border-radius: 50%; border: 1px dashed rgba(214,168,75,.36); }
+      .world-state strong { font-size: 32px; } .world-state small { display: block; margin-top: 12px; color: rgba(233,223,200,.58); font-size: 17px; letter-spacing: .12em; }
+      .contest-line { position: absolute; left: 390px; right: 390px; top: 50%; height: 2px; background: #D6A84B; transform-origin: center; z-index: -1; }
+      .pressure-tag { display: inline-flex; gap: 12px; align-items: center; color: #E9DFC8; border: 1px solid rgba(184,74,58,.55); background: rgba(184,74,58,.12); padding: 10px 16px; font-size: 17px; letter-spacing: .08em; }
+      .pressure-tag i { width: 9px; height: 9px; border-radius: 50%; background: #B84A3A; }
+
+      /* Scene 3 */
+      .chain-layout { flex: 1; display: grid; grid-template-columns: 1.4fr .6fr; gap: 64px; align-items: center; }
+      .causal-chain { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px 38px; }
+      .chain-card { min-height: 150px; padding: 28px 30px; border: 1px solid rgba(214,168,75,.28); background: rgba(16,37,60,.82); display: flex; flex-direction: column; justify-content: space-between; }
+      .chain-card:nth-child(2), .chain-card:nth-child(5) { transform: translateY(54px); }
+      .chain-no { font-size: 17px; letter-spacing: .16em; color: #D6A84B; }
+      .chain-card strong { font-size: 30px; } .chain-card span { color: rgba(233,223,200,.58); font-size: 17px; }
+      .ledger { height: 620px; padding: 34px; border: 1px solid rgba(233,223,200,.15); background: #0B1A2B; box-shadow: 22px 22px 0 rgba(214,168,75,.05); }
+      .ledger-head { display: flex; justify-content: space-between; color: #D6A84B; font-size: 18px; letter-spacing: .12em; padding-bottom: 22px; border-bottom: 1px solid rgba(214,168,75,.24); }
+      .log-row { display: grid; grid-template-columns: 76px 1fr auto; gap: 18px; padding: 19px 0; border-bottom: 1px solid rgba(233,223,200,.09); font-size: 18px; }
+      .log-row code { color: #D6A84B; } .verified { color: #E9DFC8; border: 1px solid rgba(214,168,75,.38); padding: 3px 9px; font-size: 14px; }
+
+      /* Scene 4 */
+      .layers-layout { flex: 1; display: grid; grid-template-columns: 390px 1fr; gap: 86px; align-items: center; }
+      .big-seven { font-size: 420px; line-height: .8; color: #D6A84B; letter-spacing: -.1em; text-shadow: 24px 24px 0 rgba(16,37,60,.9); }
+      .layers { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+      .layer { height: 68px; display: flex; align-items: center; gap: 22px; padding: 0 28px; border: 1px solid rgba(214,168,75,.24); background: #10253C; }
+      .layer b { color: #D6A84B; font-size: 17px; letter-spacing: .12em; } .layer strong { font-size: 24px; }
+      .layer:nth-child(1) { width: 94%; } .layer:nth-child(2) { width: 86%; } .layer:nth-child(3) { width: 100%; } .layer:nth-child(4) { width: 91%; } .layer:nth-child(5) { width: 82%; } .layer:nth-child(6) { width: 97%; } .layer:nth-child(7) { width: 88%; background: #D6A84B; color: #07111F; }
+      .layer:nth-child(7) b { color: #07111F; }
+
+      /* Scene 5 */
+      .authority-layout { flex: 1; position: relative; display: grid; place-items: center; }
+      .authority-ring { width: 680px; height: 680px; border-radius: 50%; border: 1px solid rgba(214,168,75,.32); position: relative; display: grid; place-items: center; }
+      .authority-core { width: 220px; height: 220px; border-radius: 50%; background: #D6A84B; color: #07111F; display: grid; place-items: center; text-align: center; font-size: 30px; font-weight: 900; box-shadow: 0 0 100px rgba(214,168,75,.22); }
+      .authority { position: absolute; width: 300px; padding: 22px 26px; background: #10253C; border: 1px solid rgba(214,168,75,.32); }
+      .authority b { color: #D6A84B; font-size: 16px; letter-spacing: .12em; } .authority strong { display: block; margin-top: 7px; font-size: 26px; }
+      .auth-1 { top: -8px; left: -250px; } .auth-2 { top: -8px; right: -250px; } .auth-3 { bottom: -8px; left: -250px; } .auth-4 { bottom: -8px; right: -250px; }
+      .authority-line { position: absolute; width: 150px; height: 1px; background: #D6A84B; transform-origin: left; }
+      .al-1 { left: 102px; top: 169px; transform: rotate(26deg); } .al-2 { right: 102px; top: 169px; transform: rotate(154deg); }
+      .al-3 { left: 102px; bottom: 169px; transform: rotate(-26deg); } .al-4 { right: 102px; bottom: 169px; transform: rotate(206deg); }
+
+      /* Scene 6 */
+      #scene-6 .scene-content { padding-bottom: 70px; }
+      .console { flex: 1; display: grid; grid-template-columns: 260px 1fr; min-height: 0; border: 1px solid rgba(214,168,75,.26); background: #0A1726; box-shadow: 0 34px 100px rgba(0,0,0,.34); }
+      .console-nav { padding: 30px 24px; background: #08131F; border-right: 1px solid rgba(214,168,75,.17); }
+      .console-brand { color: #D6A84B; font-size: 24px; font-weight: 900; margin-bottom: 34px; }
+      .nav-item { padding: 14px 16px; margin-bottom: 7px; color: rgba(233,223,200,.52); font-size: 17px; }
+      .nav-item.active { color: #E9DFC8; background: rgba(214,168,75,.1); box-shadow: inset 3px 0 0 #D6A84B; }
+      .console-main { padding: 30px 36px; display: flex; flex-direction: column; gap: 20px; }
+      .console-top { display: flex; justify-content: space-between; align-items: center; }
+      .console-top h3 { font-size: 30px; } .status-ok { color: #D6A84B; border: 1px solid rgba(214,168,75,.35); padding: 8px 14px; font-size: 15px; letter-spacing: .1em; }
+      .run-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+      .run-meta div { padding: 18px; background: #10253C; border: 1px solid rgba(233,223,200,.08); }
+      .run-meta span { display: block; color: rgba(233,223,200,.72); font-size: 14px; letter-spacing: .1em; margin-bottom: 7px; }
+      .run-meta strong { font-size: 19px; }
+      .tick-row { flex: 1; display: grid; grid-template-columns: 120px 1fr; gap: 20px; align-items: stretch; }
+      .tick-index { display: grid; place-items: center; background: #D6A84B; color: #07111F; font-weight: 900; font-size: 24px; }
+      .trace-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+      .trace-step { padding: 18px; border: 1px solid rgba(214,168,75,.22); background: rgba(16,37,60,.72); }
+      .trace-step b { color: #D6A84B; font-size: 13px; letter-spacing: .12em; } .trace-step strong { display: block; margin-top: 10px; font-size: 19px; } .trace-step small { display: block; margin-top: 8px; color: rgba(233,223,200,.72); font-size: 14px; line-height: 1.4; }
+      .hash { padding: 14px 18px; background: rgba(7,17,31,.8); border: 1px solid rgba(214,168,75,.18); font-size: 14px; color: rgba(233,223,200,.68); overflow-wrap: anywhere; }
+
+      /* Scene 7 */
+      #scene-7 .scene-content { justify-content: center; align-items: center; text-align: center; padding-left: 260px; padding-right: 260px; }
+      .ecosystem { position: absolute; inset: 0; }
+      .eco-ring { position: absolute; left: 50%; top: 50%; border: 1px solid rgba(214,168,75,.18); border-radius: 50%; transform: translate(-50%,-50%); }
+      .eco-ring.r1 { width: 560px; height: 560px; } .eco-ring.r2 { width: 850px; height: 850px; } .eco-ring.r3 { width: 1160px; height: 1160px; }
+      .eco-dot { position: absolute; width: 16px; height: 16px; border-radius: 50%; background: #D6A84B; box-shadow: 0 0 30px rgba(214,168,75,.5); }
+      .eco-dot.d1 { left: 390px; top: 250px; } .eco-dot.d2 { right: 280px; top: 390px; background: #B84A3A; } .eco-dot.d3 { left: 270px; bottom: 245px; } .eco-dot.d4 { right: 460px; bottom: 170px; }
+      .closing-mark { width: 128px; height: 128px; border: 2px solid #D6A84B; display: grid; place-items: center; transform: rotate(45deg); margin-bottom: 42px; background: #07111F; }
+      .closing-mark span { transform: rotate(-45deg); color: #D6A84B; font-size: 32px; font-weight: 900; }
+      #scene-7 h2 { font-size: 92px; max-width: 1320px; }
+      .cta { margin-top: 32px; color: #D6A84B; font-size: 26px; letter-spacing: .12em; }
+      .footer-line { position: absolute; bottom: 70px; left: 124px; right: 124px; display: flex; justify-content: space-between; color: rgba(233,223,200,.72); font-size: 16px; letter-spacing: .1em; }
+
+      .shutter { position: absolute; left: 0; width: 1920px; height: 540px; background: #10253C; z-index: 50; pointer-events: none; }
+      #shutter-top { top: 0; border-bottom: 1px solid #D6A84B; }
+      #shutter-bot { bottom: 0; border-top: 1px solid #D6A84B; }
+      .shutter::after { content: "TRACE / VERIFY / SETTLE"; position: absolute; left: 0; right: 0; color: rgba(214,168,75,.25); text-align: center; font-size: 28px; letter-spacing: .36em; }
+      #shutter-top::after { bottom: 34px; } #shutter-bot::after { top: 34px; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="83.4" data-width="1920" data-height="1080">
+      <section id="scene-1" class="scene">
+        <div class="world-lines" data-layout-ignore></div><div class="glow" data-layout-ignore></div><div class="palace-frame" data-layout-ignore></div>
+        <div class="scene-content">
+          <div class="eyebrow" id="s1-eye">TRACEARENA <span>THE AI WORLD RUNTIME</span></div>
+          <h1 id="s1-title" class="serif">智能，不只在<br>答案中。</h1>
+          <div id="s1-rule" class="divider"></div>
+          <p id="s1-thesis" class="thesis">它在真实约束的世界里，通过连续行动、竞争与结果验证而涌现。</p>
+          <p id="s1-en" class="sub-en">Intelligence emerges through action, competition, and verifiable outcomes.</p>
+        </div>
+        <div id="s1-orbit" class="world-orbit" data-layout-ignore><div class="world-core">AI WORLD</div><i class="orbit-node node-a"></i><i class="orbit-node node-b"></i><i class="orbit-node node-c"></i></div>
+      </section>
+
+      <section id="scene-2" class="scene">
+        <div class="world-lines" data-layout-ignore></div><div class="palace-frame" data-layout-ignore></div>
+        <div class="scene-content">
+          <div class="eyebrow" id="s2-eye">01 / EMERGENCE <span>多智能体竞争涌现</span></div>
+          <h2 id="s2-title" class="serif">同一个世界，不同的目标与代价</h2>
+          <div class="arena-board">
+            <div class="agent-side" id="agent-a"><div class="seal">A</div><div class="agent-name">研究型 Agent</div><div class="agent-meta">EVIDENCE · PATIENCE · VALUE</div><div class="resource-bar"><b style="width:78%"></b></div><div class="pressure-tag"><i></i>剩余行动预算 42%</div></div>
+            <div class="world-state" id="world-state"><div><strong>世界状态</strong><small>SHARED · PERSISTENT</small></div></div>
+            <div class="agent-side right" id="agent-b"><div class="seal">B</div><div class="agent-name">行动型 Agent</div><div class="agent-meta">SPEED · TIMING · CONTROL</div><div class="resource-bar risk"><b style="width:56%"></b></div><div class="pressure-tag"><i></i>风险阈值 68%</div></div>
+            <div id="contest-line" class="contest-line"></div>
+          </div>
+          <p id="s2-en" class="sub-en">Different goals. Limited resources. Real tools. One persistent world.</p>
+        </div>
+      </section>
+
+      <section id="scene-3" class="scene">
+        <div class="palace-frame" data-layout-ignore></div><div class="glow" style="left:-280px;top:190px" data-layout-ignore></div>
+        <div class="scene-content">
+          <div class="eyebrow" id="s3-eye">02 / CAUSAL TRACE <span>可验证因果链</span></div>
+          <h2 id="s3-title" class="serif">不只记录结果，更记录结果如何发生</h2>
+          <div class="chain-layout">
+            <div class="causal-chain" id="causal-chain">
+              <div class="chain-card"><b class="chain-no">01 / OBSERVE</b><strong>观察</strong><span>真实工具返回</span></div>
+              <div class="chain-card"><b class="chain-no">02 / EVIDENCE</b><strong>证据</strong><span>来源与哈希</span></div>
+              <div class="chain-card"><b class="chain-no">03 / DECIDE</b><strong>决策</strong><span>约束下选择</span></div>
+              <div class="chain-card"><b class="chain-no">04 / ACT</b><strong>行动</strong><span>进入共享世界</span></div>
+              <div class="chain-card"><b class="chain-no">05 / CHANGE</b><strong>状态变化</strong><span>资源、关系、风险</span></div>
+              <div class="chain-card"><b class="chain-no">06 / SETTLE</b><strong>结果结算</strong><span>可复算的胜负</span></div>
+            </div>
+            <aside id="ledger" class="ledger"><div class="ledger-head"><b>RUN LEDGER</b><span>LIVE</span></div><div class="log-row"><code>T+01</code><span>tool.result.received</span><b class="verified">VERIFIED</b></div><div class="log-row"><code>T+02</code><span>evidence.bound</span><b class="verified">HASHED</b></div><div class="log-row"><code>T+03</code><span>action.executed</span><b class="verified">VALID</b></div><div class="log-row"><code>T+04</code><span>world.state.changed</span><b class="verified">SETTLED</b></div><div class="log-row"><code>T+05</code><span>outcome.explained</span><b class="verified">AUDITABLE</b></div></aside>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-4" class="scene">
+        <div class="world-lines" data-layout-ignore></div><div class="palace-frame" data-layout-ignore></div>
+        <div class="scene-content">
+          <div class="eyebrow" id="s4-eye">03 / ARCHITECTURE <span>七层运行时架构</span></div>
+          <div class="layers-layout">
+            <div id="big-seven" class="big-seven serif">7</div>
+            <div><h2 id="s4-title" class="serif">从世界定义，到可观看结果</h2><div id="layers" class="layers" style="margin-top:34px"><div class="layer"><b>01</b><strong>场景定义 · Scenario</strong></div><div class="layer"><b>02</b><strong>世界状态 · World State</strong></div><div class="layer"><b>03</b><strong>智能体 · Agents</strong></div><div class="layer"><b>04</b><strong>真实工具 · Tools</strong></div><div class="layer"><b>05</b><strong>连续运行时 · Runtime</strong></div><div class="layer"><b>06</b><strong>裁决与验证 · Settlement</strong></div><div class="layer"><b>07</b><strong>呈现与复盘 · Playback</strong></div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-5" class="scene">
+        <div class="palace-frame" data-layout-ignore></div><div class="glow" style="right:-190px;top:90px" data-layout-ignore></div>
+        <div class="scene-content">
+          <div class="eyebrow" id="s5-eye">04 / SETTLEMENT <span>四类裁决权威</span></div>
+          <h2 id="s5-title" class="serif">让每一种“正确”，都有明确来源</h2>
+          <div class="authority-layout"><div id="authority-ring" class="authority-ring" data-layout-allow-overflow><div class="authority-core">可验证<br>结果</div><div class="authority auth-1"><b>RULE</b><strong>规则权威</strong></div><div class="authority auth-2"><b>CODE</b><strong>代码权威</strong></div><div class="authority auth-3"><b>EXTERNAL</b><strong>外部事实权威</strong></div><div class="authority auth-4"><b>HUMAN</b><strong>人工裁决权威</strong></div><i class="authority-line al-1"></i><i class="authority-line al-2"></i><i class="authority-line al-3"></i><i class="authority-line al-4"></i></div></div>
+        </div>
+      </section>
+
+      <section id="scene-6" class="scene" data-layout-allow-occlusion>
+        <div class="palace-frame" data-layout-ignore></div>
+        <div class="scene-content">
+          <div class="eyebrow" id="s6-eye">05 / WATCHABLE RUNS <span>真实运行 · 全程可看</span></div>
+          <h2 id="s6-title" class="serif">从无密钥回放，到真实模型与工具</h2>
+          <div id="console" class="console">
+            <nav class="console-nav"><div class="console-brand">TraceArena</div><div class="nav-item active">运行回放</div><div class="nav-item">世界状态</div><div class="nav-item">证据链</div><div class="nav-item">裁决结果</div><div class="nav-item">导出数据</div></nav>
+            <main class="console-main"><div class="console-top"><h3>Market Replay / value_catalyst_synthetic_v1</h3><span class="status-ok">✓ COMPLETE</span></div><div class="run-meta"><div><span>RUN ID</span><strong>run_cc120d89</strong></div><div><span>TICKS</span><strong>2</strong></div><div><span>NETWORK</span><strong>DISABLED</strong></div><div><span>VERIFICATION</span><strong>PASSED</strong></div></div><div class="tick-row"><div class="tick-index">TICK 01</div><div class="trace-list"><div class="trace-step"><b>OBSERVE</b><strong>6 tool results</strong><small>quote · catalyst · valuation</small></div><div class="trace-step"><b>DECIDE</b><strong>2 actions</strong><small>evidence refs attached</small></div><div class="trace-step"><b>EXECUTE</b><strong>world changed</strong><small>shared state persisted</small></div><div class="trace-step"><b>SETTLE</b><strong>2 outcomes</strong><small>deterministic replay</small></div></div></div><div class="hash">CANONICAL REPLAY SHA-256 · b22a5c32cf735b6d5160dbc0da33d9afe3e2f579352cc9670907d880e18079ca</div></main>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-7" class="scene">
+        <div class="ecosystem" data-layout-ignore><i class="eco-ring r1"></i><i class="eco-ring r2"></i><i class="eco-ring r3"></i><i class="eco-dot d1"></i><i class="eco-dot d2"></i><i class="eco-dot d3"></i><i class="eco-dot d4"></i></div><div class="palace-frame" data-layout-ignore></div>
+        <div class="scene-content"><div id="closing-mark" class="closing-mark"><span>界</span></div><div id="s7-eye" class="eyebrow">OPEN SOURCE · APACHE 2.0</div><h2 id="s7-title" class="serif">构建一个必须行动、<span class="gold">可以验证</span>、值得复盘的 AI 世界</h2><p id="s7-en" class="sub-en">Build worlds where agents must act — and outcomes can be proven.</p><p id="s7-cta" class="cta">GITHUB.COM/TONYHYWORLD/TRACEARENA</p></div>
+        <div id="footer-line" class="footer-line"><span>TRACEARENA · AUDITABLE MULTI-AGENT WORLDS</span><span>SCENARIO PACKS WELCOME</span></div>
+      </section>
+
+      <div id="shutter-top" class="shutter" data-layout-ignore></div><div id="shutter-bot" class="shutter" data-layout-ignore></div>
+      <audio id="narration" class="clip" data-start="0" data-duration="82.405" data-track-index="9" src="narration.wav" data-volume="1"></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      tl.set("#shutter-top", { y: -540 }, 0);
+      tl.set("#shutter-bot", { y: 540 }, 0);
+      function focusTransition(oldScene, newScene, t) {
+        tl.to(oldScene, { filter: "blur(15px)", duration: .55, ease: "power1.in" }, t);
+        tl.to(oldScene, { opacity: 0, duration: .32, ease: "power2.in" }, t + .25);
+        tl.fromTo(newScene, { opacity: 0, filter: "blur(10px)", scale: .985 }, { opacity: 1, filter: "blur(0px)", scale: 1, duration: .52, ease: "power3.out" }, t + .26);
+      }
+
+      // Scene 1 — thesis
+      tl.from("#s1-eye", { x: -48, opacity: 0, duration: .58, ease: "expo.out" }, .22);
+      tl.from("#s1-title", { y: 62, opacity: 0, duration: .86, ease: "power3.out" }, .45);
+      tl.from("#s1-rule", { scaleX: 0, duration: .74, ease: "sine.out" }, .78);
+      tl.from("#s1-thesis", { y: 30, opacity: 0, duration: .62, ease: "power2.out" }, 1.02);
+      tl.from("#s1-en", { x: 28, opacity: 0, duration: .72, ease: "sine.out" }, 1.34);
+      tl.from("#s1-orbit", { scale: .72, rotation: -18, opacity: 0, duration: 1.16, ease: "power3.out" }, .66);
+      tl.to("#s1-orbit", { rotation: 12, duration: 8.3, ease: "sine.inOut" }, 1.86);
+
+      focusTransition("#scene-1", "#scene-2", 10.2);
+      tl.from("#s2-eye", { x: -44, opacity: 0, duration: .52, ease: "expo.out" }, 10.72);
+      tl.from("#s2-title", { y: 48, opacity: 0, duration: .72, ease: "power3.out" }, 10.92);
+      tl.from("#world-state", { scale: .62, opacity: 0, rotation: -12, duration: .92, ease: "back.out(1.25)" }, 11.2);
+      tl.from("#agent-a", { x: -90, opacity: 0, duration: .78, ease: "power4.out" }, 11.44);
+      tl.from("#agent-b", { x: 90, opacity: 0, duration: .66, ease: "circ.out" }, 11.56);
+      tl.from("#contest-line", { scaleX: 0, duration: .92, ease: "sine.out" }, 11.72);
+      tl.from("#s2-en", { y: 24, opacity: 0, duration: .5, ease: "power2.out" }, 12.02);
+      tl.to("#world-state", { scale: 1.035, duration: 2.4, repeat: 3, yoyo: true, ease: "sine.inOut" }, 12.9);
+
+      focusTransition("#scene-2", "#scene-3", 21.8);
+      tl.from("#s3-eye", { x: -42, opacity: 0, duration: .48, ease: "expo.out" }, 22.32);
+      tl.from("#s3-title", { y: 50, opacity: 0, duration: .74, ease: "power3.out" }, 22.5);
+      tl.from("#causal-chain .chain-card", { scale: .88, opacity: 0, rotationX: 12, duration: .58, stagger: .08, ease: "back.out(1.2)" }, 22.86);
+      tl.from("#ledger", { x: 82, opacity: 0, duration: .8, ease: "circ.out" }, 23.12);
+      tl.from("#ledger .log-row", { x: 24, opacity: 0, duration: .42, stagger: .07, ease: "power2.out" }, 23.52);
+      tl.to("#ledger", { y: -9, duration: 3.2, repeat: 2, yoyo: true, ease: "sine.inOut" }, 25.2);
+
+      focusTransition("#scene-3", "#scene-4", 33.1);
+      tl.from("#s4-eye", { x: -46, opacity: 0, duration: .52, ease: "expo.out" }, 33.62);
+      tl.from("#big-seven", { scale: .52, opacity: 0, rotation: -8, duration: .96, ease: "power4.out" }, 33.82);
+      tl.from("#s4-title", { y: 46, opacity: 0, duration: .7, ease: "power3.out" }, 34.04);
+      tl.from("#layers .layer", { x: 92, opacity: 0, duration: .52, stagger: .09, ease: "circ.out" }, 34.32);
+      tl.to("#big-seven", { y: -12, duration: 3, repeat: 2, yoyo: true, ease: "sine.inOut" }, 36.2);
+
+      focusTransition("#scene-4", "#scene-5", 44.6);
+      tl.from("#s5-eye", { x: -44, opacity: 0, duration: .5, ease: "expo.out" }, 45.12);
+      tl.from("#s5-title", { y: 48, opacity: 0, duration: .72, ease: "power3.out" }, 45.3);
+      tl.from("#authority-ring", { scale: .68, opacity: 0, rotation: -20, duration: 1.02, ease: "back.out(1.15)" }, 45.62);
+      tl.from("#authority-ring .authority", { scale: .82, opacity: 0, duration: .5, stagger: .1, ease: "circ.out" }, 46.0);
+      tl.from("#authority-ring .authority-line", { scaleX: 0, duration: .62, stagger: .08, ease: "sine.out" }, 46.26);
+      tl.to("#authority-ring", { rotation: 4, duration: 4.2, repeat: 1, yoyo: true, ease: "sine.inOut" }, 48.0);
+
+      // Mechanical shutter transition into the operational console.
+      tl.to("#shutter-top", { y: 0, duration: .32, ease: "power3.in" }, 55.5);
+      tl.to("#shutter-bot", { y: 0, duration: .32, ease: "power3.in" }, 55.5);
+      tl.set("#scene-5", { opacity: 0 }, 55.82);
+      tl.set("#scene-6", { opacity: 1 }, 55.82);
+      tl.to("#shutter-top", { y: -540, duration: .38, ease: "power3.out" }, 55.9);
+      tl.to("#shutter-bot", { y: 540, duration: .38, ease: "power3.out" }, 55.9);
+      tl.from("#s6-eye", { x: -42, opacity: 0, duration: .48, ease: "expo.out" }, 56.08);
+      tl.from("#s6-title", { y: 46, opacity: 0, duration: .7, ease: "power3.out" }, 56.26);
+      tl.from("#console", { scale: .94, y: 54, opacity: 0, duration: .88, ease: "circ.out" }, 56.58);
+      tl.from("#console .run-meta > div", { y: 24, opacity: 0, duration: .4, stagger: .08, ease: "power2.out" }, 57.14);
+      tl.from("#console .trace-step", { x: 28, opacity: 0, duration: .44, stagger: .09, ease: "back.out(1.1)" }, 57.46);
+      tl.from("#console .hash", { scaleX: .75, opacity: 0, transformOrigin: "left center", duration: .64, ease: "sine.out" }, 58.02);
+      tl.to("#console", { y: -8, duration: 3.4, repeat: 2, yoyo: true, ease: "sine.inOut" }, 59.6);
+
+      focusTransition("#scene-6", "#scene-7", 69.0);
+      tl.from("#scene-7 .eco-ring", { scale: .56, opacity: 0, duration: 1.1, stagger: .14, ease: "power3.out" }, 69.54);
+      tl.from("#scene-7 .eco-dot", { scale: 0, opacity: 0, duration: .48, stagger: .09, ease: "back.out(1.5)" }, 69.86);
+      tl.from("#closing-mark", { scale: .58, rotation: 0, opacity: 0, duration: .86, ease: "power4.out" }, 70.04);
+      tl.from("#s7-eye", { x: 34, opacity: 0, duration: .7, ease: "sine.out" }, 70.28);
+      tl.from("#s7-title", { y: 56, opacity: 0, duration: .9, ease: "power3.out" }, 70.54);
+      tl.from("#s7-en", { y: 26, opacity: 0, duration: .58, ease: "circ.out" }, 70.92);
+      tl.from("#s7-cta", { scale: .9, opacity: 0, duration: .62, ease: "back.out(1.2)" }, 71.2);
+      tl.from("#footer-line", { y: 24, opacity: 0, duration: .5, ease: "power2.out" }, 71.46);
+      tl.to("#scene-7 .eco-ring", { rotation: 12, duration: 10.5, ease: "none" }, 71.0);
+      tl.to("#scene-7 .scene-content, #footer-line", { opacity: 0, duration: .78, ease: "power2.in" }, 82.46);
+      tl.to("#scene-7", { opacity: 0, duration: .6, ease: "sine.in" }, 82.74);
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

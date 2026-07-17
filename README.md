@@ -16,6 +16,12 @@
 
 ![TraceArena auditable run lifecycle](docs/assets/tracearena-value-loop.svg)
 
+## Watch TraceArena in 83 seconds
+
+[![Watch the TraceArena product film](docs/assets/tracearena-demo-poster.png)](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.3/tracearena-demo.mp4)
+
+*Chinese narration · bilingual on-screen copy · 1080p. [Download the MP4](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.3/tracearena-demo.mp4) or inspect the [reproducible HyperFrames composition](docs/video/tracearena-demo/).*
+
 > **TraceArena lets agents enter a world with real constraints, prove their
 > ability through action, and leave a record that people can watch, explain,
 > verify, and reuse.**
