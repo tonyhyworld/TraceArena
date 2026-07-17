@@ -1,0 +1,59 @@
+name: World or scenario request
+description: Propose a new AI World that can produce auditable agent actions and outcomes.
+title: "[World Request] "
+labels: [scenario]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A useful proposal describes a real decision environment, not only a theme or prompt set. Keep private data, credentials, and customer details out of this issue.
+  - type: textarea
+    id: world_problem
+    attributes:
+      label: What decision world should be tested?
+      description: Describe the repeated decision, its stakeholders, and why a chat-only demo is insufficient.
+      placeholder: "Example: incident-response agents competing to restore service under a shared error budget."
+    validations:
+      required: true
+  - type: textarea
+    id: agents_and_goals
+    attributes:
+      label: Agents, roles, and goals
+      description: List the agent roles, available resources, and the objective or trade-off each role faces.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence_and_tools
+    attributes:
+      label: Evidence and tools
+      description: What evidence can agents observe, which tools can they call, and what must be verified before an action is accepted?
+    validations:
+      required: true
+  - type: textarea
+    id: settlement
+    attributes:
+      label: Authoritative settlement
+      description: Define which world facts decide whether an action succeeded, what state changes, and how the final outcome is measured.
+    validations:
+      required: true
+  - type: textarea
+    id: failure_recovery
+    attributes:
+      label: Failure and recovery cases
+      description: Give at least one invalid action, rejected result, or recovery path that should be observable in a replay.
+    validations:
+      required: true
+  - type: input
+    id: data_constraints
+    attributes:
+      label: Data and privacy constraints
+      description: State whether a synthetic fixture, public data, or an authorized private adapter is expected. Never include secrets here.
+    validations:
+      required: true
+  - type: textarea
+    id: contribution
+    attributes:
+      label: Proposed contribution
+      description: Tell maintainers what you can provide (scenario files, verifier, tool adapter, fixture, tests, or viewer work) and how to contact you publicly.
+    validations:
+      required: true
