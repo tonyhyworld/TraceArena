@@ -50,6 +50,7 @@ jobs:
         run: |
           node --check frontend/public_viewer/app.js
           node --check frontend/demo_web/app.js
+          node --check frontend/public_demo/app.js
 
       - name: Run deterministic no-key Market Replay
         working-directory: .
@@ -60,3 +61,44 @@ jobs:
           elapsed=$(( $(date +%s) - REPLAY_START_EPOCH ))
           echo "Dependency install through replay: ${elapsed}s"
           test "$elapsed" -le 300
+
+  public-demo-container:
+    name: Public demo container boundary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build public replay-only image
+        run: docker build -t tracearena-public-demo .
+
+      - name: Verify non-root runtime and public API boundary
+        run: |
+          docker run -d --name tracearena-public-demo \
+            -p 127.0.0.1:7860:7860 tracearena-public-demo
+          for attempt in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:7860/api/health && break
+            sleep 2
+          done
+          test "$(docker exec tracearena-public-demo id -u)" = "1000"
+          curl -fsS http://127.0.0.1:7860/api/health | \
+            jq -e '.mode == "public-replay-only" and .llm == "disabled"'
+          status=$(curl -sS -o /tmp/rejected.json -w '%{http_code}' \
+            -X POST -H 'content-type: application/json' \
+            -d '{"locale":"en-US","api_key":"must-not-echo"}' \
+            http://127.0.0.1:7860/api/runs)
+          test "$status" = "422"
+          ! grep -q 'must-not-echo' /tmp/rejected.json
+          curl -fsS -X POST -H 'content-type: application/json' \
+            -d '{"locale":"en-US"}' http://127.0.0.1:7860/api/runs | \
+            jq -e '.mode == "deterministic-replay" and
+              .manifest.provider == "replay" and
+              .manifest.network == "disabled" and
+              .manifest.brokerage == "disabled"'
+
+      - name: Print logs on failure
+        if: failure()
+        run: docker logs tracearena-public-demo || true
+
+      - name: Stop public demo container
+        if: always()
+        run: docker rm -f tracearena-public-demo || true

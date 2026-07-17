@@ -10,6 +10,7 @@ backend/user_data/
 backend/.venv/
 __pycache__/
 *.pyc
+*.egg-info/
 
 # ── node ──
 frontend/node_modules/

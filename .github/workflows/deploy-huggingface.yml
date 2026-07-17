@@ -1,0 +1,34 @@
+name: Deploy Hugging Face Space
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Prepare isolated Space snapshot
+        run: |
+          cp deploy/huggingface/README.md /tmp/SPACE_README.md
+          git checkout --orphan space-deploy
+          cp /tmp/SPACE_README.md README.md
+          git add -A
+          git -c user.name=tracearena-bot -c user.email=tonyhyworld@gmail.com \
+            commit -m "Deploy TraceArena public replay demo"
+
+      - name: Push to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          test -n "$HF_TOKEN"
+          git push --force \
+            "https://tonyworld888:${HF_TOKEN}@huggingface.co/spaces/tonyworld888/tracearena-demo" \
+            space-deploy:main

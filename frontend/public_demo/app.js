@@ -1,0 +1,19 @@
+const COPY={
+  "en-US":{eyebrow:"A VERIFIABLE MULTI-AGENT WORLD",title:"WATCH INTELLIGENCE\nACT UNDER CONSTRAINT.",subtitle:"Run a bounded TraceArena world where two agents share rules, compete for outcomes, and leave an auditable trajectory.",scenarioLabel:"PUBLIC DEMONSTRATION",scenarioTitle:"Capital Market Replay",scenarioBody:"A deterministic simulation driven by reviewed synthetic fixtures. It evaluates the action process—not investment performance.",run:"RUN THE AI WORLD",running:"WORLD RUNNING…",notice:"Evaluation and education only. No model call, real market data, brokerage connection, or financial advice.",status:"WORLD STATUS",ready:"READY",done:"VERIFIED",failed:"FAILED",runId:"RUN ID",ticks:"TRAJECTORY STEPS",trajectoryLabel:"AUDIT TRAJECTORY",trajectoryTitle:"Actions. Evidence. Consequences.",empty:"Run the world to generate a verifiable trajectory.",step:"STEP",actions:"actions",events:"events",settlements:"settlements"},
+  "zh-CN":{eyebrow:"可验证的多智能体世界",title:"观看智能体在约束中\n采取行动。",subtitle:"运行一个有共同规则、竞争结果和完整审计轨迹的 TraceArena AI 世界。",scenarioLabel:"公开安全演示",scenarioTitle:"资本市场确定性回放",scenarioBody:"使用已审阅的合成数据运行确定性模拟，评价行动与决策过程，而不是投资收益。",run:"启动 AI 世界",running:"世界运行中…",notice:"仅用于评测与教学；不调用模型、不接入真实行情或券商，也不构成投资建议。",status:"世界状态",ready:"就绪",done:"核验通过",failed:"运行失败",runId:"运行 ID",ticks:"轨迹步数",trajectoryLabel:"审计轨迹",trajectoryTitle:"行动、证据与后果",empty:"启动世界后将在这里生成可验证轨迹。",step:"步骤",actions:"行动",events:"事件",settlements:"结算"}
+};
+let locale=localStorage.getItem("tracearena.public.locale")||"en-US";
+let run=null;
+const $=id=>document.getElementById(id),t=key=>COPY[locale][key];
+function ticks(){return run?.replay?.ticks||run?.replay?.frames||[]}
+function render(){
+  document.documentElement.lang=locale;document.title=`TraceArena · ${t("scenarioTitle")}`;
+  for(const [id,key] of [["eyebrow","eyebrow"],["title","title"],["subtitle","subtitle"],["scenarioLabel","scenarioLabel"],["scenarioTitle","scenarioTitle"],["scenarioBody","scenarioBody"],["runButton","run"],["notice","notice"],["statusLabel","status"],["runLabel","runId"],["tickLabel","ticks"],["trajectoryLabel","trajectoryLabel"],["trajectoryTitle","trajectoryTitle"]])$(id).textContent=t(key);
+  $("statusValue").textContent=run?t("done"):t("ready");$("runValue").textContent=run?.run_id?.slice(0,12)||"—";$("tickValue").textContent=run?String(ticks().length):"—";$("digestValue").textContent=run?.manifest?.canonical_replay_sha256?.slice(0,18)||"—";
+  const timeline=$("timeline");timeline.replaceChildren();
+  if(!run){const li=document.createElement("li");li.className="empty";li.textContent=t("empty");timeline.append(li);return}
+  ticks().forEach((item,index)=>{const li=document.createElement("li");const n=document.createElement("b");n.textContent=String(index+1).padStart(2,"0");const body=document.createElement("div");const title=document.createElement("strong");title.textContent=`${t("step")} ${item.tick??index+1}`;const meta=document.createElement("span");meta.textContent=`${(item.world_actions||[]).length} ${t("actions")} · ${(item.world_events||[]).length} ${t("events")} · ${(item.settlements||[]).length} ${t("settlements")}`;body.append(title,meta);li.append(n,body);timeline.append(li)})
+}
+$("locale").value=locale;$("locale").onchange=event=>{locale=event.target.value;localStorage.setItem("tracearena.public.locale",locale);render()};
+$("runButton").onclick=async()=>{const button=$("runButton");button.disabled=true;button.textContent=t("running");try{const response=await fetch("/api/runs",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({locale})});if(!response.ok)throw new Error((await response.json()).detail||`HTTP ${response.status}`);run=await response.json();render()}catch(error){console.error("TraceArena public replay failed",error);$("statusValue").textContent=t("failed");alert(error.message)}finally{button.disabled=false;button.textContent=t("run")}};
+render();
