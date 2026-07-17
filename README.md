@@ -92,6 +92,8 @@ Prefer a guided first look? Open the [live demo](https://tonyworld888-tracearena
 
 After your first run, please submit the short [first-run feedback form](https://github.com/tonyhyworld/TraceArena/issues/new?template=first-run-feedback.yml). It asks only about your path, result, environment, time to first result, and the next change that would make you continue—never include credentials or private run data.
 
+Join the [v0.1.4 technical discussion](https://github.com/tonyhyworld/TraceArena/discussions/8) to compare observations with other Agent builders.
+
 The example uses a scripted replay provider, synthetic fixture data, no API key, no LLM call, no MCP call, no brokerage account and no real order execution. It is infrastructure for simulation and evaluation, not financial advice.
 
 ### Run the full AI World frontend locally
