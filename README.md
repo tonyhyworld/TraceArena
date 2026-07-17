@@ -66,6 +66,7 @@ The public preview includes a deterministic, no-key Market Replay that can be ru
 ./scripts/install.sh
 # The installer creates/reuses .venv and runs npm ci for the frontend.
 # Windows PowerShell: .\scripts\install.ps1
+# If python3 is not the right interpreter: PYTHON_BIN=/path/to/python3.12 ./scripts/install.sh
 
 # Then run the no-key replay:
 source .venv/bin/activate
