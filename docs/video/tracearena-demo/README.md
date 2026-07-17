@@ -1,6 +1,6 @@
 # TraceArena product film
 
-This directory contains the reproducible HyperFrames composition for the 83-second TraceArena product film.
+This directory contains the reproducible HyperFrames composition for the two-minute TraceArena product film. The film uses English narration with English-first bilingual on-screen copy.
 
 ## Render
 

@@ -1,36 +1,45 @@
-# TraceArena Demo — Visual Identity
+# TraceArena Film V2 — Visual Identity
 
 ## Style Prompt
 
-A restrained cinematic “AI court” aesthetic inspired by the visual language of a strategic palace contest: an ink-dark world, architectural framing, gold authority lines, cinnabar warnings, scroll-like evidence panels, and chessboard spatial hierarchy. The film must feel consequential and auditable rather than mystical or decorative. Agents are abstract seals and decision nodes, never historical characters. Every visual motif should reinforce competition, causality, verification, and the accumulation of valuable decision data.
+A cinematic, mysterious artificial-intelligence universe forming in deep space. TraceArena is visualized as a living digital world: a luminous core wrapped in causal orbits, neural constellations, flowing evidence streams, and precise runtime geometry. The mood is advanced and intelligent rather than “cyberpunk”; dark negative space creates scale, while cyan and ultraviolet light reveal structure only when the narrative needs it. Interfaces feel like instruments from a future observatory, not SaaS dashboards. Multi-agent competition is shown as distinct intelligence signatures perturbing one shared world and producing measurable consequences.
 
 ## Colors
 
-- `#07111F` — ink-night canvas and primary background.
-- `#10253C` — palace-blue structures, panels, and depth layers.
-- `#D6A84B` — authority gold for verified paths, headings, and decisive outcomes.
-- `#B84A3A` — cinnabar for pressure, risk, and failed constraints.
-- `#E9DFC8` — parchment white for primary copy and evidence surfaces.
+- `#030713` — deep-space void and primary canvas.
+- `#0B1E3A` — world depth, runtime structures, and dark surfaces.
+- `#52E7FF` — verified facts, active intelligence, and causal paths.
+- `#A77BFF` — alternate strategies, hidden state, and emergence.
+- `#F1F7FF` — primary copy and high-confidence outcomes.
 
 ## Typography
 
-- `STSong` / `Songti SC` — Chinese display voice; institutional, editorial, and world-building statements.
-- `Avenir Next` — English, data, labels, and operational UI voice; precise and contemporary.
+- `TraceDisplay` (`Avenir Next`, local) — English statements and world-scale headlines; engineered, spacious, and authoritative.
+- `IBM Plex Mono` — runtime state, evidence, metrics, and technical labels.
+- `TraceCN` (`PingFang SC`, local) — subordinate Chinese translations only.
 
-The contrast is intentional: the serif voice describes the world and its meaning; the sans voice records evidence, metrics, and runtime state.
+The Sans/Mono register shift separates world-scale claims from machine-observable runtime facts. English carries the main narrative. Chinese appears smaller and quieter as a second reading layer, never competing with the English hierarchy.
 
 ## Motion
 
-- Use deliberate seal-stamp reveals, gold line drawing, shallow focus pulls, and shutter-like scene handoffs.
-- Entrances feel weighted: `power3.out`, `expo.out`, and `sine.out`; 0.35–0.85 seconds.
-- One slow ambient motion per scene: drifting map lines, breathing seals, or a restrained camera push.
-- Transitions use focus-pull dissolves as the primary language, with one mechanical shutter at the product reveal.
-- No jump cuts and no pre-transition exits. The transition carries the outgoing scene away.
+- World-scale motion: slow orbital drift, parallax star fields, data ribbons, and breathing field distortion.
+- Agent motion: asymmetric pulses and converging trajectories that visibly affect shared state.
+- Evidence motion: line drawing, packet travel, deterministic branching, and state confirmation.
+- Primary transition: directional blur through the digital world. Accent transitions: one chromatic split at the multi-agent emergence reveal and one iris-like world expansion at the finale.
+- Entrances use `expo.out`, `power4.out`, `circ.out`, and `sine.out`, with distinct rhythms per scene.
+
+## Composition Rules
+
+- Each scene must have a dominant world-scale visual, not a grid of equal cards.
+- Use layered depth: star field / world field / information foreground / precision HUD marks.
+- Keep English headlines at 72px or larger; Chinese translations at 24–30px.
+- Architecture and data must be animated as systems and flows, not displayed as static tables.
+- Preserve long enough holds for the main idea to be understood without pausing.
 
 ## What NOT to Do
 
-- Do not reuse characters, story text, imagery, music, or other assets from the private “三子夺嫡” scenario.
-- Do not use cyberpunk neon, cyan-purple SaaS gradients, holographic clutter, or generic particle storms.
-- Do not use identical card grids, excessive glassmorphism, playful bounce, or cartoon motion.
-- Do not romanticize opaque model reasoning; show evidence, actions, state changes, and verifiable outcomes.
-- Do not make the film look like a historical-drama trailer. The palace language is structural metaphor, not subject matter.
+- No palace, court, scroll, seal, gold, historical, or “三子夺嫡” visual references.
+- No generic neon city, hacker terminal rain, robot faces, brains, or stock AI imagery.
+- No six-panel dashboards, identical card grids, decorative hexagon wallpaper, or PowerPoint diagrams.
+- No gradient-filled text and no purple-to-blue full-screen linear gradient.
+- Do not claim that a model’s private chain of thought is exposed; show observable evidence, tool use, actions, feedback, state, and settlement.

@@ -16,11 +16,11 @@
 
 ![TraceArena 可审计运行生命周期](docs/assets/tracearena-value-loop.svg)
 
-## 83 秒了解 TraceArena
+## 两分钟了解 TraceArena
 
 [![观看 TraceArena 产品演示视频](docs/assets/tracearena-demo-poster.png)](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.3/tracearena-demo.mp4)
 
-*中文旁白 · 中英双语画面 · 1080p。可[下载 MP4](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.3/tracearena-demo.mp4)，也可查看[可复现的 HyperFrames 视频工程](docs/video/tracearena-demo/)。*
+*英语旁白 · 英语为主、中文为辅的双语画面 · 1080p。可[下载 MP4](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.3/tracearena-demo.mp4)，也可查看[可复现的 HyperFrames 视频工程](docs/video/tracearena-demo/)。*
 
 > **TraceArena 让智能体进入真实约束的世界，用行动证明能力；让每一次研究、判断、
 > 行动和结果都能被观看、解释、核验和复用。**
