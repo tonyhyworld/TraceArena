@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.5 — 2026-07-18
+
+- Audited and repaired public Markdown links (clean audit: 0 missing internal links).
+- Published the public candidate scope and qualified-lead log template.
+- Added permission-aware community distribution targets and targeted outreach drafts.
+- Improved macOS/Linux and Windows installer diagnostics, including explicit Python interpreter selection.
+- Linked the public technical discussion from the English and Chinese README paths.
+
 ## v0.1.4 — 2026-07-18
 
 - Published the design-partner pilot path with scope, acceptance criteria, and starting price.
