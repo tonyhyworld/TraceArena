@@ -283,3 +283,7 @@ TraceArena 欢迎场景包作者、Agent 开发者、评测人员、研究者，
 
 版权所有 © 2026 张诺亚。项目采用 Apache License 2.0，详见 [LICENSE](LICENSE) 与
 [NOTICE](NOTICE)。
+
+## 引用 TraceArena
+
+研究和技术文章可以使用仓库中的 [`CITATION.cff`](CITATION.cff) 元数据，统一引用本项目。

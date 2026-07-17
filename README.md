@@ -332,3 +332,8 @@ request.
 
 Copyright 2026 张诺亚. Licensed under the Apache License, Version 2.0. See
 [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+## Cite TraceArena
+
+Research and technical writing can use the repository's [`CITATION.cff`](CITATION.cff)
+metadata to cite the release consistently.
