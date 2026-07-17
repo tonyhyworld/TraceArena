@@ -220,7 +220,7 @@ your_scenario/
 ```
 
 请从内置 [`capital_market`](backend/scenarios/capital_market/) 参考场景包开始，再阅读
-[场景包贡献指南](docs/scenario-pack-guide.zh-CN.md)。高质量贡献应明确结算权威、为重要
+[场景包开发指南](docs/scenario-pack-development-guide.zh-CN.md)。高质量贡献应明确结算权威、为重要
 行动保留证据、提供可复现 fixture，并记录所有素材/数据的再分发权。
 
 欢迎代码评审、企业运营、治理、教育、科研、商业分析与策略博弈等领域的场景包；也欢迎
