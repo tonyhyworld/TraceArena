@@ -26,6 +26,23 @@
 > ability through action, and leave a record that people can watch, explain,
 > verify, and reuse.**
 
+## One-command installation
+
+On macOS/Linux, install the Python runtime, frontend dependencies, and local
+frontend configuration with one command:
+
+```bash
+git clone https://github.com/tonyhyworld/TraceArena.git
+cd TraceArena
+./scripts/install.sh
+```
+
+Windows PowerShell users can run `./scripts/install.ps1`. The installer creates
+`.venv`, installs the backend in editable mode, runs `npm ci` for the full Vue
+frontend, and creates `frontend/.env.local` only when it does not already exist.
+It never installs or stores API keys. See [the frontend setup guide](frontend/README.md)
+for the full OS backend/API requirement.
+
 ## The AI-world thesis
 
 TraceArena is built on a simple belief: an agent's most meaningful intelligence

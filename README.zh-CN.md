@@ -25,6 +25,21 @@
 > **TraceArena 让智能体进入真实约束的世界，用行动证明能力；让每一次研究、判断、
 > 行动和结果都能被观看、解释、核验和复用。**
 
+## 一条命令安装
+
+在 macOS/Linux 中，下面一条命令会自动创建 Python 虚拟环境、安装后端依赖、安装完整 Vue
+前端依赖，并生成本地前端配置：
+
+```bash
+git clone https://github.com/tonyhyworld/TraceArena.git
+cd TraceArena
+./scripts/install.sh
+```
+
+Windows PowerShell 用户运行 `./scripts/install.ps1`。安装器会创建 `.venv`，以 editable 模式
+安装后端，执行 `npm ci` 安装完整前端，并且只在不存在时创建 `frontend/.env.local`。安装器
+不会安装或保存任何 API Key。完整前端所需的 OS 后端/API 说明见[前端启动指南](frontend/README.md)。
+
 ## AI 世界理念：智能在世界中涌现，价值数据在过程中沉淀
 
 TraceArena 建立在一个朴素判断之上：智能体最有意义的智能，不会只从一条孤立提示词中
