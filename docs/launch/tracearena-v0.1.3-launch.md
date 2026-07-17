@@ -67,3 +67,6 @@ The hosted demo uses deterministic synthetic data in the browser. It does not
 call an LLM, connect to real markets or brokerages, accept API keys, or provide
 investment advice. Those limits are intentional and should remain explicit in
 every launch post.
+
+For follow-up execution, use the [30-day adoption plan](30-day-adoption-plan.md)
+and the [Chinese social-post variants](tracearena-social-posts.zh-CN.md).
