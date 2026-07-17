@@ -90,6 +90,8 @@ scenario-pack development, and provider configuration.
 
 Prefer a guided first look? Open the [live demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html) or read the [first public replay](https://github.com/tonyhyworld/TraceArena/discussions/4).
 
+After your first run, please submit the short [first-run feedback form](https://github.com/tonyhyworld/TraceArena/issues/new?template=first-run-feedback.yml). It asks only about your path, result, environment, time to first result, and the next change that would make you continue—never include credentials or private run data.
+
 The example uses a scripted replay provider, synthetic fixture data, no API key, no LLM call, no MCP call, no brokerage account and no real order execution. It is infrastructure for simulation and evaluation, not financial advice.
 
 ## Repository scope
@@ -108,6 +110,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Please do
 
 - Build and propose a scenario pack using the [scenario-pack guide](场景包开发指南.md).
 - Report a reproducible bug or request a feature through GitHub Issues.
+- Tell us how the first run went through the [first-run feedback form](https://github.com/tonyhyworld/TraceArena/issues/new?template=first-run-feedback.yml).
 - For a bounded agent-evaluation pilot, use the [pilot request form](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml).
 - For implementation, integration, or evaluation support, see the [commercial support path](docs/commercial-support.md).
 - Maintainers can use the [adoption log template](docs/open_source_release/ADOPTION_LOG_TEMPLATE.md) to report aggregate, auditable adoption signals without collecting unnecessary personal data.
@@ -115,4 +118,3 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Please do
 ## License
 
 Copyright 2026 张诺亚. Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
-
