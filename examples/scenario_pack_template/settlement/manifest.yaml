@@ -1,0 +1,9 @@
+authority:
+  type: deterministic_verifier
+  id: TODO.verifier
+  version: 1
+  evidence:
+    - "TODO: Name the recorded evidence used to settle the result."
+rules:
+  - id: TODO.result_rule
+    description: "TODO: Explain how the world determines the outcome."

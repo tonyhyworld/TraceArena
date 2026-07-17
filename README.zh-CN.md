@@ -10,7 +10,7 @@
 [![CI](https://github.com/tonyhyworld/TraceArena/actions/workflows/ci.yml/badge.svg)](https://github.com/tonyhyworld/TraceArena/actions/workflows/ci.yml)
 [![欢迎场景包贡献](https://img.shields.io/badge/生态-欢迎场景包贡献-5eead4.svg)](CONTRIBUTING.zh-CN.md)
 
-[English](README.md) · [在线演示](https://huggingface.co/spaces/tonyworld888/tracearena-demo) · [本地运行](#本地运行一个可验证的世界) · [构建世界](#一起构建世界库)
+[English](README.md) · [在线演示](https://huggingface.co/spaces/tonyworld888/tracearena-demo) · [五分钟上手](docs/quickstart.zh-CN.md) · [本地运行](#本地运行一个可验证的世界) · [构建世界](#一起构建世界库)
 
 </div>
 
@@ -215,6 +215,8 @@ docker compose up --build
 认证、权限、密钥托管和审计能力。
 
 ## 一起构建世界库
+
+新贡献者可以先阅读[五分钟上手](docs/quickstart.zh-CN.md)，再复制[场景包模板](examples/scenario_pack_template/)。
 
 每一个高质量场景包都可以为生态增加一条测评线、一条内容线和一条数据线。只要一个领域
 可以定义角色、目标、允许行动、环境反馈和可负责的结果，它就可以成为一个世界。

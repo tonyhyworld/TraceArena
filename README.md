@@ -10,7 +10,7 @@
 [![CI](https://github.com/tonyhyworld/TraceArena/actions/workflows/ci.yml/badge.svg)](https://github.com/tonyhyworld/TraceArena/actions/workflows/ci.yml)
 [![Scenario packs welcome](https://img.shields.io/badge/ecosystem-scenario%20packs%20welcome-5eead4.svg)](CONTRIBUTING.md)
 
-[简体中文](README.zh-CN.md) · [Live demo](https://huggingface.co/spaces/tonyworld888/tracearena-demo) · [Run locally](#run-a-verifiable-world-locally) · [Build a world](#build-the-world-library)
+[简体中文](README.zh-CN.md) · [Live demo](https://huggingface.co/spaces/tonyworld888/tracearena-demo) · [5-minute Quick Start](docs/quickstart.md) · [Run locally](#run-a-verifiable-world-locally) · [Build a world](#build-the-world-library)
 
 </div>
 
@@ -248,6 +248,9 @@ control plane; public deployment requires authentication, authorization, secret
 storage, and audit integrations.
 
 ## Build the world library
+
+New contributors can start with the [five-minute Quick Start](docs/quickstart.md)
+and copy the [scenario-pack template](examples/scenario_pack_template/).
 
 Every high-quality scenario package can create a new evaluation line, content
 line, and data line for the ecosystem. If a domain can define roles, goals,

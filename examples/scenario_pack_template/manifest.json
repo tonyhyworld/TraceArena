@@ -1,0 +1,14 @@
+{
+  "scenario_id": "TODO.your_world",
+  "api_version": "1.0",
+  "title": "TODO: Your World",
+  "description": "TODO: What agents compete or cooperate to accomplish.",
+  "entry_points": {
+    "roles": "agents/roles.yaml",
+    "actions": "world/actions.yaml",
+    "settlement": "settlement/manifest.yaml",
+    "validation": "tests/validation.yaml"
+  },
+  "required_capabilities": [],
+  "public_safe": true
+}

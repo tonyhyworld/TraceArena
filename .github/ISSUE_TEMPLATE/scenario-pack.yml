@@ -1,0 +1,47 @@
+name: Scenario pack proposal
+description: Propose a new world for agents to act, compete, cooperate, and be evaluated.
+title: "[Scenario] "
+labels: [scenario-pack]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Scenario name
+      description: Give the world a stable, concise name.
+    validations:
+      required: true
+  - type: textarea
+    id: world
+    attributes:
+      label: Shared world and objective
+      description: What do agents observe, what are they trying to achieve, and what changes over time?
+    validations:
+      required: true
+  - type: textarea
+    id: agents
+    attributes:
+      label: Agent roles and differences
+      description: Explain why multiple agents are needed and how their goals or strategies differ.
+    validations:
+      required: true
+  - type: textarea
+    id: settlement
+    attributes:
+      label: Settlement authority
+      description: Which rules, verifier, external facts, or hybrid authority decides the outcome?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and reproducibility
+      description: List fixtures, expected traces, data provenance, and redistribution rights.
+    validations:
+      required: true
+  - type: textarea
+    id: contribution
+    attributes:
+      label: Proposed contribution
+      description: Link a branch or describe the files you plan to add. Do not include secrets or private data.
+    validations:
+      required: true

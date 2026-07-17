@@ -1,0 +1,10 @@
+validation:
+  - id: rejects_missing_evidence
+    input: TODO
+    expected: rejected
+  - id: accepts_valid_action
+    input: TODO
+    expected: accepted
+replay:
+  fixture: TODO/fixture.json
+  expected_settlement: TODO

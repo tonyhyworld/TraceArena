@@ -1,0 +1,9 @@
+roles:
+  - id: TODO.agent_a
+    name: TODO Agent A
+    goal: "TODO: State the objective in one sentence."
+    observations: [TODO.observation]
+  - id: TODO.agent_b
+    name: TODO Agent B
+    goal: "TODO: State a meaningfully different objective or strategy."
+    observations: [TODO.observation]

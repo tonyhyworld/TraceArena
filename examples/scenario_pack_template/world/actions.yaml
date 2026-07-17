@@ -1,0 +1,10 @@
+actions:
+  - id: TODO.action
+    description: "TODO: Describe the structured action."
+    actor_roles: [TODO.agent_a, TODO.agent_b]
+    parameters:
+      value:
+        type: number
+        required: true
+    preconditions:
+      - "TODO: Add a rule that can accept or reject the action."
