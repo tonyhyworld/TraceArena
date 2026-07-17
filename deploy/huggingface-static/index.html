@@ -3,47 +3,104 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Run a safe, deterministic TraceArena multi-agent world replay.">
-  <title>TraceArena · Public AI World Replay</title>
+  <meta name="description" content="See two AI agents compete inside a verifiable TraceArena world.">
+  <title>TraceArena · Two agents. One world. Verifiable outcomes.</title>
   <link rel="stylesheet" href="./assets/styles.css">
 </head>
 <body>
-  <div class="nebula" aria-hidden="true"></div>
-  <main>
-    <header>
-      <div class="brand"><span class="mark">TA</span><span>TRACEARENA</span></div>
+  <div class="sky" aria-hidden="true"></div>
+  <header class="nav wrap">
+    <a class="brand" href="#top" aria-label="TraceArena home"><span class="brand-mark">TA</span><span>TRACEARENA</span></a>
+    <div class="nav-actions">
+      <span class="live-dot"><i></i><span id="demoMode"></span></span>
       <select id="locale" aria-label="Language"><option value="en-US">English</option><option value="zh-CN">简体中文</option></select>
-    </header>
-    <section class="hero">
-      <p class="eyebrow" id="eyebrow"></p>
-      <h1 id="title"></h1>
-      <p class="subtitle" id="subtitle"></p>
-      <div class="world" aria-hidden="true"><i></i><i></i><span>AI<br>WORLD</span></div>
-    </section>
-    <section class="console">
-      <div>
-        <p class="eyebrow" id="scenarioLabel"></p>
-        <h2 id="scenarioTitle"></h2>
-        <p id="scenarioBody"></p>
-        <ul class="guards"><li>LOCAL REPLAY</li><li>SYNTHETIC DATA</li><li>NO API KEY</li><li>NO BROKERAGE</li></ul>
-        <button id="runButton" type="button"></button>
-        <p class="notice" id="notice"></p>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero wrap">
+      <div class="hero-copy">
+        <p class="kicker" id="heroKicker"></p>
+        <h1 id="heroTitle"></h1>
+        <p class="hero-lead" id="heroLead"></p>
+        <a class="primary-link" href="#arena" id="heroCta"></a>
       </div>
-      <aside>
-        <div class="status"><span id="statusLabel"></span><strong id="statusValue">READY</strong></div>
-        <dl>
-          <dt id="runLabel"></dt><dd id="runValue">—</dd>
-          <dt id="tickLabel"></dt><dd id="tickValue">—</dd>
-          <dt>SHA-256</dt><dd id="digestValue">—</dd>
-        </dl>
-      </aside>
+      <div class="world-visual" aria-hidden="true">
+        <div class="orbit orbit-a"><span>A</span></div>
+        <div class="orbit orbit-b"><span>V</span></div>
+        <div class="world-core"><b>AI</b><small>WORLD</small></div>
+      </div>
+      <div class="thesis" id="thesis"></div>
     </section>
-    <section class="trajectory">
-      <div class="section-head"><p class="eyebrow" id="trajectoryLabel"></p><h2 id="trajectoryTitle"></h2></div>
-      <ol id="timeline"><li class="empty" id="empty"></li></ol>
+
+    <section class="section wrap" aria-labelledby="howTitle">
+      <div class="section-heading"><p class="kicker" id="howKicker"></p><h2 id="howTitle"></h2><p id="howLead"></p></div>
+      <div class="how-grid" id="howGrid"></div>
     </section>
-    <footer><span>OPEN SOURCE · APACHE 2.0</span><a href="https://github.com/tonyhyworld/TraceArena" target="_blank" rel="noreferrer">GITHUB ↗</a></footer>
+
+    <section class="section wrap" aria-labelledby="briefTitle">
+      <div class="section-heading compact"><p class="kicker" id="briefKicker"></p><h2 id="briefTitle"></h2></div>
+      <div class="brief-grid">
+        <article class="brief-card">
+          <span class="card-index">WORLD / 01</span>
+          <h3 id="worldName"></h3>
+          <p id="worldBrief"></p>
+          <div class="market-facts" id="marketFacts"></div>
+        </article>
+        <article class="rules-card">
+          <span class="card-index">CONTRACT / 02</span>
+          <h3 id="rulesTitle"></h3>
+          <ul id="rulesList"></ul>
+          <p class="settlement-note" id="settlementNote"></p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-labelledby="agentsTitle">
+      <div class="section-heading compact"><p class="kicker" id="agentsKicker"></p><h2 id="agentsTitle"></h2><p id="agentsLead"></p></div>
+      <div class="agent-grid" id="agentGrid"></div>
+    </section>
+
+    <section class="arena-section" id="arena" aria-labelledby="arenaTitle">
+      <div class="wrap">
+        <div class="arena-heading">
+          <div><p class="kicker" id="arenaKicker"></p><h2 id="arenaTitle"></h2><p id="arenaLead"></p></div>
+          <div class="arena-state"><span id="stateLabel"></span><strong id="stateValue"></strong></div>
+        </div>
+        <div class="run-panel">
+          <div class="progress-copy"><span id="progressLabel"></span><strong id="progressValue">0 / 3</strong></div>
+          <div class="progress-track"><i id="progressBar"></i></div>
+          <button id="runButton" type="button"></button>
+          <p class="safety-note" id="safetyNote"></p>
+        </div>
+        <div class="rounds" id="rounds" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="section wrap result-section" id="resultSection" hidden aria-labelledby="resultTitle">
+      <div class="result-header">
+        <div><p class="kicker" id="resultKicker"></p><h2 id="resultTitle"></h2><p id="resultLead"></p></div>
+        <div class="winner-seal"><span id="winnerLabel"></span><strong>VECTOR</strong></div>
+      </div>
+      <div class="score-grid" id="scoreGrid"></div>
+      <div class="why-box"><span>WHY</span><p id="whyWinner"></p></div>
+      <div class="meaning-box"><p class="kicker" id="meaningKicker"></p><h3 id="meaningTitle"></h3><p id="meaningBody"></p></div>
+    </section>
+
+    <section class="audit wrap">
+      <details>
+        <summary><span id="auditTitle"></span><small id="auditHint"></small></summary>
+        <div class="audit-grid">
+          <div><span id="runIdLabel"></span><strong id="runId">—</strong></div>
+          <div><span>SHA-256</span><strong id="digest">—</strong></div>
+          <div><span id="verifierLabel"></span><strong id="verifier">—</strong></div>
+        </div>
+        <p id="auditBody"></p>
+      </details>
+    </section>
   </main>
+
+  <footer class="footer wrap"><span>OPEN SOURCE · APACHE 2.0</span><a href="https://github.com/tonyhyworld/TraceArena" target="_blank" rel="noreferrer">GITHUB ↗</a></footer>
   <script type="module" src="./assets/app.js"></script>
 </body>
 </html>
