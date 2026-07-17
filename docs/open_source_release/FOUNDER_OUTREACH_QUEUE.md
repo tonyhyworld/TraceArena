@@ -55,7 +55,7 @@ Demo: <https://tonyworld888-tracearena-demo.static.hf.space/index.html>
 
 ## 运行记录
 
-公开仓当前基线（2026-07-18）：GitHub 近 14 天 views 0、clones 0；后续每轮触达后重新记录，避免把曝光或内部运行误报为采用。
+公开仓当前基线（2026-07-18）：GitHub stars 1、forks 0、watchers 0；近 14 天 views 0、clones 0。star 的来源和是否为外部用户尚未验证；后续每轮触达后重新记录，避免把曝光或内部运行误报为采用。
 
 | 编号 | 联系对象 | 渠道 | 首次运行时间 | 首个结果耗时 | 卡点 | 是否愿意贡献 | 是否潜在试点 |
 |---|---|---|---|---|---|---|---|
