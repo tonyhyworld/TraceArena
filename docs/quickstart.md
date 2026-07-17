@@ -101,7 +101,7 @@ both manifests when opening an issue.
 
 ## 5. Explore a scenario pack
 
-Read [the scenario-pack guide](场景包开发指南.md) and inspect the
+Read [the scenario-pack guide](scenario-pack-guide.md) and inspect the
 [capital-market reference pack](../backend/scenarios/capital_market/) before
 creating a new pack. Keep world rules, authoritative settlement, tool
 permissions, and acceptance checks explicit; a prompt collection alone is not
