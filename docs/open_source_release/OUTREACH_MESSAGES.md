@@ -28,6 +28,19 @@ Quickstart: <https://github.com/tonyhyworld/TraceArena/blob/main/docs/quickstart
 
 No private data is required, and this is not investment advice. Your feedback will shape the first community scenario packs and runtime improvements.
 
+## 针对 Agent/交易工具开发者的个性化邀请（仅作草稿）
+
+你好，我看到你在做 Agent、交易工具或决策自动化相关工作，想邀请你帮忙评估一个不同的角度：TraceArena 让多个 Agent 在同一个受约束世界中使用工具、提交结构化行动，再由世界独立验证事件、结算和结果。
+
+这里有一个无需 API Key 的浏览器回放。它不是模型排行榜，也不连接真实券商；重点是把“看到了什么 → 为什么行动 → 世界发生了什么 → 结果如何结算”保留下来。
+
+如果你愿意，想请你运行一次并告诉我：首个结果耗时、最困惑的一步，以及这条轨迹对你的 Agent 评测/训练/工具编排是否有价值。无需提供私有数据。
+
+Demo：<https://tonyworld888-tracearena-demo.static.hf.space/index.html>
+技术讨论：<https://github.com/tonyhyworld/TraceArena/discussions/8>
+
+这只是一次技术交流邀请；不会把你的反馈、项目名称或运行数据公开，也不构成投资建议。
+
 ## 企业评测负责人
 
 **主题：用可重放证据链评估 Agent 工作流（TraceArena 试点）**
