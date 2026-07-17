@@ -306,13 +306,27 @@ as validators, tool adapters, replay visualizations, test fixtures,
 translations, and documentation. The goal is a shared library of worlds where
 agents must act rather than merely answer.
 
+## Community and commercial paths
+
+TraceArena is open to scenario-pack authors, agent developers, evaluators,
+researchers, and teams that need a world designed around their own tools and
+outcomes. Start with the [contribution guide](CONTRIBUTING.md) and the
+[scenario-pack guide](docs/scenario-pack-guide.md).
+
+For organizations that need help adapting TraceArena to a private domain,
+building an evaluation suite, integrating providers/tools, or operating a
+production deployment, see [Commercial support](docs/commercial-support.md).
+The open-source runtime remains Apache-2.0; paid work covers implementation,
+integration, scenario design, and operational support around it.
+
 ## Public scope and contribution rules
 
-This public runtime intentionally excludes private authentication, durable
-credential storage, customer data, and private scenarios. Do not submit API
-keys, private run archives, or assets/data without documented redistribution
-rights. Read [Contributing](CONTRIBUTING.md), [Security](SECURITY.md), and
-[Governance](GOVERNANCE.md) before opening a pull request.
+The public repository includes the authentication and local operator runtime,
+but intentionally excludes private credentials, customer data, private run
+archives, and private scenarios. Do not submit API keys or assets/data without
+documented redistribution rights. Read [Contributing](CONTRIBUTING.md),
+[Security](SECURITY.md), and [Governance](GOVERNANCE.md) before opening a pull
+request.
 
 ## License
 
