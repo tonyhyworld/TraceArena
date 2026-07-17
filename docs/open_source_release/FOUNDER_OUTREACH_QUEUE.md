@@ -10,6 +10,7 @@
 - First 10 runs: <https://github.com/tonyhyworld/TraceArena/discussions/6>
 - Scenario proposal: <https://github.com/tonyhyworld/TraceArena/issues/2>
 - Evaluation pilot: <https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml>
+- Ready-to-send messages: [OUTREACH_MESSAGES.md](OUTREACH_MESSAGES.md)
 
 ## 发送顺序
 
@@ -65,4 +66,3 @@ Demo: <https://tonyworld888-tracearena-demo.static.hf.space/index.html>
 | 08 |  |  |  |  |  |  |  |
 | 09 |  |  |  |  |  |  |  |
 | 10 |  |  |  |  |  |  |  |
-
