@@ -10,7 +10,7 @@ Use one path in every announcement so a reader always knows what to do next:
 
 1. **See it:** [live demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html)
 2. **Run it:** [no-key Market Replay](../../examples/market_replay/README.md)
-3. **Discuss a world:** [scenario-pack guide](../场景包开发指南.md)
+3. **Discuss a world:** [scenario-pack guide](../scenario-pack-guide.md)
 4. **Join the public technical discussion:** [v0.1.4 discussion](https://github.com/tonyhyworld/TraceArena/discussions/8)
 5. **Request an evaluation pilot:** [pilot issue form](../../.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml)
 6. **Ask about a private engagement:** [commercial support](commercial-support.md)
