@@ -94,6 +94,36 @@ After your first run, please submit the short [first-run feedback form](https://
 
 The example uses a scripted replay provider, synthetic fixture data, no API key, no LLM call, no MCP call, no brokerage account and no real order execution. It is infrastructure for simulation and evaluation, not financial advice.
 
+### Run the full AI World frontend locally
+
+The replay above is the fastest public proof. To open the full watchable viewer
+and operator console, run the backend and Vue frontend as two local processes.
+This path uses the public capital-market scenario contract; it does not enable
+the private 三子夺嫡 pack.
+
+```bash
+# Terminal 1 — backend
+cd backend
+source ../.venv/bin/activate
+AIWORLD_CONFIG=./framework.capital_market.yaml PYTHONPATH=. \
+  python -m uvicorn app.main:app --host 127.0.0.1 --port 8001
+
+# Terminal 2 — create a local account once, then start the frontend
+cd backend
+source ../.venv/bin/activate
+python scripts/create_user.py
+
+cd ../frontend
+npm run dev
+```
+
+Open `http://localhost:5173`. The account is stored only in local
+`backend/user_data/`; there is no hosted account service in this public
+candidate. A live agent run additionally requires configuring your own model
+provider and any permitted tools. Start with the no-key replay before adding
+credentials, and never commit `.env`, provider keys, customer data or private
+run archives.
+
 ## Repository scope
 
 This public runtime candidate intentionally excludes private authentication and operator control planes, the commercial viewer, external-agent gateway routes, and the private 三子夺嫡 scenario and all of its assets. The synthetic Market Replay uses the separately reviewed public capital-market example package.
