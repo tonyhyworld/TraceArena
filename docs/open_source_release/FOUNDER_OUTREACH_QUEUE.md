@@ -8,6 +8,7 @@
 - Demo: <https://tonyworld888-tracearena-demo.static.hf.space/index.html>
 - Quickstart: <https://github.com/tonyhyworld/TraceArena/blob/main/docs/quickstart.md>
 - First 10 runs: <https://github.com/tonyhyworld/TraceArena/discussions/6>
+- Technical discussion: <https://github.com/tonyhyworld/TraceArena/discussions/8>
 - Scenario proposal: <https://github.com/tonyhyworld/TraceArena/issues/2>
 - Evaluation pilot: <https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml>
 - Design partner call: <https://github.com/tonyhyworld/TraceArena/issues/7>
