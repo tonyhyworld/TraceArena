@@ -24,6 +24,8 @@ evidence → structured action → world event → authoritative settlement → 
 - Market Replay：[examples/market_replay](https://github.com/tonyhyworld/TraceArena/tree/main/examples/market_replay)
 - 提议场景包：[Issue #2](https://github.com/tonyhyworld/TraceArena/issues/2)
 - 评测试点：[申请表](https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml)
+- 设计合作伙伴：[公开试点招募议题](https://github.com/tonyhyworld/TraceArena/issues/7)
+- 试点范围与验收：[Agent Evaluation Pilot one-pager](https://github.com/tonyhyworld/TraceArena/blob/main/docs/open_source_release/PILOT_ONE_PAGER.md)
 - 商业支持：[commercial-support.md](https://github.com/tonyhyworld/TraceArena/blob/main/docs/commercial-support.md)
 
 已验证的最短路径：
@@ -90,6 +92,7 @@ Repository: https://github.com/tonyhyworld/TraceArena
 Replay: https://github.com/tonyhyworld/TraceArena/tree/main/examples/market_replay  
 Scenario proposal: https://github.com/tonyhyworld/TraceArena/issues/2  
 Pilot: https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml
+Design partner call: https://github.com/tonyhyworld/TraceArena/issues/7
 
 We are looking for world builders, settlement-verifier authors, tool-adapter maintainers, replay engineers, and reproducible failure cases.
 
@@ -142,4 +145,3 @@ package boundaries, and interoperability with other environment APIs.
 | D30 | 透明月报 | 运行、贡献、失败和线索汇总 | 查看路线图 |
 
 商业支持入口：[commercial-support.md](https://github.com/tonyhyworld/TraceArena/blob/main/docs/commercial-support.md)。公开指标只用于生态透明度，不能推导收入或客户承诺。
-
