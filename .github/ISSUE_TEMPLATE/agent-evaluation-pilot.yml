@@ -1,0 +1,85 @@
+name: Agent evaluation pilot
+description: Request a scoped TraceArena evaluation pilot for an agent, workflow, or model comparison.
+title: "[Pilot] "
+labels:
+  - pilot
+  - commercial
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## TraceArena Agent Evaluation Pilot
+        
+        Use this form to request a scoped, evidence-linked evaluation pilot. We will reply with a proposed scope, timeline, and statement of work.
+        
+        If you only want to contribute an open-source scenario pack, use the [scenario-pack guide](../../docs/scenario-pack-guide.md) instead.
+  - type: input
+    id: organization
+    attributes:
+      label: Organization or team
+      description: Company, lab, or community name.
+      placeholder: Example Corp
+    validations:
+      required: true
+  - type: input
+    id: contact
+    attributes:
+      label: Contact email
+      description: We use this only to follow up on the request.
+      placeholder: name@example.com
+    validations:
+      required: true
+  - type: textarea
+    id: decision
+    attributes:
+      label: Workflow or decision to evaluate
+      description: What should the agent accomplish, and what decision must be trusted?
+      placeholder: Describe the business workflow, user, and authoritative outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: agents
+    attributes:
+      label: Agents, models, and tools
+      description: List the agents, model versions, tools, and integrations that must participate.
+      placeholder: Include versions or links when available.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and acceptance criteria
+      description: What must be recorded, replayable, or considered a pass?
+      placeholder: Metrics, traces, approvals, risk limits, or outcome checks.
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Preferred deployment
+      options:
+        - Local or self-hosted
+        - Private cloud
+        - Public demo first
+        - Not decided
+    validations:
+      required: true
+  - type: input
+    id: target_date
+    attributes:
+      label: Target date
+      description: Desired start or decision date.
+      placeholder: YYYY-MM-DD
+    validations:
+      required: false
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Acknowledgement
+      options:
+        - label: I understand this is an evaluation service request, not a guarantee of model performance or business outcomes.
+          required: true
+  - type: markdown
+    attributes:
+      value: |
+        Starting pilot engagements are described in [Agent Evaluation Pilot](../../docs/agent-evaluation-pilot.md). For private details, email **tonyhyworld@gmail.com**.
