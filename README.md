@@ -2,84 +2,164 @@
 
 # TraceArena
 
-**The open-source runtime for auditable multi-agent worlds — real tools, verifiable outcomes, watchable runs.**
+### The open-source runtime for auditable multi-agent worlds
+
+**Real tools · enforceable rules · verifiable outcomes · watchable runs**
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![CI](https://github.com/tonyhyworld/TraceArena/actions/workflows/ci.yml/badge.svg)](https://github.com/tonyhyworld/TraceArena/actions/workflows/ci.yml)
-[![Contributions welcome](https://img.shields.io/badge/contributions-scenario%20packs%20welcome-5eead4.svg)](CONTRIBUTING.md)
+[![Scenario packs welcome](https://img.shields.io/badge/ecosystem-scenario%20packs%20welcome-5eead4.svg)](CONTRIBUTING.md)
 
-[简体中文](README.zh-CN.md) · [Quick start](#run-a-verifiable-world-locally) · [Build a scenario pack](#grow-the-world-library)
+[简体中文](README.zh-CN.md) · [Run locally](#run-a-verifiable-world-locally) · [Build a world](#build-the-world-library)
 
 </div>
 
 ![TraceArena auditable run lifecycle](docs/assets/tracearena-value-loop.svg)
 
-## AI agents should be judged by what happens, not by what they claim
+> **TraceArena lets agents enter a world with real constraints, prove their
+> ability through action, and leave a record that people can watch, explain,
+> verify, and reuse.**
 
-Most agent stacks end when a model returns text. That is insufficient when an
-agent must investigate, use a tool, spend a resource, make a structured move,
-and live with the result. It also leaves teams unable to answer the practical
-questions: *What evidence did it use? Which rule accepted or rejected it? Can
-we replay the result?*
+## From “can answer” to “can act in a world”
 
-TraceArena is a runtime for persistent, shared worlds. Multiple agents receive
-bounded observations, use approved capabilities, and submit typed actions. A
-scenario's rules and settlement authority—not an LLM self-evaluation—determine
-what becomes world fact. The run is retained as an inspectable trace.
+The next generation of AI will not live only in chat windows. It will need to
+perceive an environment, research with tools, use code, commit actions, face
+constraints, recover from failure, and accept consequences.
 
-| The problem | What TraceArena makes possible |
-| --- | --- |
-| A chat answer hides the work and cannot be independently checked. | Preserve the chain from observation and action to event, settlement, and outcome. |
-| Static benchmarks reward memorisation and one-shot answers. | Evaluate continuous choices under the same clock, rules, resources, and pressure. |
-| Domain logic gets welded into every agent application. | Express a world as a scenario package while keeping the runtime generic. |
-| Impressive demos are hard to trust or explain. | Produce replay artifacts that a reviewer can inspect offline. |
+Most agent stacks end when a model produces text. Most benchmarks score an
+isolated answer. Neither is enough to establish whether an agent can reliably
+operate across time in a shared, changing world. TraceArena runs that world.
 
-This creates value for four audiences: researchers comparing agents, product
-teams diagnosing tool-using behaviour, operators reviewing consequential runs,
-and world builders who need a reusable execution and settlement substrate.
-
-## The product in one picture
+Multiple agents receive bounded observations and approved capabilities. They
+may research and propose structured actions, but they do **not** get to declare
+their own success. A scenario's settlement authority—rules, an executable
+verifier, verified external facts, or an explicit combination—decides what
+became true. The result is an auditable run rather than a persuasive transcript.
 
 ```mermaid
 flowchart LR
-    A["Agent runtime\nobserve · plan · use tools"] --> B["Structured action\nvalidated against a contract"]
-    B --> C["Scenario world\nstate · visibility · resources · rules"]
-    C --> D["Settlement authority\nledger · executable verifier · external fact"]
-    D --> E["Trace artifacts\nactions · events · outcomes · replay"]
-    E --> F["Viewer / evaluation / diagnosis"]
+    P["Perceive"] --> R["Research\nuse tools / code"] --> A["Submit a typed action"]
+    A --> W["World validates\nand changes state"] --> S["Settlement authority\ndecides outcome"]
+    S --> T["Trace + replay\nfor people and systems"]
 ```
 
-The important separation is deliberate: the agent may propose; the world
-decides. Scenario packages declare the vocabulary and rules of a world. The
-generic runtime runs the lifecycle, records the trace, and exports replayable
-artifacts.
+## Why this exists
 
-## What is in this repository
+| Persistent industry problem | TraceArena's answer |
+| --- | --- |
+| **Real agent capability is hard to measure.** Static tasks can be memorized and one turn cannot reveal tool use, persistence, correction, or responsibility for an outcome. | Run agents under the same world, clock, tools, resources, and rules; evaluate a continuous trajectory rather than a single reply. |
+| **Agent decisions are black boxes.** A final answer cannot show where research, evidence, planning, execution, or settlement failed. | Keep a chain from observation and tool use through action, event, settlement reason, and result. |
+| **High-value behavior data is scarce.** Text alone misses the environment, evidence, feedback, and objective consequence that make a trajectory useful. | Turn each run into structured, reusable evidence, decisions, actions, feedback, and outcomes. |
+| **Strong AI behavior is difficult to communicate.** The interesting work is usually trapped in logs and JSON. | Build factual replay and presentation on the same ledger, so an audience sees what happened without inventing a story. |
 
-- **Scenario Boot and contracts** — load a scenario's roles, actions, tools,
-  visibility, resources, metrics, presentation, and settlement configuration.
-- **Tick-based multi-agent runtime** — progress a shared world through
-  observation, action validation, event generation, and authoritative
-  settlement.
-- **Trace and deterministic replay** — record run manifests and replay data so
-  behavior can be inspected after the run, including offline in the Viewer.
-- **Scenario/runtime boundary checks** — validation and purity checks help keep
-  domain rules out of the generic OS layer.
-- **A runnable capital-market example** — synthetic fixture data and a
-  simulated ledger make the bundled replay reproducible without a model key,
-  brokerage account, or real order execution.
-- **A local self-hosted console** — start a trusted-localhost developer
-  console for replay, temporary model configuration, run status, and artifact
-  inspection.
+## One run, four forms of value
 
-The capital-market package demonstrates a **hybrid** world: observed market
-data can inform an agent while the scenario's simulated ledger settles the
-portfolio. It is infrastructure for simulation and evaluation, not investment
-advice and not a live-trading system.
+The same authoritative run has different consumers. It is not four unrelated
+products; it is one source of truth viewed four ways.
+
+| For whom | What they receive | Why it matters |
+| --- | --- | --- |
+| **Audience / content teams** | Watchable factual runs: roles, decisions, conflicts, results, and replay. | AI behavior becomes understandable without turning it into scripted fiction. |
+| **Enterprises / researchers** | Continuous capability evaluation under shared constraints. | Compare models or external agents on completion, risk, efficiency, and stability—not just eloquence. |
+| **Agent developers** | Action, tool, evidence, and settlement traces. | Diagnose whether a failure came from planning, tool use, evidence, protocol format, rule validation, or the result itself. |
+| **Data / training teams** | Structured behavioral trajectories, including successful and failed attempts. | Produce material for tool-use learning, long-horizon planning, failure recovery, preference work, and evaluation. |
+
+The objective is to make agent capability a production asset that can be
+**watched, compared, explained, and continuously improved**.
+
+## Product architecture: scenario packages define worlds; the OS runs them
+
+TraceArena separates domain knowledge from the generic runtime. A scenario
+package defines its roles, goals, actions, tools, visibility, resource meaning,
+pressure, settlement rules, presentation vocabulary, and tests. The OS loads,
+schedules, records, validates, and replays that declaration.
+
+```mermaid
+flowchart TB
+    SP["Scenario package\nroles · world rules · actions · clock · pressure\nsettlement · presentation · locales · tests"] --> L0
+    subgraph OS["TraceArena generic runtime — seven-layer pipeline"]
+      direction LR
+      L0["L0\nScenario boot"] --> L1["L1\nWorld state"] --> L2["L2\nPerception isolation"] --> L3["L3\nAgent runtime"] --> L4["L4\nAction runtime"] --> L5["L5\nSettlement & evaluation"] --> L6["L6\nDirection & presentation"]
+    end
+    OS --> V["Viewer / replay"]
+    OS --> O["Evaluation / diagnosis"]
+    OS --> D["Structured run artifacts"]
+```
+
+### The seven layers
+
+| Layer | Responsibility | Why it is a platform boundary |
+| --- | --- | --- |
+| **L0 — Scenario Boot** | Load, validate, and assemble the scenario contract and its declared capabilities. | A new world enters through declarations rather than an engine fork. |
+| **L1 — World State** | Maintain objects, resources, lifecycle, metrics, and causal state changes. | The world has a single stateful source of truth. |
+| **L2 — Perception Isolation** | Project only the observations each actor is allowed to receive. | Agents compete or collaborate under explicit information boundaries. |
+| **L3 — Agent Runtime** | Run the agent loop, prompts, memory hooks, capability discovery, and provider integration. | Different models or external agents can face the same world contract. |
+| **L4 — Action Runtime** | Parse, validate, authorize, and commit typed actions. | “I did it” in prose is not the same as a world action. |
+| **L5 — Settlement & Evaluation** | Apply the declared authority, evidence requirements, rules, and outcome accounting. | A model cannot win by persuading its evaluator. |
+| **L6 — Direction & Presentation** | Select public facts and transform them into replay/presentation commands. | Watchability is derived from facts without exposing private reasoning or fabricating events. |
+
+The architectural rule is simple: **the runtime must not learn a scenario's
+business vocabulary.** A stock position, a city policy, and a code submission
+belong to scenario packages, not the generic OS. Repository checks help protect
+that separation so new domains can reuse the same execution, trace, settlement,
+and replay substrate.
+
+### Agent Harness: an agent must do work, not merely narrate work
+
+Within a decision cycle, an agent can follow a research-to-action loop:
+
+```text
+discover capability → call approved tool → inspect result → run analysis/code
+→ cite evidence → submit structured action → receive acceptance/rejection
+→ update the next decision
+```
+
+The runtime contains capability brokerage, provider integrations, sandbox-facing
+components, action contracts, trace recording, and feedback pathways. A
+scenario decides the permitted tools and actions. This makes tool use and
+failure recovery observable parts of evaluation instead of hidden implementation
+details.
+
+## Four kinds of worlds, defined by who settles the result
+
+TraceArena classifies world behavior by settlement authority. This is more than
+a label: it tells a scenario author what must be evidenced and tells reviewers
+how an outcome should be explained.
+
+| Type | Who decides the outcome | Appropriate worlds | Explanation chain |
+| --- | --- | --- | --- |
+| **Simulation** | Scenario rules or world physics. | Operations, governance, negotiation, resource strategy. | observation → action → world transition → metrics |
+| **External reality** | Verified external observation; the runtime records rather than invents the fact. | Market observations, weather, web tasks, real tool execution. | task → observation → provenance check → fact → result |
+| **Deterministic verifier** | An executable, reproducible validator—never an LLM judge. | Code tests, mathematical answers, format checks, order legality. | submission → structured answer → verifier verdict → score |
+| **Hybrid** | Verified external facts combined with deterministic scenario rules. | Investment simulation, data-driven business exercises. | research → evidence → action → rule/ledger settlement → outcome |
+
+An action can require more than one authority. For example, a market scenario
+may validate order shape deterministically while using verified price evidence
+as an external input and a simulated portfolio ledger for final accounting.
+
+## The trust model: facts first, narration second
+
+TraceArena's core records are designed to establish *what happened* and *who
+had authority to say so*:
+
+| Contract / record | Captures | Typical consumer |
+| --- | --- | --- |
+| `HarnessTrace` | perception, planning hooks, tool/code activity, and final action path | diagnosis, evaluation, data processing |
+| `WorldAction` | an actor's structured request to the world | action runtime, audit |
+| `ExternalObservation` | external data, provenance, freshness, and verification state | settlement, evidence review |
+| `WorldEvent` | accepted world facts and state transitions | replay, presentation, settlement |
+| `SettlementRecord` | result, evidence/rules, version, and deciding authority | scoring, audit, exports |
+| `DirectorPlan` | references to facts selected for presentation | viewer and replay |
+
+Presentation is downstream of the ledger. A director/presentation layer can
+choose which public facts to show and how to pace them, but it cannot create an
+action, predict a result, or settle a winner. This separation lets a viewer
+answer “what happened?” while an audit view can answer “why, based on what,
+and who decided?”
 
 ## Run a verifiable world locally
 
-### No-key deterministic replay
+### Deterministic, no-key replay
 
 ```bash
 python -m venv .venv
@@ -91,62 +171,65 @@ PYTHONPATH=backend python backend/scripts/market_replay.py \
   --locale en-US
 ```
 
-The output contains a run manifest and deterministic replay. Use `--locale
-zh-CN` for Chinese presentation text. Open
-`frontend/public_viewer/index.html` in a modern browser to inspect the
-artifacts locally; the Viewer has no login, backend, or model integration.
+The bundled `capital_market` replay runs from synthetic fixture data and a
+simulated ledger. It makes no model call, requires no brokerage account, and
+does not place real orders. It is an evaluation/simulation example, not
+investment advice. Use `--locale zh-CN` for Chinese presentation text.
 
-### Local developer console
+Open `frontend/public_viewer/index.html` directly in a modern browser to
+inspect `run_manifest.json` and `replay_deterministic.json` offline.
+
+### Local self-hosted developer console
 
 ```bash
 docker compose up --build
 ```
 
-Open `http://127.0.0.1:8000`. The console supports scenario language choice,
-no-key Replay, provider/model configuration, a temporary in-memory API-key
-field, run state, and action/event/settlement inspection.
+Open `http://127.0.0.1:8000` for scenario language selection, no-key Replay,
+provider/model configuration, a temporary in-memory API-key field, run state,
+and action/event/settlement inspection.
 
-**Security boundary:** this no-login console binds to localhost only. A key is
-used only for the current request; it is not persisted, logged, returned, or
-written to environment variables. It is not a public-internet operations
-console. Internet-facing deployment requires authentication, authorization,
-secret storage, and audit integrations.
+**Security boundary:** the no-login console binds to localhost only. Keys are
+used only for the request and are not persisted, logged, returned, or written
+to environment variables. It is deliberately not an internet-facing enterprise
+control plane; public deployment requires authentication, authorization, secret
+storage, and audit integrations.
 
-## Grow the world library
+## Build the world library
 
-TraceArena becomes more useful as its library of worlds grows. The best way to
-contribute is to build a scenario pack that makes agents face a meaningful,
-testable constraint—not merely answer a prompt.
+Every high-quality scenario package can create a new evaluation line, content
+line, and data line for the ecosystem. If a domain can define roles, goals,
+allowed actions, feedback, and an accountable result, it can become a world.
 
 ```text
 your_scenario/
-├── manifest.json              # identity, capability contract, entry points
+├── manifest.json              # identity, capabilities, entry points
 ├── agents/                    # roles and prompt contract
 ├── world/                     # actions, tools, resources, visibility, metrics
 ├── settlement/                # authority and outcome rules
-├── presentation.yaml          # display vocabulary and bindings
+├── presentation.yaml          # public vocabulary and bindings
 ├── locales/                   # optional language overlays
 └── tests/                     # validation and replay expectations
 ```
 
-Good packs have a clear settlement authority: a deterministic verifier,
-scenario physics, verifiable external facts, or an explicit hybrid of these.
-They declare what an agent may observe and do, define what constitutes an
-accepted result, and ship a reproducible test/replay fixture. Start from the
-bundled [`capital_market`](backend/scenarios/capital_market/) pack and read the
-[scenario-pack contribution guide](docs/scenario-pack-guide.md).
+Start with the bundled [`capital_market`](backend/scenarios/capital_market/)
+reference package, then follow the [scenario-pack contribution guide](docs/scenario-pack-guide.md).
+Strong contributions define a clear settlement authority, preserve evidence for
+important actions, include reproducible fixtures, and document redistribution
+rights for all included assets/data.
 
-We welcome packs for code review, operations, governance, education, research,
-or any other domain where continuous agent action should have accountable
-consequences. Contributions of validators, replay visualizations, tool
-adapters, tests, translations, and documentation are equally valuable.
+We welcome scenario packs for code review, enterprise operations, governance,
+education, scientific research, business analysis, and strategic games—as well
+as validators, tool adapters, replay visualizations, test fixtures,
+translations, and documentation. The goal is a shared library of worlds where
+agents must act rather than merely answer.
 
-## Project boundaries and contribution rules
+## Public scope and contribution rules
 
-The public runtime excludes private authentication, user management, durable
+This public runtime intentionally excludes private authentication, durable
 credential storage, customer data, and private scenarios. Do not submit API
-keys, private run archives, or media/data without documented redistribution
-rights. See [Contributing](CONTRIBUTING.md), [Security](SECURITY.md), and
+keys, private run archives, or assets/data without documented redistribution
+rights. Read [Contributing](CONTRIBUTING.md), [Security](SECURITY.md), and
 [Governance](GOVERNANCE.md) before opening a pull request.
 
 ## License
