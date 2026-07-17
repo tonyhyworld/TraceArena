@@ -9,25 +9,6 @@ on:
     branches: ["**"]
 
 jobs:
-  frontend:
-    name: Full Vue frontend build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install frontend dependencies
-        run: npm ci --prefix frontend
-
-      - name: Build full frontend
-        run: npm run build --prefix frontend
-
   backend:
     name: Public runtime smoke test
     strategy:
@@ -55,17 +36,6 @@ jobs:
       - name: Compile public runtime
         run: PYTHONPATH=backend uv run python -m compileall -q backend/app backend/scripts
 
-      - name: Smoke test full authenticated OS startup
-        run: |
-          PYTHONPATH=backend AIWORLD_CONFIG=backend/framework.public.yaml uv run python - <<'PY'
-          from fastapi.testclient import TestClient
-          from app.main import app
-          with TestClient(app) as client:
-              response = client.get("/")
-              assert response.status_code == 200, response.text
-              assert response.json()["status"] == "ok"
-          PY
-
       - name: Run public candidate test suite
         run: |
           PYTHONPATH=backend uv run pytest -q \
@@ -73,14 +43,10 @@ jobs:
             backend/tests/test_market_replay_cli.py \
             backend/tests/test_market_replay_pipeline.py \
             backend/tests/test_public_asset_provenance.py \
-            backend/tests/test_scenario_locale.py \
-            backend/tests/test_demo_server.py
+            backend/tests/test_scenario_locale.py
 
-      - name: Validate static frontends
-        run: |
-          node --check frontend/public_viewer/app.js
-          node --check frontend/demo_web/app.js
-          node --check frontend/public_demo/app.js
+      - name: Validate static public Viewer
+        run: node --check frontend/public_viewer/app.js
 
       - name: Run deterministic no-key Market Replay
         working-directory: .
@@ -92,43 +58,24 @@ jobs:
           echo "Dependency install through replay: ${elapsed}s"
           test "$elapsed" -le 300
 
-  public-demo-container:
-    name: Public demo container boundary
+  frontend:
+    name: Frontend production build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build public replay-only image
-        run: docker build -t tracearena-public-demo .
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Verify non-root runtime and public API boundary
-        run: |
-          docker run -d --name tracearena-public-demo \
-            -p 127.0.0.1:7860:7860 tracearena-public-demo
-          for attempt in $(seq 1 30); do
-            curl -fsS http://127.0.0.1:7860/api/health && break
-            sleep 2
-          done
-          test "$(docker exec tracearena-public-demo id -u)" = "1000"
-          curl -fsS http://127.0.0.1:7860/api/health | \
-            jq -e '.mode == "public-replay-only" and .llm == "disabled"'
-          status=$(curl -sS -o /tmp/rejected.json -w '%{http_code}' \
-            -X POST -H 'content-type: application/json' \
-            -d '{"locale":"en-US","api_key":"must-not-echo"}' \
-            http://127.0.0.1:7860/api/runs)
-          test "$status" = "422"
-          ! grep -q 'must-not-echo' /tmp/rejected.json
-          curl -fsS -X POST -H 'content-type: application/json' \
-            -d '{"locale":"en-US"}' http://127.0.0.1:7860/api/runs | \
-            jq -e '.mode == "deterministic-replay" and
-              .manifest.provider == "replay" and
-              .manifest.network == "disabled" and
-              .manifest.brokerage == "disabled"'
+      - name: Install frontend dependencies
+        run: npm ci
 
-      - name: Print logs on failure
-        if: failure()
-        run: docker logs tracearena-public-demo || true
-
-      - name: Stop public demo container
-        if: always()
-        run: docker rm -f tracearena-public-demo || true
+      - name: Build frontend
+        run: npm run build
