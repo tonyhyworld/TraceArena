@@ -130,7 +130,7 @@ This public runtime candidate intentionally excludes private authentication and 
 
 ## Status
 
-TraceArena is a public preview: the no-key replay path is verified, while the runtime and scenario-pack APIs continue to evolve with community feedback. See [the public candidate scope](docs/open_source_release/PUBLIC_CANDIDATE_SCOPE.md) and [release gates](docs/open_source_release/release-gates.yaml) for evidence and boundaries.
+TraceArena is a public preview: the no-key replay path is verified, while the runtime and scenario-pack APIs continue to evolve with community feedback. See [the public candidate scope](docs/open_source_release/PUBLIC_CANDIDATE_SCOPE.md) for evidence and boundaries.
 
 ## Contributing and security
 
@@ -138,7 +138,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Please do
 
 ## Join the ecosystem
 
-- Build and propose a scenario pack using the [scenario-pack guide](场景包开发指南.md).
+- Build and propose a scenario pack using the [scenario-pack guide](docs/scenario-pack-guide.md).
 - Report a reproducible bug or request a feature through GitHub Issues.
 - Tell us how the first run went through the [first-run feedback form](https://github.com/tonyhyworld/TraceArena/issues/new?template=first-run-feedback.yml).
 - For a bounded agent-evaluation pilot, use the [pilot request form](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml).
