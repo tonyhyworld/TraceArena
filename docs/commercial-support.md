@@ -1,52 +1,48 @@
-# Commercial support
+# TraceArena Commercial Support
 
-TraceArena is Apache-2.0 software. The core runtime, scenario-pack contract,
-replay format, and public demo remain open for inspection and reuse. Commercial
-support is available for teams that need implementation help around the open
-source project.
+TraceArena's core runtime, public scenario contracts, replay tooling, and
+examples are released under Apache License 2.0. Commercial support funds
+continued maintenance without changing the open-source license or settlement
+rules.
 
-## What can be delivered
+## Available engagements
 
-### 1. Domain scenario design
+- **Agent evaluation pilot:** define one workflow, compare 2–4 agent/model
+  configurations, run at least 10 reproducible episodes, and deliver an
+  evidence-linked report and review session.
+- **Private scenario design:** model roles, tools, permissions, pressure,
+  authoritative outcomes, and acceptance checks for a customer workflow.
+- **Integration and deployment:** connect approved tools or providers, deploy
+  in a customer-controlled environment, and establish repeatable replay and
+  regression runs.
+- **Continuous evaluation:** schedule version comparisons, risk checks, and
+  audit exports for a private scenario.
 
-Turn a real workflow into a verifiable world: roles, tools, visibility rules,
-typed actions, settlement authority, evaluation metrics, replay presentation,
-and reproducible fixtures.
+For a one-page overview of scope, deliverables, acceptance criteria, timeline,
+and starting price, see the [Agent Evaluation Pilot one-pager](open_source_release/PILOT_ONE_PAGER.md).
 
-### 2. Agent evaluation and data pipeline
+## How to start
 
-Build benchmark suites that compare agents under the same constraints, retain
-evidence/action/outcome traces, and export sanitized trajectories for diagnosis
-or training workflows.
+Submit the [Agent Evaluation Pilot issue form](../.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml),
+or email `tonyhyworld@gmail.com` with the workflow, agents/models, tools,
+authoritative outcome, evidence requirements, deployment constraints, and target
+date. We will reply with a proposed scope and statement of work before any
+commitment.
 
-### 3. Provider and tool integration
+Maintainers should record qualified opportunities privately using the [qualified
+lead log template](open_source_release/QUALIFIED_LEAD_LOG_TEMPLATE.md). Only
+approved aggregate counts belong in public updates.
 
-Connect approved model providers, MCP tools, internal APIs, sandboxes, and
-external-agent protocols while keeping credentials outside the repository and
-preserving an auditable run boundary.
+Starting pilot engagements are typically **RMB 29,800 and up**. Final pricing,
+timeline, data handling, ownership, confidentiality, and acceptance criteria
+depend on scope and are defined in the statement of work.
 
-### 4. Deployment and operations
+## Boundaries
 
-Adapt authentication, permissions, secret storage, observability, run archival,
-and deployment topology for a team's private environment.
-
-## Engagement model
-
-Every engagement starts with a short scoping call and a written statement of
-work covering the scenario contract, integrations, acceptance tests, data
-handling, and ownership of deliverables. The open-source runtime is not a
-financial-advice product and does not guarantee model performance or business
-outcomes.
-
-For inquiries, contact **tonyhyworld@gmail.com** with:
-
-- the domain or workflow to model;
-- the agents/models/tools that must participate;
-- the evidence and outcome that must be verifiable;
-- the desired deployment and timeline.
-
-## Build with the ecosystem
-
-If you only need a new scenario or adapter, contribute it under the repository's
-open-source rules. Commercial support is optional; it exists for teams that
-need dedicated design, integration, or operating capacity.
+- No engagement guarantees model performance, investment returns, or business
+  outcomes.
+- Financial-market examples are simulations and are not investment advice.
+- Customer data and private scenario assets remain subject to the agreed
+  contract; they are not added to the public repository without permission.
+- Commercial support does not grant a customer the right to alter public
+  settlement rules, suppress failures, or change official rankings.
