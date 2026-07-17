@@ -54,6 +54,19 @@ and ask moderators when required. The recent
 shows why a direct promotional post should wait until the account has useful
 community participation.
 
+## 5. Adjacent evaluation communities — contribute before announcing
+
+- [AgentEval.org](https://www.agenteval.org/) describes itself as an open,
+  community-driven initiative for domain-specific benchmarks and evaluation
+  methods. Start with a technical comparison or scenario contribution; do not
+  assume a project-post channel exists.
+- [AI Agent Engineering](https://ai-agent-engineering.org/) is a community
+  space for agent builders. Read its current participation and submission
+  rules before proposing a walkthrough.
+- [GitHub discussions on agent evaluation](https://github.com/karpathy/autoresearch/discussions/406)
+  show the kind of concrete question that attracts useful technical exchange:
+  how to measure why an agent succeeds or fails, not merely which model wins.
+
 ## Tracking and stop conditions
 
 For each channel record the post URL, date, unique visitors, first successful
