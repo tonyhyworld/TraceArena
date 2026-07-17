@@ -21,6 +21,9 @@ TraceArena 是一个让智能体在规则、资源和时间约束下行动，并
 
 前置条件：Python 3.10 以上版本和 Git。
 
+如果系统的 `python3` 不是完整安装（缺少 `venv/ensurepip`），请先选择兼容解释器：
+`PYTHON_BIN=/path/to/python3.12 ./scripts/install.sh`，或手动使用该解释器创建虚拟环境。
+
 ```bash
 git clone https://github.com/tonyhyworld/TraceArena.git
 cd TraceArena
