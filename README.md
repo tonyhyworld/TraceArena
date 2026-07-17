@@ -1,3 +1,12 @@
+
+
+## Join the ecosystem
+
+- Build and propose a scenario pack using the [scenario-pack guide](场景包开发指南.md).
+- Report a reproducible bug or request a feature through GitHub Issues.
+- For a bounded agent-evaluation pilot, use the [pilot request form](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml).
+- For implementation, integration, or evaluation support, see the [commercial support path](docs/commercial-support.md).
+- Maintainers can use the [adoption log template](docs/open_source_release/ADOPTION_LOG_TEMPLATE.md) to report aggregate, auditable adoption signals without collecting unnecessary personal data.
 <div align="center">
 
 # TraceArena
