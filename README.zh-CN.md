@@ -10,7 +10,7 @@
 [![CI](https://github.com/tonyhyworld/TraceArena/actions/workflows/ci.yml/badge.svg)](https://github.com/tonyhyworld/TraceArena/actions/workflows/ci.yml)
 [![欢迎场景包贡献](https://img.shields.io/badge/生态-欢迎场景包贡献-5eead4.svg)](CONTRIBUTING.zh-CN.md)
 
-[English](README.md) · [本地运行](#本地运行一个可验证的世界) · [构建世界](#一起构建世界库)
+[English](README.md) · [在线演示](https://huggingface.co/spaces/tonyworld888/tracearena-demo) · [本地运行](#本地运行一个可验证的世界) · [构建世界](#一起构建世界库)
 
 </div>
 

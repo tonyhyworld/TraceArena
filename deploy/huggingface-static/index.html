@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Run a safe, deterministic TraceArena multi-agent world replay.">
+  <title>TraceArena · Public AI World Replay</title>
+  <link rel="stylesheet" href="./assets/styles.css">
+</head>
+<body>
+  <div class="nebula" aria-hidden="true"></div>
+  <main>
+    <header>
+      <div class="brand"><span class="mark">TA</span><span>TRACEARENA</span></div>
+      <select id="locale" aria-label="Language"><option value="en-US">English</option><option value="zh-CN">简体中文</option></select>
+    </header>
+    <section class="hero">
+      <p class="eyebrow" id="eyebrow"></p>
+      <h1 id="title"></h1>
+      <p class="subtitle" id="subtitle"></p>
+      <div class="world" aria-hidden="true"><i></i><i></i><span>AI<br>WORLD</span></div>
+    </section>
+    <section class="console">
+      <div>
+        <p class="eyebrow" id="scenarioLabel"></p>
+        <h2 id="scenarioTitle"></h2>
+        <p id="scenarioBody"></p>
+        <ul class="guards"><li>LOCAL REPLAY</li><li>SYNTHETIC DATA</li><li>NO API KEY</li><li>NO BROKERAGE</li></ul>
+        <button id="runButton" type="button"></button>
+        <p class="notice" id="notice"></p>
+      </div>
+      <aside>
+        <div class="status"><span id="statusLabel"></span><strong id="statusValue">READY</strong></div>
+        <dl>
+          <dt id="runLabel"></dt><dd id="runValue">—</dd>
+          <dt id="tickLabel"></dt><dd id="tickValue">—</dd>
+          <dt>SHA-256</dt><dd id="digestValue">—</dd>
+        </dl>
+      </aside>
+    </section>
+    <section class="trajectory">
+      <div class="section-head"><p class="eyebrow" id="trajectoryLabel"></p><h2 id="trajectoryTitle"></h2></div>
+      <ol id="timeline"><li class="empty" id="empty"></li></ol>
+    </section>
+    <footer><span>OPEN SOURCE · APACHE 2.0</span><a href="https://github.com/tonyhyworld/TraceArena" target="_blank" rel="noreferrer">GITHUB ↗</a></footer>
+  </main>
+  <script type="module" src="./assets/app.js"></script>
+</body>
+</html>

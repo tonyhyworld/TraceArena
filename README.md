@@ -10,7 +10,7 @@
 [![CI](https://github.com/tonyhyworld/TraceArena/actions/workflows/ci.yml/badge.svg)](https://github.com/tonyhyworld/TraceArena/actions/workflows/ci.yml)
 [![Scenario packs welcome](https://img.shields.io/badge/ecosystem-scenario%20packs%20welcome-5eead4.svg)](CONTRIBUTING.md)
 
-[简体中文](README.zh-CN.md) · [Run locally](#run-a-verifiable-world-locally) · [Build a world](#build-the-world-library)
+[简体中文](README.zh-CN.md) · [Live demo](https://huggingface.co/spaces/tonyworld888/tracearena-demo) · [Run locally](#run-a-verifiable-world-locally) · [Build a world](#build-the-world-library)
 
 </div>
 

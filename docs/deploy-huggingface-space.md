@@ -1,10 +1,20 @@
-# Deploy the public replay demo to Hugging Face Spaces
+# Deploy the public demo to Hugging Face Spaces
 
-The root `Dockerfile` is the public deployment boundary. It runs
-`app.public_demo_server:app` on `0.0.0.0:7860` as an unprivileged user. The
-public API accepts only a locale and always executes the reviewed deterministic
-fixture. It does not accept model, provider, API-key, path, tool, upload, or
-code-execution input.
+The default public Space uses the free **Static** SDK. It runs a deterministic,
+browser-local replay from `deploy/huggingface-static/`: two agents act on
+reviewed synthetic evidence, the world applies events and settlements, and the
+browser calculates a SHA-256 digest for the canonical trajectory. There is no
+server process and no model, provider, API-key, path, tool, upload, brokerage,
+or code-execution input.
+
+The live demo is available at
+[tonyworld888/tracearena-demo](https://huggingface.co/spaces/tonyworld888/tracearena-demo).
+
+The root `Dockerfile` remains the richer public replay boundary for accounts
+that can host Docker Spaces. It runs `app.public_demo_server:app` on
+`0.0.0.0:7860` as an unprivileged user and accepts only a locale. Hugging Face
+currently requires a PRO subscription for new Docker or Gradio CPU Spaces;
+the Static demo is the no-server, no-subscription deployment path.
 
 The local developer console remains available through `docker compose up`; the
 Compose command overrides the public entry point and maps it only to
@@ -12,22 +22,24 @@ Compose command overrides the public entry point and maps it only to
 
 ## One-time setup
 
-1. Create a public Docker Space named `tracearena-demo` under the Hugging Face
+1. Create a public Static Space named `tracearena-demo` under the Hugging Face
    account `tonyworld888`.
 2. Create a Hugging Face access token with write access to that Space.
 3. In `tonyhyworld/TraceArena`, add the token as the Actions secret `HF_TOKEN`.
 4. Run the `Deploy Hugging Face Space` workflow manually.
 
-The workflow creates an orphan deployment commit, replaces the GitHub README
-with `deploy/huggingface/README.md`, and force-pushes that snapshot to the Space.
-The token is read only from the encrypted GitHub Actions secret.
+The workflow creates an isolated repository from
+`deploy/huggingface-static/` and force-pushes only that minimal snapshot to the
+Space. The token is read only from the encrypted GitHub Actions secret.
 
 ## Local verification
 
 ```bash
-docker build -t tracearena-public-demo .
-docker run --rm -p 127.0.0.1:7860:7860 tracearena-public-demo
+python3 -m http.server 7860 --directory deploy/huggingface-static
 ```
 
-Open `http://127.0.0.1:7860` and verify `/api/health` reports
-`public-replay-only`.
+Open `http://127.0.0.1:7860`, run the AI world, and verify that the status is
+`VERIFIED`, the trajectory contains three steps, and the SHA-256 field is set.
+
+For the Docker variant, build the root `Dockerfile` and verify
+`/api/health` reports `public-replay-only`.
