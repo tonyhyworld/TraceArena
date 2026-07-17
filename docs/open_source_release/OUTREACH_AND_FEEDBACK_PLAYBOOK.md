@@ -11,8 +11,9 @@ Use one path in every announcement so a reader always knows what to do next:
 1. **See it:** [live demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html)
 2. **Run it:** [no-key Market Replay](../../examples/market_replay/README.md)
 3. **Discuss a world:** [scenario-pack guide](../场景包开发指南.md)
-4. **Request an evaluation pilot:** [pilot issue form](../../.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml)
-5. **Ask about a private engagement:** [commercial support](commercial-support.md)
+4. **Join the public technical discussion:** [v0.1.4 discussion](https://github.com/tonyhyworld/TraceArena/discussions/8)
+5. **Request an evaluation pilot:** [pilot issue form](../../.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml)
+6. **Ask about a private engagement:** [commercial support](commercial-support.md)
 
 Do not send people directly to a generic “contact us” message when a runnable
 example or structured issue form can answer the next question.
@@ -88,6 +89,10 @@ Conceptual questions remain welcome in the community, but they are not counted
 as pipeline. Record source, date, scenario, next action, and consent before
 putting a conversation in a private sales tracker.
 
+Use the [qualified lead log template](QUALIFIED_LEAD_LOG_TEMPLATE.md) for the
+minimum fields, stage definitions, and monthly aggregate report. Keep the
+record private and publish only approved totals.
+
 ## 6. Minimum operating metrics
 
 Report these monthly; do not use stars alone as the success metric:
@@ -113,4 +118,3 @@ Before publishing a case or metric, verify:
   exposed;
 - financial examples state that they are simulations and not investment advice;
 - commercial copy describes scope and evidence, never a guaranteed outcome.
-
