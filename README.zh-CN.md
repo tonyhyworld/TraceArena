@@ -173,9 +173,14 @@ TraceArena 的核心记录用于回答“发生了什么”以及“谁有权做
 
 ### 无 Key 的确定性回放
 
+前置条件：Python 3.10 或更高版本（推荐 Python 3.11）。创建虚拟环境前请先确认解释器
+版本；如果系统的 `python3` 仍指向 Python 3.9，请显式选择更新版本的可执行文件。
+
 ```bash
-python -m venv .venv
+python3 --version
+python3 -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 PYTHONPATH=backend python backend/scripts/market_replay.py \
   --fixture examples/market_replay/fixture.json \

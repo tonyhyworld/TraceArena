@@ -201,9 +201,15 @@ and who decided?”
 
 ### Deterministic, no-key replay
 
+Prerequisite: Python 3.10 or newer (Python 3.11 is recommended). Confirm the
+interpreter version before creating the environment; on systems where
+`python3` still points to Python 3.9, select a newer executable explicitly.
+
 ```bash
-python -m venv .venv
+python3 --version
+python3 -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 PYTHONPATH=backend python backend/scripts/market_replay.py \
   --fixture examples/market_replay/fixture.json \
