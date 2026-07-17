@@ -10,6 +10,7 @@
 - First 10 runs: <https://github.com/tonyhyworld/TraceArena/discussions/6>
 - Scenario proposal: <https://github.com/tonyhyworld/TraceArena/issues/2>
 - Evaluation pilot: <https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml>
+- Design partner call: <https://github.com/tonyhyworld/TraceArena/issues/7>
 - Ready-to-send messages: [OUTREACH_MESSAGES.md](OUTREACH_MESSAGES.md)
 
 ## 发送顺序
@@ -53,6 +54,8 @@ Demo: <https://tonyworld888-tracearena-demo.static.hf.space/index.html>
 - 不购买流量、不伪造用户或收入、不把脚本 Replay Agent 描述成自主大模型。
 
 ## 运行记录
+
+公开仓当前基线（2026-07-18）：GitHub 近 14 天 views 0、clones 0；后续每轮触达后重新记录，避免把曝光或内部运行误报为采用。
 
 | 编号 | 联系对象 | 渠道 | 首次运行时间 | 首个结果耗时 | 卡点 | 是否愿意贡献 | 是否潜在试点 |
 |---|---|---|---|---|---|---|---|
