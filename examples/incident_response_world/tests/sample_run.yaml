@@ -1,0 +1,13 @@
+sample_run:
+  agents:
+    - role_id: incident_commander
+    - role_id: service_owner
+  reference_decision_paths:
+    - agent_id: incident_commander
+      steps:
+        - {tick: 1, action_id: acknowledge_incident, target_id: incident_record}
+        - {tick: 3, action_id: run_health_check, target_id: incident_record}
+    - agent_id: service_owner
+      steps:
+        - {tick: 2, action_id: propose_mitigation, target_id: incident_record}
+        - {tick: 4, action_id: declare_resolved, target_id: incident_record}

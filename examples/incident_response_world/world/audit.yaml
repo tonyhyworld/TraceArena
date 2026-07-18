@@ -1,0 +1,8 @@
+audit:
+  rules:
+    - id: evidence_quality_recorded
+      description: Every accepted response action records an evidence reference.
+      metric: metric_evidence_quality
+    - id: service_health_settled
+      description: Final service health is written by the deterministic settlement authority.
+      metric: metric_service_health

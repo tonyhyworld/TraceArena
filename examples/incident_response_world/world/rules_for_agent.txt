@@ -1,0 +1,1 @@
+Only synthetic evidence references from the incident record may support actions. A mitigation requires a prior acknowledgement. A resolution requires an accepted passing health check. Unsupported claims are rejected and remain visible in the replay.

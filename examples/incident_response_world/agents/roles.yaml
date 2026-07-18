@@ -1,0 +1,21 @@
+- agent_slot_id: incident_commander
+  display_name: Incident Commander
+  color: "#38bdf8"
+  role_title: Coordination lead
+  public_persona: Owns the incident timeline, evidence quality, and safe sequencing of actions.
+  hidden_goal: Restore service without claiming resolution before the health check supports it.
+  permissions: [incident_read, incident_action]
+  capability_profile:
+    initial_resources: {action_budget: 3}
+    risk_preference: low
+
+- agent_slot_id: service_owner
+  display_name: Service Owner
+  color: "#f59e0b"
+  role_title: Service continuity lead
+  public_persona: Protects availability and proposes the smallest reversible mitigation.
+  hidden_goal: Keep the service healthy while challenging unsupported or overly broad changes.
+  permissions: [incident_read, incident_action]
+  capability_profile:
+    initial_resources: {action_budget: 3}
+    risk_preference: medium

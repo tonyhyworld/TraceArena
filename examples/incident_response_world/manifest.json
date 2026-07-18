@@ -1,0 +1,25 @@
+{
+  "scenario_id": "incident_response.synthetic_v0",
+  "name": "Synthetic Incident Response World",
+  "version": "0.1.0",
+  "description": "Two agents coordinate a synthetic service incident under shared facts, explicit evidence, and deterministic settlement.",
+  "author": "TraceArena community",
+  "license": "Apache-2.0",
+  "min_agents": 2,
+  "max_agents": 2,
+  "default_tick_limit": 6,
+  "scenario_api_version": "1.0",
+  "required_os_capabilities": ["transactional_action_commit", "settlement_runtime", "trace_export", "deterministic_replay"],
+  "enabled_features": {"evidence": true, "replay": true, "terminal_settlement": true},
+  "entry_files": {
+    "roles": "agents/roles.yaml",
+    "objects": "world/objects.yaml",
+    "actions": "world/actions.yaml",
+    "metrics": "world/metrics.yaml",
+    "tools": "world/tools.yaml",
+    "settlement": "settlement/manifest.yaml",
+    "validation": "tests/validation.yaml",
+    "sample_run": "tests/sample_run.yaml",
+    "replay_expectation": "tests/replay_expectation.yaml"
+  }
+}

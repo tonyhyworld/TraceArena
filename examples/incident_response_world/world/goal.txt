@@ -1,0 +1,1 @@
+Restore the synthetic service to a healthy state without skipping acknowledgement, evidence, mitigation, or verification. The winning response is the one whose final state is supported by the authoritative settlement record.

@@ -1,0 +1,22 @@
+validation:
+  required_files:
+    - manifest.json
+    - agents/roles.yaml
+    - world/objects.yaml
+    - world/actions.yaml
+    - world/metrics.yaml
+    - world/intro.txt
+    - world/goal.txt
+    - world/rules_for_agent.txt
+    - settlement/manifest.yaml
+    - tests/fixture.json
+    - scripts/replay.py
+    - tests/test_replay.py
+  expected_ids:
+    actions: [acknowledge_incident, propose_mitigation, run_health_check, declare_resolved]
+    objects: [incident_record, response_board]
+    metrics: [metric_service_health, metric_evidence_quality, metric_response_progress]
+  minimum_counts:
+    actions: 4
+    objects: 2
+    metrics: 3

@@ -1,0 +1,65 @@
+actions:
+  - id: acknowledge_incident
+    name: Acknowledge incident
+    category: incident_response
+    intent: investigate
+    description: Accept the incident and establish an accountable response owner.
+    target_kind: object
+    target_types: [incident]
+    target_optional_for_settlement: false
+    permissions_required: [incident_action]
+    parameters_schema:
+      type: object
+      required: [evidence_ref]
+      properties:
+        evidence_ref: {type: string, description: Synthetic observation reference supporting the acknowledgement}
+        owner_role: {type: string, description: Role taking response ownership}
+
+  - id: propose_mitigation
+    name: Propose mitigation
+    category: incident_response
+    intent: repair
+    description: Propose a bounded, reversible mitigation tied to the observed symptom and component.
+    target_kind: object
+    target_types: [incident]
+    target_optional_for_settlement: false
+    permissions_required: [incident_action]
+    parameters_schema:
+      type: object
+      required: [evidence_ref, affected_component, mitigation]
+      properties:
+        evidence_ref: {type: string, description: Observation reference for the symptom}
+        affected_component: {type: string, description: Component named by the incident evidence}
+        mitigation: {type: string, description: Bounded mitigation identifier}
+        rollback_plan: {type: string, description: How to reverse the mitigation}
+
+  - id: run_health_check
+    name: Run health check
+    category: verification
+    intent: investigate
+    description: Record the synthetic post-mitigation health check before any resolution claim.
+    target_kind: object
+    target_types: [incident]
+    target_optional_for_settlement: false
+    permissions_required: [incident_action]
+    parameters_schema:
+      type: object
+      required: [evidence_ref, status]
+      properties:
+        evidence_ref: {type: string, description: Health-check observation reference}
+        status: {type: string, enum: [pass, fail], description: Synthetic check result}
+
+  - id: declare_resolved
+    name: Declare resolved
+    category: incident_response
+    intent: improve
+    description: Close the incident only after an accepted health check passes.
+    target_kind: object
+    target_types: [incident]
+    target_optional_for_settlement: false
+    permissions_required: [incident_action]
+    parameters_schema:
+      type: object
+      required: [evidence_ref]
+      properties:
+        evidence_ref: {type: string, description: Passing health-check reference}

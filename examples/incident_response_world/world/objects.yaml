@@ -1,0 +1,17 @@
+objects:
+  - id: incident_record
+    name: Incident record
+    type: incident
+    description: Synthetic P1 incident with an observed symptom, affected component, and evidence bundle.
+    owner: global
+    visibility: {default: visible, requires_discovery: false}
+    permissions_required: [incident_read]
+    metric_links: [metric_service_health, metric_evidence_quality]
+  - id: response_board
+    name: Response board
+    type: coordination_board
+    description: Shared record of acknowledgement, mitigation, health checks, and resolution status.
+    owner: global
+    visibility: {default: visible, requires_discovery: false}
+    permissions_required: [incident_action]
+    metric_links: [metric_response_progress]

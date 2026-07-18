@@ -1,0 +1,9 @@
+tools:
+  - id: synthetic_incident_evidence
+    name: Synthetic incident evidence
+    description: Returns the versioned synthetic observation bundle; it cannot access external systems.
+    provider: fixture
+    capabilities: [incident_read]
+    output_schema:
+      type: object
+      required: [evidence_ref, symptom, affected_component]

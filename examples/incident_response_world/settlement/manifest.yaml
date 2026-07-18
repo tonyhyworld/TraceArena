@@ -1,0 +1,32 @@
+evidence_validity_ticks: 6
+execution:
+  default:
+    mode: deterministic_verifier
+    provider_id: incident_response_verifier
+providers:
+  - id: incident_response_verifier
+    authority: deterministic_verifier
+    verifier_id: incident_response_verifier
+    rule_version: incident_response.synthetic.v1
+    handles: [action_resolved, finalize]
+victory:
+  provider_id: incident_response_verifier
+  value: service_health
+  order: descending
+  label: Final synthetic service health
+display_values:
+  service_health: Service health
+  evidence_quality: Evidence quality
+  response_progress: Response progress
+metric_bindings:
+  metric_service_health: {value: service_health, transform: identity}
+  metric_evidence_quality: {value: evidence_quality, transform: identity}
+  metric_response_progress: {value: response_progress, transform: identity}
+operator_trace:
+  title: Incident evidence chain
+  process_chain_type: deterministic
+  nodes:
+    - {id: observation, label: Observation, kind: observation, next_label: Structured action}
+    - {id: action, label: Structured action, kind: action, next_label: World validation}
+    - {id: settlement, label: Settlement, kind: settlement, next_label: Outcome}
+    - {id: outcome, label: Outcome, kind: result}

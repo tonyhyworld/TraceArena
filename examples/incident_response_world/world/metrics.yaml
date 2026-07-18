@@ -1,0 +1,29 @@
+metrics:
+  - id: metric_service_health
+    name: Service health
+    owner_type: global
+    initial: 40
+    min: 0
+    max: 100
+    visible_to_owner: true
+    visible_to_others: true
+  - id: metric_evidence_quality
+    name: Evidence quality
+    owner_type: global
+    initial: 0
+    min: 0
+    max: 100
+    visible_to_owner: true
+    visible_to_others: true
+  - id: metric_response_progress
+    name: Response progress
+    owner_type: global
+    initial: 0
+    min: 0
+    max: 100
+    visible_to_owner: true
+    visible_to_others: true
+ranking:
+  mode: single_metric
+  by: metric_service_health
+  order: descending

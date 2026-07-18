@@ -1,0 +1,6 @@
+replay_expectation:
+  required_event_types: [action_submitted, action_resolved, settlement_recorded]
+  deterministic: true
+  final_state:
+    service_health: 100
+    incident_status: resolved

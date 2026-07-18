@@ -1,0 +1,1 @@
+A synthetic P1 service incident is unfolding. Two response roles share the same evidence but must coordinate under a short action budget. The system records what was observed, which structured action was submitted, whether the world accepted it, and why the incident was or was not resolved.

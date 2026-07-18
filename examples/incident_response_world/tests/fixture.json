@@ -1,0 +1,14 @@
+{
+  "scenario_id": "incident_response.synthetic_v0",
+  "evidence": {
+    "signal_001": {"symptom": "elevated_5xx", "affected_component": "api-gateway"},
+    "health_002": {"service_health": 100, "status": "pass"}
+  },
+  "actions": [
+    {"tick": 1, "actor": "incident_commander", "id": "acknowledge_incident", "parameters": {"evidence_ref": "signal_001", "owner_role": "incident_commander"}},
+    {"tick": 2, "actor": "service_owner", "id": "propose_mitigation", "parameters": {"evidence_ref": "signal_001", "affected_component": "api-gateway", "mitigation": "throttle_upstream", "rollback_plan": "remove_throttle"}},
+    {"tick": 3, "actor": "service_owner", "id": "declare_resolved", "parameters": {"evidence_ref": "signal_001"}},
+    {"tick": 4, "actor": "incident_commander", "id": "run_health_check", "parameters": {"evidence_ref": "health_002", "status": "pass"}},
+    {"tick": 5, "actor": "incident_commander", "id": "declare_resolved", "parameters": {"evidence_ref": "health_002"}}
+  ]
+}
