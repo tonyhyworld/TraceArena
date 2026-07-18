@@ -97,3 +97,33 @@ def test_market_replay_cli_exports_chinese_localized_summary(tmp_path):
     manifest = json.loads((output / "run_manifest.json").read_text(encoding="utf-8"))
     assert manifest["locale"] == "zh-CN"
     assert "不构成投资建议" in (output / "summary.md").read_text(encoding="utf-8")
+
+
+def test_market_replay_semantic_digest_is_stable_across_runs(tmp_path):
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(ROOT / "backend")
+    digests = []
+    integrity_digests = []
+    for name in ("replay_a", "replay_b"):
+        output = tmp_path / name
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--fixture", str(FIXTURE),
+                "--output", str(output),
+            ],
+            cwd=str(ROOT),
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+        assert result.returncode == 0, result.stderr
+        manifest = json.loads((output / "run_manifest.json").read_text())
+        digests.append(manifest["deterministic_replay_sha256"])
+        integrity_digests.append(manifest["canonical_replay_sha256"])
+
+    assert digests[0] == digests[1]
+    # The full-file digest retains per-run identity and is not the comparison key.
+    assert integrity_digests[0] != integrity_digests[1]

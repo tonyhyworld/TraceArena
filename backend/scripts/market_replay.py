@@ -33,6 +33,45 @@ TEXT = {
     },
 }
 
+# These fields identify an individual execution or record wall-clock timing;
+# they must not affect the semantic digest used to compare deterministic runs.
+_VOLATILE_REPLAY_FIELDS = frozenset({
+    "run_id",
+    "seed",
+    "submitted_at",
+    "observed_at",
+    "received_at",
+    "occurred_at",
+    "created_at",
+})
+
+
+def _semantic_replay_value(value: Any) -> Any:
+    """Return replay content with per-execution identity/timing removed."""
+    if isinstance(value, dict):
+        return {
+            key: _semantic_replay_value(item)
+            for key, item in value.items()
+            if key not in _VOLATILE_REPLAY_FIELDS
+        }
+    if isinstance(value, list):
+        return [_semantic_replay_value(item) for item in value]
+    return value
+
+
+def _replay_digests(replay: Dict[str, Any]) -> tuple[str, str]:
+    """Return (full-file integrity digest, cross-run semantic digest)."""
+    canonical = json.dumps(replay, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    semantic = json.dumps(
+        _semantic_replay_value(replay),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest(), hashlib.sha256(
+        semantic.encode("utf-8")
+    ).hexdigest()
+
 
 def _load_fixture(path: Path) -> Dict[str, Any]:
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -160,8 +199,7 @@ async def _run(args: argparse.Namespace) -> int:
     output_dir = Path(args.output).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     replay = json.loads(replay_path.read_text(encoding="utf-8"))
-    canonical = json.dumps(replay, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    integrity_digest, semantic_digest = _replay_digests(replay)
     (output_dir / "replay_deterministic.json").write_text(
         json.dumps(replay, ensure_ascii=False, indent=2), encoding="utf-8"
     )
@@ -173,7 +211,8 @@ async def _run(args: argparse.Namespace) -> int:
         "network": "disabled",
         "locale": locale,
         "run_id": engine.run_id,
-        "canonical_replay_sha256": digest,
+        "canonical_replay_sha256": integrity_digest,
+        "deterministic_replay_sha256": semantic_digest,
     }, ensure_ascii=False, indent=2), encoding="utf-8")
     (output_dir / "summary.md").write_text(
         f"# {TEXT[locale]['title']}\n\n"
@@ -181,7 +220,8 @@ async def _run(args: argparse.Namespace) -> int:
         f"- provider: `replay`\n"
         "- brokerage: disabled\n"
         "- network: disabled\n"
-        f"- canonical replay SHA-256: `{digest}`\n\n"
+        f"- full-file integrity SHA-256: `{integrity_digest}`\n"
+        f"- deterministic semantic SHA-256: `{semantic_digest}`\n\n"
         f"{TEXT[locale]['disclaimer']}\n",
         encoding="utf-8",
     )
@@ -191,7 +231,7 @@ async def _run(args: argparse.Namespace) -> int:
     print("brokerage: disabled")
     print("network: disabled")
     print(f"ticks: {ticks}")
-    print(f"verification: passed ({digest})")
+    print(f"verification: passed (semantic digest {semantic_digest})")
     print(f"output: {output_dir}")
     return 0
 

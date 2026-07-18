@@ -98,10 +98,13 @@ run; the replay path above remains the supported zero-key verification path.
 
 ## 4. Check determinism
 
-Run the command twice with two output directories and compare the canonical
-replay digest in each `run_manifest.json`. A changed digest is a useful bug
-report: include the operating system, Python version, commit, command, and
-both manifests when opening an issue.
+Run the command twice with two output directories and compare the
+`deterministic_replay_sha256` value in each `run_manifest.json`. It should match
+for the same fixture, scenario, and commit. The separate
+`canonical_replay_sha256` is a full-file integrity digest and may differ because
+each execution has its own run identity and timestamps. If the deterministic
+digest changes, include the operating system, Python version, commit, command,
+and both manifests when opening an issue.
 
 ## 5. Explore a scenario pack
 
