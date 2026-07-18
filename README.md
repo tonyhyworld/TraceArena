@@ -160,6 +160,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Please do
 - To discuss a design-partner pilot publicly, see the [design-partner call](https://github.com/tonyhyworld/TraceArena/issues/7).
 - Maintainers can use the [adoption log template](docs/open_source_release/ADOPTION_LOG_TEMPLATE.md) to report aggregate, auditable adoption signals without collecting unnecessary personal data.
 
+For the maintainer-facing first 14-day distribution loop, see the [Growth
+Execution Board](docs/open_source_release/GROWTH_EXECUTION_BOARD.md). It keeps
+the funnel focused on real runs, useful feedback, scenario contributions, and
+qualified evaluation pilots rather than vanity metrics.
+
 ## License
 
 Copyright 2026 张诺亚. Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
