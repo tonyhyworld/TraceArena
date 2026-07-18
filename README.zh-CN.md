@@ -197,6 +197,10 @@ TraceArena 的核心记录用于回答“发生了什么”以及“谁有权做
 
 ### 无 Key 的确定性回放
 
+[![在 GitHub Codespaces 中打开](https://github.com/codespaces/badge.svg)](https://codespaces.new/tonyhyworld/TraceArena?quickstart=1)
+
+如果不想在本机配置 Python 和 Node，可以直接在 GitHub Codespaces 中打开仓库。仓库内置的开发容器会安装开发依赖并转发前后端端口；Codespaces 是否收费取决于你的 GitHub 账户额度和套餐。无 Key 回放本身不需要模型或券商凭证。
+
 前置条件：Python 3.10 或更高版本（推荐 Python 3.11）。创建虚拟环境前请先确认解释器
 版本；如果系统的 `python3` 仍指向 Python 3.9，请显式选择更新版本的可执行文件。
 

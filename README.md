@@ -62,6 +62,14 @@ The OS does not hard-code a domain. A contributor can add a new world by shippin
 
 The public preview includes a deterministic, no-key Market Replay that can be run locally in minutes:
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/tonyhyworld/TraceArena?quickstart=1)
+
+If you prefer not to configure Python and Node locally, open the repository in
+GitHub Codespaces. The checked-in dev container installs the development
+dependencies and forwards the public frontend/backend ports. Codespaces usage
+is subject to GitHub account quotas and billing; the no-key replay itself stays
+local and free of model or brokerage credentials.
+
 ```bash
 ./scripts/install.sh
 # The installer creates/reuses .venv and runs npm ci for the frontend.
