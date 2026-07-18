@@ -49,6 +49,7 @@ perception → planning → evidence → tools/code → action
 - deterministic replay and evidence-linked traces;
 - validation and purity tools for keeping domain rules out of the generic runtime;
 - a no-key synthetic Market Replay example for local evaluation.
+- a no-key synthetic Incident Response World showing a non-financial evidence → action → settlement loop.
 
 ### Seven-layer runtime pipeline
 
@@ -115,6 +116,8 @@ See the full [Quickstart guide](docs/quickstart.md) for determinism checks,
 scenario-pack development, and provider configuration.
 
 Prefer a guided first look? Open the [live demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html) or read the [first public replay](https://github.com/tonyhyworld/TraceArena/discussions/4).
+
+Looking for a non-financial example? Read the [Incident Response World](examples/incident_response_world/README.md), run its deterministic fixture, and inspect the explicitly rejected premature resolution.
 
 Want to inspect the evidence before installing? Download the [v0.1.6 replay
 bundle](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.6/tracearena-v0.1.6-replay.zip)
