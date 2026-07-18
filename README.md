@@ -127,6 +127,16 @@ provider and any permitted tools. Start with the no-key replay before adding
 credentials, and never commit `.env`, provider keys, customer data or private
 run archives.
 
+### Hugging Face models
+
+TraceArena can route chat-completion agents through Hugging Face Inference
+Providers using the existing OpenAI-compatible adapter. Set `HF_TOKEN`, choose
+`provider: huggingface`, and use a Hugging Face model repository ID (for
+example, `deepseek-ai/DeepSeek-R1:fastest`) in the agent configuration. The
+default endpoint is `https://router.huggingface.co/v1`; override it with
+`HF_BASE_URL` when using a compatible gateway. This path is optional and is not
+used by the no-key replay.
+
 ## Repository scope
 
 This public runtime candidate intentionally excludes private authentication and operator control planes, the commercial viewer, external-agent gateway routes, and the private 三子夺嫡 scenario and all of its assets. The synthetic Market Replay uses the separately reviewed public capital-market example package.

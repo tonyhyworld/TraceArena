@@ -595,7 +595,7 @@ const mountEl = ref(null), feedEl = ref(null), noticeBodyEl = ref(null)
 const snapshot = ref({ tick: 0, is_running: false, is_game_over: false, agents: [], artifacts: [] })
 const recapCollapsed = ref(false)
 const narrativeFeed = ref([]), showConfig = ref(false), showNotice = ref(false)
-const agentConfigs = ref([]), availableProviders = ref(['mock','openai','deepseek','anthropic','minimax'])
+const agentConfigs = ref([]), availableProviders = ref(['mock','openai','deepseek','anthropic','minimax','huggingface'])
 const scenarios = ref([]), selectedScenario = ref(''), cfgMsg = ref('')
 const scenarioFileInput = ref(null), uploadMsg = ref('')
 const replays = ref([]), selectedReplay = ref('')
@@ -2134,7 +2134,7 @@ async function fetchConfig(){
     const r=await authedFetch(`${API_BASE}/config`);
     const d=await r.json();
     agentConfigs.value=(d.agents||[]).map(a=>normalizeAgentConfig({ ...a }, API_BASE));
-    availableProviders.value=d.available_providers||['mock','openai','deepseek','anthropic','minimax'];
+    availableProviders.value=d.available_providers||['mock','openai','deepseek','anthropic','minimax','huggingface'];
   } catch(e){ console.warn('config fetch fail',e) }
 }
 

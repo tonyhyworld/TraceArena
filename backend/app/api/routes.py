@@ -14,7 +14,7 @@ from app.auth.models import User
 from app.auth.permissions import Permission
 from app.engine_manager import UserEngineContext
 
-_PROVIDERS = ["mock", "openai", "deepseek", "anthropic", "minimax"]
+_PROVIDERS = ["mock", "openai", "deepseek", "anthropic", "minimax", "huggingface"]
 
 router = APIRouter()
 

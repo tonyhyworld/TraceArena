@@ -73,6 +73,18 @@ _FACTORIES: Dict[str, Callable[[AgentSlotConfig, Optional[str]], LLMProvider]] =
         provider_id="ark",
         **_sampling_kwargs(cfg),
     ),
+    # Hugging Face Inference Providers 的 OpenAI-compatible Chat Completions API。
+    "huggingface": lambda cfg, key: OpenAICompatProvider(
+        model=cfg.model,
+        api_key=key or os.environ.get("HF_TOKEN"),
+        base_url=str(
+            cfg.extra.get("base_url")
+            or os.environ.get("HF_BASE_URL")
+            or "https://router.huggingface.co/v1"
+        ),
+        provider_id="huggingface",
+        **_sampling_kwargs(cfg),
+    ),
 }
 
 _KEY_ENV = {
@@ -81,6 +93,7 @@ _KEY_ENV = {
     "anthropic": "ANTHROPIC_API_KEY",
     "minimax": "MINIMAX_API_KEY",
     "ark": "ARK_API_KEY",
+    "huggingface": "HF_TOKEN",
 }
 
 
