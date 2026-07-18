@@ -67,6 +67,10 @@ The fixture is synthetic and marked `internal_synthetic_pending_approval`.
 It is engineering evidence, not a public financial dataset. The example is
 not financial advice and says nothing about future returns.
 
+Before installing, you can inspect the same public evidence in the [v0.1.6
+replay bundle](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.6/tracearena-v0.1.6-replay.zip).
+It contains the summary, manifest, and deterministic event/settlement trace.
+
 ## 3. Open the full local frontend (optional)
 
 The no-key replay is intentionally independent of authentication and model

@@ -216,6 +216,8 @@ PYTHONPATH=backend python backend/scripts/market_replay.py \
 也不执行真实下单。它是评测/仿真示例，不构成投资建议。欢迎加入 [v0.1.4 技术讨论](https://github.com/tonyhyworld/TraceArena/discussions/8)，交流首次运行体验和场景包想法。使用 `--locale en-US` 可切换
 英文呈现文本。
 
+如果想先检查证据再安装，可以下载 [v0.1.6 回放证据包](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.6/tracearena-v0.1.6-replay.zip)，直接查看其中的 `summary.md`、`run_manifest.json` 和 `replay_deterministic.json`。
+
 ### Hugging Face 模型
 
 TraceArena 可以通过现有的 OpenAI 兼容适配器，将对话型 Agent 路由到

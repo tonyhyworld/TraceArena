@@ -91,9 +91,13 @@ scenario-pack development, and provider configuration.
 
 Prefer a guided first look? Open the [live demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html) or read the [first public replay](https://github.com/tonyhyworld/TraceArena/discussions/4).
 
+Want to inspect the evidence before installing? Download the [v0.1.6 replay
+bundle](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.6/tracearena-v0.1.6-replay.zip)
+and open its `summary.md`, `run_manifest.json`, and `replay_deterministic.json`.
+
 After your first run, please submit the short [first-run feedback form](https://github.com/tonyhyworld/TraceArena/issues/new?template=first-run-feedback.yml). It asks only about your path, result, environment, time to first result, and the next change that would make you continue—never include credentials or private run data.
 
-Join the [v0.1.4 technical discussion](https://github.com/tonyhyworld/TraceArena/discussions/8) to compare observations with other Agent builders.
+Join the [technical discussion](https://github.com/tonyhyworld/TraceArena/discussions/3) to compare observations with other Agent builders.
 
 The example uses a scripted replay provider, synthetic fixture data, no API key, no LLM call, no MCP call, no brokerage account and no real order execution. It is infrastructure for simulation and evaluation, not financial advice.
 
