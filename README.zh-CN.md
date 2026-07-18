@@ -62,6 +62,17 @@ TraceArena 建立在一个朴素判断之上：智能体最有意义的智能，
 
 这也是 TraceArena 面向 Agent 时代提出的一种训练与开发范式：
 
+### 你现在可以做什么
+
+| 你的目标 | 从这里开始 |
+| --- | --- |
+| 不安装任何东西先看一次运行 | [打开在线 Demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html) |
+| 本地运行确定性 Replay | [五分钟上手](docs/quickstart.zh-CN.md) |
+| 构建新的 Agent 世界 | [提出场景包](https://github.com/tonyhyworld/TraceArena/issues/2) |
+| 用真实工作流做评测 | [申请评测试点](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml) |
+
+每个入口只有一个下一步动作；公开 Replay 不需要 API Key。
+
 ```mermaid
 flowchart LR
     W["共享 AI 世界\n规则 · 资源 · 时间 · 后果"] --> C["多智能体竞争\n与协作"]

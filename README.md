@@ -16,6 +16,17 @@ Most agent demos stop at a single response. AI World puts agents inside a world 
 
 This is a new agent-development and training paradigm: build environments that make agents live under constraints, then retain the resulting episodes as high-quality evaluation and training data. TraceArena makes that loop programmable, watchable and auditable.
 
+### Choose your path
+
+| If you want to… | Start here |
+| --- | --- |
+| See a world run without installing anything | [Open the live Demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html) |
+| Run a deterministic replay locally | [Follow the five-minute Quickstart](docs/quickstart.md) |
+| Build a new agent world | [Propose a scenario pack](https://github.com/tonyhyworld/TraceArena/issues/2) |
+| Evaluate a real workflow with your team | [Request an evaluation pilot](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml) |
+
+Each path has one next action. You do not need an API key for the public replay.
+
 ```mermaid
 flowchart LR
   A[Agents] --> B[Perception & evidence]
