@@ -125,6 +125,10 @@ Want to inspect the evidence before installing? Download the [v0.1.6 replay
 bundle](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.6/tracearena-v0.1.6-replay.zip)
 and open its `summary.md`, `run_manifest.json`, and `replay_deterministic.json`.
 
+For the latest non-financial benchmark, download the [v0.1.7 Incident Response
+bundle](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.7/tracearena-v0.1.7-incident-response.zip)
+or read the [v0.1.7 release notes](https://github.com/tonyhyworld/TraceArena/releases/tag/v0.1.7).
+
 After your first run, please submit the short [first-run feedback form](https://github.com/tonyhyworld/TraceArena/issues/new?template=first-run-feedback.yml). It asks only about your path, result, environment, time to first result, and the next change that would make you continue—never include credentials or private run data.
 
 Join the [technical discussion](https://github.com/tonyhyworld/TraceArena/discussions/3) to compare observations with other Agent builders.

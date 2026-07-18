@@ -241,7 +241,7 @@ PYTHONPATH=backend python backend/scripts/market_replay.py \
 
 研究者还可以阅读[应急响应 Benchmark Card](docs/benchmarks/incident-response-v0.md)，了解评测问题、指标、结算权威和当前限制。
 
-如果想先检查证据再安装，可以下载 [v0.1.6 回放证据包](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.6/tracearena-v0.1.6-replay.zip)，直接查看其中的 `summary.md`、`run_manifest.json` 和 `replay_deterministic.json`；也可以查看[应急响应 Run of the Week #2](https://github.com/tonyhyworld/TraceArena/discussions/11)。
+如果想先检查证据再安装，可以下载 [v0.1.6 回放证据包](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.6/tracearena-v0.1.6-replay.zip)，直接查看其中的 `summary.md`、`run_manifest.json` 和 `replay_deterministic.json`；也可以查看[应急响应 Run of the Week #2](https://github.com/tonyhyworld/TraceArena/discussions/11)。最新的非金融 Benchmark 可下载 [v0.1.7 应急响应资产包](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.7/tracearena-v0.1.7-incident-response.zip)，或阅读 [v0.1.7 发布说明](https://github.com/tonyhyworld/TraceArena/releases/tag/v0.1.7)。
 
 ### Hugging Face 模型
 
