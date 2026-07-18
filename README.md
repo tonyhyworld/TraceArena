@@ -115,7 +115,7 @@ PYTHONPATH=backend python backend/scripts/market_replay.py \
 See the full [Quickstart guide](docs/quickstart.md) for determinism checks,
 scenario-pack development, and provider configuration.
 
-Prefer a guided first look? Open the [live demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html) or read the [first public replay](https://github.com/tonyhyworld/TraceArena/discussions/4).
+Prefer a guided first look? Open the [live demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html), read the [first public replay](https://github.com/tonyhyworld/TraceArena/discussions/4), or inspect [Run of the Week #2](https://github.com/tonyhyworld/TraceArena/discussions/11).
 
 Looking for a non-financial example? Read the [Incident Response World](examples/incident_response_world/README.md), run its deterministic fixture, and inspect the explicitly rejected premature resolution.
 
