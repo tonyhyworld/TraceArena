@@ -2,6 +2,12 @@
 
 # TraceArena
 
+[![最新版本](https://img.shields.io/github/v/release/tonyhyworld/TraceArena?label=release)](https://github.com/tonyhyworld/TraceArena/releases/latest)
+[![在线 Demo](https://img.shields.io/badge/live%20demo-Hugging%20Face-blue)](https://tonyworld888-tracearena-demo.static.hf.space/index.html)
+[![许可证](https://img.shields.io/github/license/tonyhyworld/TraceArena)](LICENSE)
+
+![TraceArena AI 世界演示](docs/assets/tracearena-demo-poster.png)
+
 ### 面向真实约束世界的开源多智能体运行时
 
 **真实工具 · 可执行规则 · 可验证结果 · 可观看运行**

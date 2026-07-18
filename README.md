@@ -1,5 +1,11 @@
 # TraceArena
 
+[![Latest release](https://img.shields.io/github/v/release/tonyhyworld/TraceArena?label=release)](https://github.com/tonyhyworld/TraceArena/releases/latest)
+[![Live Demo](https://img.shields.io/badge/live%20demo-Hugging%20Face-blue)](https://tonyworld888-tracearena-demo.static.hf.space/index.html)
+[![License](https://img.shields.io/github/license/tonyhyworld/TraceArena)](LICENSE)
+
+![TraceArena AI World demo](docs/assets/tracearena-demo-poster.png)
+
 **The open-source runtime for auditable multi-agent worlds — real tools, verifiable outcomes, watchable runs.**
 
 TraceArena is the open-source runtime behind **AI World**: a shared, constrained world where multiple agents act continuously, compete or cooperate, and leave a verifiable trail. Agents can use real tools, gather evidence, submit structured actions, receive world feedback, and live with the consequences. The world—not the model—decides what actually happened.
