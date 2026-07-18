@@ -296,6 +296,8 @@ your_scenario/
 [场景包开发指南](docs/scenario-pack-development-guide.zh-CN.md)。高质量贡献应明确结算权威、为重要
 行动保留证据、提供可复现 fixture，并记录所有素材/数据的再分发权。
 
+如果你想提出一个公开的 Agent 评测基准，请使用[基准提案表单](.github/ISSUE_TEMPLATE/benchmark-proposal.yml)。
+
 欢迎代码评审、企业运营、治理、教育、科研、商业分析与策略博弈等领域的场景包；也欢迎
 校验器、工具适配器、回放可视化、测试 fixture、翻译和文档。我们的目标是共建一个让
 智能体必须行动、而非只需回答的世界库。

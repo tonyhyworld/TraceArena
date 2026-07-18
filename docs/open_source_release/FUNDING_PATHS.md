@@ -27,6 +27,9 @@ Before applying, maintainers should have at least one external run, a stable
 benchmark specification, and a short statement of what new evaluation signal
 the benchmark measures.
 
+To propose that benchmark publicly, use the repository's
+[Benchmark proposal form](../../.github/ISSUE_TEMPLATE/benchmark-proposal.yml).
+
 ## Possible company financing: GitHub Fund
 
 [GitHub Fund](https://github.com/open-source/github-fund) describes an equity

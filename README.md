@@ -190,6 +190,7 @@ this repository** action.
 ## Join the ecosystem
 
 - Build and propose a scenario pack using the [scenario-pack guide](docs/scenario-pack-guide.md).
+- Propose an open benchmark using the [benchmark proposal form](.github/ISSUE_TEMPLATE/benchmark-proposal.yml).
 - Report a reproducible bug or request a feature through GitHub Issues.
 - Tell us how the first run went through the [first-run feedback form](https://github.com/tonyhyworld/TraceArena/issues/new?template=first-run-feedback.yml).
 - For a bounded agent-evaluation pilot, use the [pilot request form](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml).

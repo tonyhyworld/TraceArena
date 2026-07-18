@@ -1,0 +1,55 @@
+name: Benchmark proposal
+description: Propose an open, replayable benchmark for long-horizon agent evaluation.
+title: "[Benchmark] "
+labels:
+  - benchmark
+  - evaluation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for a public benchmark idea, not a private customer workflow.
+        Keep credentials, private data, and confidential evaluation traces out of the issue.
+  - type: textarea
+    id: evaluation_question
+    attributes:
+      label: Evaluation question
+      description: What capability or failure mode should the benchmark measure that a single answer cannot reveal?
+      placeholder: "Example: Can an agent recover from a rejected mitigation while preserving evidence and service health?"
+    validations:
+      required: true
+  - type: textarea
+    id: world_contract
+    attributes:
+      label: World contract
+      description: Describe the shared state, roles, constraints, resources, and time horizon.
+    validations:
+      required: true
+  - type: textarea
+    id: settlement
+    attributes:
+      label: Authoritative settlement
+      description: Which deterministic rule, external fact, or hybrid authority decides whether an action succeeded?
+    validations:
+      required: true
+  - type: textarea
+    id: trace_and_metrics
+    attributes:
+      label: Trace and metrics
+      description: List the evidence, events, outcomes, metrics, and failure taxonomy that should be replayable.
+    validations:
+      required: true
+  - type: textarea
+    id: reproducibility
+    attributes:
+      label: Reproducibility and data rights
+      description: Describe the fixture, expected replay, data provenance, and redistribution license.
+    validations:
+      required: true
+  - type: textarea
+    id: contribution
+    attributes:
+      label: Proposed contribution
+      description: What can you provide—scenario files, verifier, fixture, paper, or evaluation report?
+    validations:
+      required: true
