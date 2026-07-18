@@ -123,6 +123,54 @@ I would value feedback on settlement contracts, deterministic replay, scenario
 package boundaries, and interoperability with other environment APIs.
 ```
 
+## English developer post: a non-financial benchmark
+
+### A rejected action is part of the result
+
+Most agent evaluations report whether the final answer looks correct. That
+misses an important signal: did the agent respect the world's dependencies,
+and can we explain why an unsafe action was rejected?
+
+TraceArena's public Incident Response World is a small, synthetic benchmark for
+that question. Two roles share the same evidence and must move through:
+
+```text
+acknowledge → mitigate → health check → resolve
+```
+
+The reference fixture deliberately tries to declare the incident resolved too
+early. The world rejects it with `passing_health_check_required`, records the
+reason, and only settles the incident after a passing health check. The replay
+is deterministic, requires no API key, and does not connect to production
+systems.
+
+Benchmark card:
+https://github.com/tonyhyworld/TraceArena/blob/main/docs/benchmarks/incident-response-v0.md
+
+Runnable example:
+https://github.com/tonyhyworld/TraceArena/tree/main/examples/incident_response_world
+
+I would value one technical response: which dependency, evidence rule, or
+failure category should a long-horizon agent benchmark make explicit next?
+
+## 中文技术短帖：被拒绝的行动也是评测结果
+
+很多 Agent 评测只看最后答案是否像正确答案，却忽略了一个关键问题：Agent 是否遵守了世界中的依赖关系？一次不安全的行动为什么被拒绝？
+
+TraceArena 新增了一个合成应急响应 Benchmark。两个角色共享同一组证据，必须按顺序完成：
+
+```text
+确认事件 → 提出缓解 → 健康检查 → 宣布恢复
+```
+
+fixture 故意尝试提前宣布恢复，世界会记录并拒绝该行动，原因是
+`passing_health_check_required`；只有健康检查通过后，结算才会将事件标记为 resolved。整个示例不需要 API Key，不连接生产系统。
+
+Benchmark Card：
+https://github.com/tonyhyworld/TraceArena/blob/main/docs/benchmarks/incident-response-v0.md
+
+欢迎讨论：长程 Agent 评测还应该把哪些依赖、证据规则或失败类型显式化？
+
 ## 发布与证据纪律
 
 - 不使用“全球首个”“行业唯一”等无法证明的表述。
