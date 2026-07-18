@@ -143,7 +143,7 @@ This public runtime candidate intentionally excludes private authentication and 
 
 ## Status
 
-TraceArena is a public preview: the no-key replay path is verified, while the runtime and scenario-pack APIs continue to evolve with community feedback. See [the public candidate scope](docs/open_source_release/PUBLIC_CANDIDATE_SCOPE.md) for evidence and boundaries.
+TraceArena is a public preview: the no-key replay path is verified, while the runtime and scenario-pack APIs continue to evolve with community feedback. See the [latest release](https://github.com/tonyhyworld/TraceArena/releases/latest), the [public candidate scope](docs/open_source_release/PUBLIC_CANDIDATE_SCOPE.md), and the [release evidence](docs/open_source_release/release-gates.yaml) for current boundaries.
 
 ## Contributing and security
 
