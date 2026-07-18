@@ -178,6 +178,12 @@ TraceArena is a public preview: the no-key replay path is verified, while the ru
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Please do not submit credentials, customer data, private run archives, or media without redistribution rights.
 
+## Cite TraceArena
+
+If TraceArena contributes to a paper, benchmark, or evaluation report, use the
+machine-readable metadata in [`CITATION.cff`](CITATION.cff) or GitHub's **Cite
+this repository** action.
+
 ## Join the ecosystem
 
 - Build and propose a scenario pack using the [scenario-pack guide](docs/scenario-pack-guide.md).
