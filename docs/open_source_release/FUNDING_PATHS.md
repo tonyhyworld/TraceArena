@@ -29,6 +29,7 @@ the benchmark measures.
 
 To propose that benchmark publicly, use the repository's
 [Benchmark proposal form](../../.github/ISSUE_TEMPLATE/benchmark-proposal.yml).
+The first public reference card is the [Incident Response Benchmark Card](../benchmarks/incident-response-v0.md).
 
 ## Possible company financing: GitHub Fund
 

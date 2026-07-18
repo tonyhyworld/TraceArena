@@ -239,6 +239,8 @@ PYTHONPATH=backend python backend/scripts/market_replay.py \
 
 想看非金融示例？请阅读[应急响应世界](examples/incident_response_world/README.md)，运行它的确定性 fixture，并观察一次被明确拒绝的提前结案行动。
 
+研究者还可以阅读[应急响应 Benchmark Card](docs/benchmarks/incident-response-v0.md)，了解评测问题、指标、结算权威和当前限制。
+
 如果想先检查证据再安装，可以下载 [v0.1.6 回放证据包](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.6/tracearena-v0.1.6-replay.zip)，直接查看其中的 `summary.md`、`run_manifest.json` 和 `replay_deterministic.json`。
 
 ### Hugging Face 模型

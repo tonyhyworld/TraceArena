@@ -119,6 +119,8 @@ Prefer a guided first look? Open the [live demo](https://tonyworld888-tracearena
 
 Looking for a non-financial example? Read the [Incident Response World](examples/incident_response_world/README.md), run its deterministic fixture, and inspect the explicitly rejected premature resolution.
 
+Researchers can use the accompanying [Incident Response Benchmark Card](docs/benchmarks/incident-response-v0.md) to cite the evaluation question, metrics, settlement authority, and current limitations.
+
 Want to inspect the evidence before installing? Download the [v0.1.6 replay
 bundle](https://github.com/tonyhyworld/TraceArena/releases/download/v0.1.6/tracearena-v0.1.6-replay.zip)
 and open its `summary.md`, `run_manifest.json`, and `replay_deterministic.json`.
