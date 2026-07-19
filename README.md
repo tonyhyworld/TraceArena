@@ -229,6 +229,7 @@ this repository** action.
 - Tell us how the first run went through the [first-run feedback form](https://github.com/tonyhyworld/TraceArena/issues/new?template=first-run-feedback.yml).
 - For a bounded agent-evaluation pilot, use the [pilot request form](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml).
 - For implementation, integration, or evaluation support, see the [commercial support path](docs/commercial-support.md).
+- For a concrete 10-day pilot scope, deliverables, acceptance criteria, and starting price, see the [pilot one-pager](docs/agent-evaluation-pilot.md).
 - For public benchmark and open-source sustainability paths, see the [funding research note](docs/open_source_release/FUNDING_PATHS.md).
 - For a speaker, research, or media introduction, see the [founder profile](docs/FOUNDER_PROFILE.md).
 - For a one-page pilot scope, deliverables, acceptance criteria, and starting price, see the [pilot one-pager](docs/open_source_release/PILOT_ONE_PAGER.md).

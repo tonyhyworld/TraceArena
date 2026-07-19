@@ -53,6 +53,26 @@ body:
       placeholder: Metrics, traces, approvals, risk limits, or outcome checks.
     validations:
       required: true
+  - type: textarea
+    id: business_value
+    attributes:
+      label: Decision value and urgency
+      description: What decision will this pilot support, what would change if the result is positive, and when is the decision needed?
+      placeholder: Example: decide whether to ship the workflow with model A or B before the Q4 launch review.
+    validations:
+      required: true
+  - type: dropdown
+    id: budget_band
+    attributes:
+      label: Indicative pilot budget
+      description: This helps us respond with a realistic scope; final pricing is confirmed in a statement of work.
+      options:
+        - RMB 29,800–50,000
+        - RMB 50,000–100,000
+        - Above RMB 100,000
+        - Budget not decided
+    validations:
+      required: true
   - type: dropdown
     id: deployment
     attributes:

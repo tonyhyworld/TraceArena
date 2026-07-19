@@ -345,6 +345,8 @@ TraceArena 欢迎场景包作者、Agent 开发者、评测人员、研究者，
 [商业支持说明](docs/commercial-support.zh-CN.md)。开源运行时继续采用 Apache-2.0；付费内容是围绕
 开源运行时提供的实施、集成、场景设计和运营支持。
 
+如果你希望先从一个明确范围开始，请阅读 [10 天评测试点说明](docs/agent-evaluation-pilot.md)，其中列出了交付物、验收标准和人民币 29,800 元起的起始价格。
+
 如果你关心开放基准和开源项目的可持续资金路径，请参阅[资助路线研究笔记](docs/open_source_release/FUNDING_PATHS.md)。
 
 如果你需要技术会议、研究合作或媒体介绍素材，请参阅[创始人介绍](docs/FOUNDER_PROFILE.md)。
