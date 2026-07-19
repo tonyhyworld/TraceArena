@@ -58,7 +58,7 @@ body:
     attributes:
       label: Decision value and urgency
       description: What decision will this pilot support, what would change if the result is positive, and when is the decision needed?
-      placeholder: Example: decide whether to ship the workflow with model A or B before the Q4 launch review.
+      placeholder: "Example: decide whether to ship the workflow with model A or B before the Q4 launch review."
     validations:
       required: true
   - type: dropdown
