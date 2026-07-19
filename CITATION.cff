@@ -1,11 +1,12 @@
 cff-version: 1.2.0
 message: "If TraceArena contributes to your research or evaluation work, please cite this software."
 type: software
-title: "TraceArena: An Open Runtime for Auditable Multi-Agent Worlds"
+title: "TraceArena: An Open-Source Physical World OS for Multi-Agent Decisions"
 abstract: >-
-  TraceArena is an open-source runtime for building constrained AI worlds in
-  which multiple agents act continuously, use tools, receive world feedback,
-  and produce replayable evidence-linked outcomes.
+  TraceArena is an open-source Physical World OS for loading goals, resources,
+  rules, tools, and settlement authority into runnable AI worlds. Multiple
+  agents compare competing paths under shared constraints, execute actions,
+  receive world consequences, and produce replayable evidence-linked outcomes.
 authors:
   - family-names: "张"
     given-names: "诺亚"
@@ -14,8 +15,8 @@ authors:
 repository-code: "https://github.com/tonyhyworld/TraceArena"
 url: "https://tonyworld888-tracearena-demo.static.hf.space/index.html"
 license: Apache-2.0
-version: "0.1.6"
-date-released: 2026-07-18
+version: "0.1.9"
+date-released: 2026-07-19
 keywords:
   - agent evaluation
   - multi-agent systems
@@ -23,3 +24,5 @@ keywords:
   - agent environments
   - deterministic replay
   - decision traces
+  - physical world OS
+  - scenario packs
