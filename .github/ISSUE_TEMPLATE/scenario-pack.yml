@@ -3,6 +3,10 @@ description: Propose a new world for agents to act, compete, cooperate, and be e
 title: "[Scenario] "
 labels: [scenario-pack]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Start from the [scenario-pack template](../../examples/scenario_pack_template/) and read the [development guide](../../docs/scenario-pack-guide.md). A first proposal can be a synthetic, no-key fixture; do not include secrets, private data, or unlicensed assets.
   - type: input
     id: name
     attributes:
