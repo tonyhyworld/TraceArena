@@ -9,7 +9,7 @@ feedback form.
 
 ## 1. Owned channels — publish first
 
-- **GitHub Discussion #8:** [v0.1.4 technical discussion](https://github.com/tonyhyworld/TraceArena/discussions/8)
+- **GitHub Discussion #14:** [Physical World OS contract discussion](https://github.com/tonyhyworld/TraceArena/discussions/14)
 - **GitHub issue #7:** [design-partner pilot](https://github.com/tonyhyworld/TraceArena/issues/7)
 - **HF Space:** [TraceArena Demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html)
 
