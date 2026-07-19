@@ -10,6 +10,7 @@
 - 清洁环境验证：<https://github.com/tonyhyworld/TraceArena/discussions/13>
 - 场景包贡献：<https://github.com/tonyhyworld/TraceArena/issues/2>
 - 商业评测试点：<https://github.com/tonyhyworld/TraceArena/issues/7>
+- Product Hunt / social thumbnail：[`tracearena-physical-world-os-thumbnail.png`](../../docs/assets/tracearena-physical-world-os-thumbnail.png)
 
 ## 渠道优先级
 
