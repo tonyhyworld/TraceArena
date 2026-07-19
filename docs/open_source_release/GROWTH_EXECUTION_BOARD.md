@@ -55,6 +55,8 @@
 - 生态内容 → [场景请求](https://github.com/tonyhyworld/TraceArena/issues/new?template=world-request.yml)
 - 商业内容 → [评测试点申请](https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml)
 
+各渠道的发布规则、草稿和指标定义见[外部分发作战手册](DISTRIBUTION_PLAYBOOK.md)。
+
 不要在同一条帖子里同时要求 Star、试用、加入群、购买服务和贡献代码。
 
 ## 首个 14 天目标
