@@ -5,7 +5,7 @@
 
 ## 当前基线
 
-记录日期：2026-07-18
+记录日期：2026-07-19
 
 ## 最新核验（2026-07-19）
 
@@ -16,7 +16,7 @@
 - 两次 `deterministic_replay_sha256` 均为 `3250361a904b73688ebebc8a4ef04efb74f312b7f665a82f0224f7f7ccb588cb`；
 - 公开证据：[Run of the Week #3](https://github.com/tonyhyworld/TraceArena/discussions/13)。
 - Hugging Face 社区入口：[下一类物理世界问题讨论](https://huggingface.co/spaces/tonyworld888/tracearena-demo/discussions/1)。
-- 最新主分支的 CI、前端生产构建、Ubuntu/macOS 公共运行时 smoke test 和 OpenSSF Scorecard 均通过（提交 `d14ec10`）。
+- 最新主分支的 CI、前端生产构建、Ubuntu/macOS 公共运行时 smoke test 和 OpenSSF Scorecard 均通过（验证提交 `d14ec10`；公开主分支随后已推进到 `d7b5978`，当前发布为 [v0.1.9](https://github.com/tonyhyworld/TraceArena/releases/tag/v0.1.9)）。
 
 这证明公开首跑路径可复现，但**不等于外部采用**。截至本次记录，外部场景包、合格试点线索和付费收入仍按下表如实记录为 0。
 
