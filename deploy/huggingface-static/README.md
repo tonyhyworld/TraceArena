@@ -45,6 +45,6 @@ TraceArena can model one bounded workflow as a private evaluation world,
 compare 2–4 agent/model configurations across at least 10 replayable episodes,
 and deliver an evidence-linked path comparison and review session. Evaluation
 pilots start at RMB 29,800; see the [pilot one-pager](https://github.com/tonyhyworld/TraceArena/blob/main/docs/open_source_release/PILOT_ONE_PAGER.md)
-or [request a pilot](https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml).
+or [request a pilot](https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml). For private workflow details, email [tonyhyworld@gmail.com](mailto:tonyhyworld@gmail.com?subject=TraceArena%20Physical%20World%20OS%20pilot).
 
 Suggest the next world in the [Space discussion](https://huggingface.co/spaces/tonyworld888/tracearena-demo/discussions/1).
