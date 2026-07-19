@@ -7,12 +7,23 @@
 
 记录日期：2026-07-18
 
+## 最新核验（2026-07-19）
+
+维护者在公开仓库清洁副本完成了从安装到回放的验证：
+
+- `PYTHON_BIN=.../python3 ./scripts/install.sh` 成功安装后端与 Vue 前端依赖；
+- 同一 Market Replay fixture 连续运行两次，均通过验证；
+- 两次 `deterministic_replay_sha256` 均为 `3250361a904b73688ebebc8a4ef04efb74f312b7f665a82f0224f7f7ccb588cb`；
+- 公开证据：[Run of the Week #3](https://github.com/tonyhyworld/TraceArena/discussions/13)。
+
+这证明公开首跑路径可复现，但**不等于外部采用**。截至本次记录，外部场景包、合格试点线索和付费收入仍按下表如实记录为 0。
+
 | 指标 | 当前值 | 目标定义 | 证据来源 |
 | --- | ---: | --- | --- |
-| GitHub stars | 2 | 真实开发者认可 | GitHub repository |
-| GitHub forks | 0 | 有人开始改造 | GitHub repository |
+| GitHub stars | 2 | 真实开发者认可 | GitHub repository（2026-07-19） |
+| GitHub forks | 0 | 有人开始改造 | GitHub repository（2026-07-19） |
 | Hugging Face likes | 0 | Demo 被收藏 | HF Space |
-| 首次成功运行 | 待记录 | 跑完 replay 并看到结果 | first-run issue / 本地反馈 |
+| 首次成功运行 | 维护者已验证 | 跑完 replay 并看到结果；外部运行仍待记录 | [Run of the Week #3](https://github.com/tonyhyworld/TraceArena/discussions/13) |
 | 外部场景包 | 0 | 非维护者提交并通过审阅 | GitHub PR |
 | 合格试点线索 | 0 | 有明确工作流、验收口径和时间窗 | pilot issue |
 | 付费收入 | 0 | 已收款的授权服务 | 合同/发票，不公开个人信息 |
