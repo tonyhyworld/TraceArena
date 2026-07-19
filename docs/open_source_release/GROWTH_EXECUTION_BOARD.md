@@ -24,6 +24,8 @@
 | --- | ---: | --- | --- |
 | GitHub stars | 2 | 真实开发者认可 | GitHub repository（2026-07-19） |
 | GitHub forks | 0 | 有人开始改造 | GitHub repository（2026-07-19） |
+| GitHub views（近 14 天） | 177 / 4 uniques | 真实访问与独立访客 | GitHub traffic API（截至 2026-07-18） |
+| GitHub clones（近 14 天） | 826 / 186 uniques | 代码被取用；需结合外部反馈判定有效采用 | GitHub traffic API（截至 2026-07-18） |
 | Hugging Face likes | 0 | Demo 被收藏 | HF Space |
 | 首次成功运行 | 维护者已验证 | 跑完 replay 并看到结果；外部运行仍待记录 | [Run of the Week #3](https://github.com/tonyhyworld/TraceArena/discussions/13) |
 | 外部场景包 | 0 | 非维护者提交并通过审阅 | GitHub PR |
