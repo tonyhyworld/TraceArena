@@ -12,8 +12,8 @@ Outcomes come from explicit authority. Simulation worlds use declared rules. Ext
 
 TraceArena evaluates the complete trajectory: perception, planning, evidence, tool use, code, action, feedback, correction, and result. Teams can compare completion, risk, efficiency, stability, evidence integrity, and recovery under the same conditions.
 
-Every run also becomes a data-production pipeline. Evidence, decisions, actions, rejection reasons, state changes, and objective outcomes are normalized, quality-checked, deduplicated, and exported as decision cards, trajectory samples, preference pairs, and training data.
+Every run also becomes a decision-evidence pipeline. Evidence, decisions, actions, rejection reasons, state changes, and objective outcomes are normalized, quality-checked, and exported as replayable evidence cards, path comparisons, recovery records, and evaluation packs. These artifacts help people inspect and improve decisions; they are not the product's primary promise.
 
 From markets and enterprise operations to governance, research, code, analysis, and strategic games, a new scenario package creates a new world while the same runtime remains reusable.
 
-TraceArena gives the agent era its worlds, rules, stage, and data. Build worlds where intelligence must act, outcomes can be verified, and every run makes the next agent better.
+TraceArena gives the agent era its worlds, rules, stage, and evidence. Build worlds where agents must act, paths can be compared, outcomes can be verified, and goals can be pursued continuously.

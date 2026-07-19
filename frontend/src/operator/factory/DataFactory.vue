@@ -2,9 +2,9 @@
   <div class="df-root">
     <header class="df-hero">
       <div>
-        <span class="kicker">Agent 训练数据工厂</span>
-        <h1>训练数据导出</h1>
-        <p>把对局沉淀成优秀轨迹、偏好对、完整对局、能力样本和 OS 2.0 可追溯因果链。</p>
+        <span class="kicker">决策证据工厂</span>
+        <h1>评测工件导出</h1>
+        <p>把对局整理成可复盘轨迹、路径比较、完整运行、能力评测和 OS 2.0 可追溯因果链。</p>
       </div>
       <button class="df-refresh" @click="loadRuns" :disabled="loadingRuns">
         {{ loadingRuns ? '加载中…' : '刷新对局' }}
@@ -33,11 +33,11 @@
       <section class="df-panel wide">
         <h2>2 · 预览样本（决策卡）</h2>
         <div class="df-filters">
-          <label>数据类型
+          <label>工件类型
             <select v-model="fmt">
-              <option value="sft">优秀轨迹（SFT）</option>
-              <option value="dpo">偏好对（DPO）</option>
-              <option value="episodes">完整对局（RL）</option>
+              <option value="sft">高质量轨迹（评测）</option>
+              <option value="dpo">路径偏好对（比较）</option>
+              <option value="episodes">完整对局（回放）</option>
               <option value="eval">能力评测</option>
               <option value="trace">OS 2.0 可追溯链路</option>
             </select>
@@ -92,8 +92,8 @@
 
       <!-- 右：导出 + 数据集 -->
       <section class="df-panel">
-        <h2>3 · 导出数据集</h2>
-        <label class="df-name">数据集名称
+        <h2>3 · 导出评测工件</h2>
+        <label class="df-name">工件包名称
           <input v-model="datasetName" placeholder="如：AI World 跨场景轨迹 v1" />
         </label>
         <button class="df-btn primary" @click="doExport" :disabled="!selected.length || exporting">
@@ -103,15 +103,15 @@
           ✅ {{ exportResult.total_samples }} 条 · 良品率 {{ pct(exportResult.good_rate) }}
         </p>
 
-        <h3>已导出数据集</h3>
-        <div v-if="!datasets.length" class="df-empty sm">还没有数据集。</div>
+        <h3>已导出的工件包</h3>
+        <div v-if="!datasets.length" class="df-empty sm">还没有工件包。</div>
         <article v-for="d in datasets" :key="d.dataset_id" class="df-dataset">
           <div class="df-ds-head">
             <b>{{ d.name }}</b>
             <span>{{ d.total_samples }} 条 · 良品 {{ pct(d.good_rate) }}</span>
           </div>
           <div class="df-ds-actions">
-            <button class="df-link" @click="viewCard(d.dataset_id)">数据卡</button>
+            <button class="df-link" @click="viewCard(d.dataset_id)">证据卡</button>
             <a class="df-link" :href="fileUrl(d.dataset_id, 'sft_train.jsonl')" target="_blank">SFT</a>
             <a class="df-link" :href="fileUrl(d.dataset_id, 'dpo_train.jsonl')" target="_blank">DPO</a>
             <a class="df-link" :href="fileUrl(d.dataset_id, 'os2_traces.jsonl')" target="_blank">OS2 Trace</a>

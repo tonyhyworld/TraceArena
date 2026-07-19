@@ -86,9 +86,9 @@ const NAV = [
   { label: '分析', items: [
     { key: 'assessment', label: '模型分析', ready: true },
   ] },
-  // 训练数据工厂：有 export_data 权限或超管可见
+  // 决策证据工厂：有 export_data 权限或超管可见
   ...((hasPermission('export_data') || getCurrentUser()?.is_admin) ? [{ label: '数据', items: [
-    { key: 'factory', label: '训练数据', ready: true },
+    { key: 'factory', label: '决策证据', ready: true },
   ] }] : []),
   // 用户管理仅超管可见——is_admin 之外没有任何权限能打开这一入口
   ...(getCurrentUser()?.is_admin ? [{ label: '系统', items: [
