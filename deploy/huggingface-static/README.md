@@ -38,3 +38,11 @@ This public Space is deliberately safe and self-contained:
 The full open-source runtime, backend, operator console, documentation, and
 scenario-pack guides are available at
 [tonyhyworld/TraceArena](https://github.com/tonyhyworld/TraceArena).
+
+## For teams
+
+TraceArena can model one bounded workflow as a private evaluation world,
+compare 2–4 agent/model configurations across at least 10 replayable episodes,
+and deliver an evidence-linked path comparison and review session. Evaluation
+pilots start at RMB 29,800; see the [pilot one-pager](https://github.com/tonyhyworld/TraceArena/blob/main/docs/open_source_release/PILOT_ONE_PAGER.md)
+or [request a pilot](https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml).
