@@ -15,6 +15,7 @@
 - 同一 Market Replay fixture 连续运行两次，均通过验证；
 - 两次 `deterministic_replay_sha256` 均为 `3250361a904b73688ebebc8a4ef04efb74f312b7f665a82f0224f7f7ccb588cb`；
 - 公开证据：[Run of the Week #3](https://github.com/tonyhyworld/TraceArena/discussions/13)。
+- Hugging Face 社区入口：[下一类物理世界问题讨论](https://huggingface.co/spaces/tonyworld888/tracearena-demo/discussions/1)。
 
 这证明公开首跑路径可复现，但**不等于外部采用**。截至本次记录，外部场景包、合格试点线索和付费收入仍按下表如实记录为 0。
 
