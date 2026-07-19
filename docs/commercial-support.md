@@ -25,7 +25,8 @@ and starting price, see the [Agent Evaluation Pilot one-pager](open_source_relea
 ## How to start
 
 Submit the [Agent Evaluation Pilot issue form](../.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml),
-or email `tonyhyworld@gmail.com` with the workflow, agents/models, tools,
+or use [email](mailto:tonyhyworld@gmail.com?subject=TraceArena%20Physical%20World%20OS%20pilot&body=Workflow%20or%20decision%20to%20evaluate%3A%0AAgents%2Fmodels%20and%20tools%3A%0AAuthoritative%20outcome%20and%20acceptance%20criteria%3A%0ADeployment%20constraints%3A%0ATarget%20date%3A)
+with the workflow, agents/models, tools,
 authoritative outcome, evidence requirements, deployment constraints, and target
 date. We will reply with a proposed scope and statement of work before any
 commitment.

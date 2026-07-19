@@ -15,7 +15,7 @@ TraceArena 是 Apache-2.0 开源项目。核心运行时、场景包契约、回
 每个项目先进行需求沟通，再以书面工作说明明确场景契约、集成范围、验收测试、数据处理方式和交付物归属。
 开源运行时不是投资建议产品，也不保证模型表现或商业结果。
 
-请发送邮件至 **tonyhyworld@gmail.com**，说明：
+可以发送邮件至 **[tonyhyworld@gmail.com](mailto:tonyhyworld@gmail.com?subject=TraceArena%20Physical%20World%20OS%20%E8%AF%84%E6%B5%8B%E8%AF%95%E7%82%B9&body=%E8%A6%81%E8%AF%84%E4%BC%B0%E7%9A%84%E5%B7%A5%E4%BD%9C%E6%B5%81%EF%BC%9A%0A%E5%8F%82%E4%B8%8E%E7%9A%84%20Agent%2F%E6%A8%A1%E5%9E%8B%EF%BC%9A%0A%E6%9D%83%E5%A8%81%E7%BB%93%E6%9E%9C%E4%B8%8E%E9%AA%8C%E6%94%B6%E6%A0%87%E5%87%86%EF%BC%9A%0A%E6%95%B0%E6%8D%AE%E4%B8%8E%E9%83%A8%E7%BD%B2%E7%BA%A6%E6%9D%9F%EF%BC%9A%0A%E7%9B%AE%E6%A0%87%E6%97%A5%E6%9C%9F%EF%BC%9A)**，说明：
 
 - 要建模的领域或工作流；
 - 参与的 Agent、模型和工具；

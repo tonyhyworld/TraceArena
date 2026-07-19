@@ -34,7 +34,7 @@ Pilot engagements start at RMB 29,800. Final price depends on scenario complexit
 
 ## Start a conversation
 
-Email tonyhyworld@gmail.com with:
+Use the [pilot email template](mailto:tonyhyworld@gmail.com?subject=TraceArena%20Physical%20World%20OS%20pilot&body=Workflow%20or%20decision%20to%20evaluate%3A%0AAgents%2Fmodels%20and%20tools%3A%0AAuthoritative%20outcome%20and%20acceptance%20criteria%3A%0ADeployment%20constraints%3A%0ATarget%20date%3A), or email `tonyhyworld@gmail.com` with:
 
 - the workflow or business decision to evaluate;
 - the agents, models, and tools that must participate;
