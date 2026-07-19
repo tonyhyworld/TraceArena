@@ -21,6 +21,7 @@ rules.
 
 For a one-page overview of scope, deliverables, acceptance criteria, timeline,
 and starting price, see the [Agent Evaluation Pilot one-pager](open_source_release/PILOT_ONE_PAGER.md).
+For a reusable scope and acceptance draft, see the [Statement of Work template](open_source_release/STATEMENT_OF_WORK_TEMPLATE.md).
 
 ## How to start
 
