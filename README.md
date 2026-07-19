@@ -54,6 +54,8 @@ The result is a new agent-development paradigm: lower the barrier from “how do
 
 Each path has one next action. You do not need an API key for the public replay.
 
+> **For teams:** turn one bounded workflow into a replayable evaluation world, compare 2–4 agent/model configurations, and receive a reviewable evidence report. Pilot engagements start at RMB 29,800; see the [pilot one-pager](docs/open_source_release/PILOT_ONE_PAGER.md) or [request a pilot](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml).
+
 ```mermaid
 flowchart LR
   A[Agents with different goals] --> B[Perception & evidence]
