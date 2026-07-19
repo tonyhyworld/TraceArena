@@ -39,7 +39,7 @@ const DATA = {
     scoreLabels:{score:"WORLD SCORE",return:"RETURN",drawdown:"MAX DRAWDOWN",discipline:"VALID ACTIONS"},
     whyWinner:"Vector reacted faster to confirmation and reduced exposure before the reversal. Both agents followed every rule; the difference came from timing and risk control.",
     meaningKicker:"WHY TRACEARENA MATTERS", meaningTitle:"The valuable output is not only who won.",
-    meaningBody:"The complete trajectory explains how the result emerged: shared evidence, competing strategies, accepted actions, changing consequences, and objective settlement. That record can support evaluation, diagnosis, comparison, and future agent training.",
+    meaningBody:"The complete trajectory explains how the result was selected: shared evidence, competing strategies, accepted actions, changing consequences, and objective settlement. The same world contract can be adapted to a new operational problem through a scenario pack.",
     auditTitle:"Technical audit record", auditHint:"For developers and evaluators", runIdLabel:"RUN ID", verifierLabel:"VERIFIER", verifierValue:"DETERMINISTIC / PASSED",
     auditBody:"The digest fingerprints this exact synthetic trajectory. It proves record consistency; it does not claim investment performance or model intelligence."
   },
