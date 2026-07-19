@@ -1,5 +1,5 @@
 ---
-title: TraceArena · Two Agents, One World
+title: TraceArena · Physical World OS for Agents
 emoji: 🌌
 colorFrom: blue
 colorTo: purple
@@ -7,7 +7,15 @@ sdk: static
 app_file: index.html
 license: apache-2.0
 pinned: false
-short_description: Watch two agents compete in a verifiable AI world
+short_description: Load goals and rules, compare agent paths, verify outcomes
+tags:
+  - agent-evaluation
+  - multi-agent
+  - physical-world-ai
+  - auditable-ai
+  - simulation
+  - scenario-packs
+  - open-source
 ---
 
 # TraceArena AI World Demo
