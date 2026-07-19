@@ -23,6 +23,20 @@
 | 3 | 2 位潜在企业用户 | 验证评测试点需求 | 直接发送 pilot 入口 | 一个明确需求或拒绝原因 |
 | 4 | Hacker News / Hugging Face 社区 | 扩大公开触达 | 先贡献讨论，再发布项目帖 | 帖子 URL、评论数 |
 
+## 公开候选短名单（尚未联系）
+
+以下只记录公开项目和公开入口，不代表对方同意合作，也不自动发送消息。创始人联系前应先阅读项目近期活动，针对具体技术交集一对一撰写邀请。
+
+| 项目 | 公开入口 | 可能的技术交集 |
+| --- | --- | --- |
+| AWS Labs agent-evaluation | <https://github.com/awslabs/agent-evaluation> | 评测框架可对照 TraceArena 的世界结算与路径证据链。 |
+| Base Agent Challenge | <https://github.com/BaseIntelligence/agent-challenge> | 竞争式 Agent 运行与隔离环境，适合讨论结果权威和复现。 |
+| AgentArk | <https://github.com/P90-RushB/AgentArk> | 可扩展多模态 Agent 评测环境，适合比较 world contract 边界。 |
+| AgentScope Runtime | <https://github.com/agentscope-ai/agentscope-runtime> | Agent runtime、工具治理和可观测性，与 OS 层接口有交集。 |
+| Google Cloud race-condition | <https://github.com/GoogleCloudPlatform/race-condition> | 多 Agent 竞争/协作示例，适合交流事件、资源和结算模型。 |
+
+建议第一轮只选择 2–3 个高度匹配对象，并邀请其运行同一个公开 Demo；不要把这张表当作群发名单或客户名单。
+
 ## 首次邀请模板（中文）
 
 你好，我在做 AI World / TraceArena：让多个 Agent 在共享约束世界里使用真实工具、提交结构化行动，并由世界验证事件和结果，而不是只评价最终回答。
