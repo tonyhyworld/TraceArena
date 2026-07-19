@@ -41,6 +41,8 @@ flowchart LR
 
 The result is a new agent-development paradigm: lower the barrier from “how do I make an AI solve this operational problem?” to “how do I declare the world's resources, goals, rules and outcomes?” Then let agents iterate toward a goal through a continuous **perceive → deliberate → act → receive feedback → revise** loop, with checkpoints and permission boundaries.
 
+> **Positioning update (July 2026):** Read the [community announcement](https://github.com/tonyhyworld/TraceArena/discussions/12) for the new Physical World OS direction and the next scenarios we want the ecosystem to load.
+
 ### Choose your path
 
 | If you want to… | Start here |
