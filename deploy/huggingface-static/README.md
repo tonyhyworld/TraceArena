@@ -46,3 +46,5 @@ compare 2–4 agent/model configurations across at least 10 replayable episodes,
 and deliver an evidence-linked path comparison and review session. Evaluation
 pilots start at RMB 29,800; see the [pilot one-pager](https://github.com/tonyhyworld/TraceArena/blob/main/docs/open_source_release/PILOT_ONE_PAGER.md)
 or [request a pilot](https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml).
+
+Suggest the next world in the [Space discussion](https://huggingface.co/spaces/tonyworld888/tracearena-demo/discussions/1).
