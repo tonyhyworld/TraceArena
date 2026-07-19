@@ -2,7 +2,7 @@
 
 [English quick guide](scenario-pack-guide.md) · [中文快速清单](scenario-pack-guide.zh-CN.md)
 
-> 适用版本：TraceArena `v0.1.3`，场景 API `1.0`。本文以本公开仓的加载器、编译器和校验器实际行为为准。
+> 适用版本：TraceArena `v0.1.9`，场景 API `1.0`。本文以本公开仓的加载器、编译器和校验器实际行为为准；若使用更新的主分支，请以对应测试和校验器输出为最终依据。
 
 场景包让开发者定义一个 AI 世界；TraceArena 负责运行这个世界。一个合格场景包应当在**不修改通用 OS** 的前提下，独立定义角色、行动、约束、结果和可审计轨迹。
 
