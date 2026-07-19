@@ -1,6 +1,6 @@
 # TraceArena 开源首发内容包（可直接发布）
 
-> 状态：首发候选稿，已替换为真实公开链接。发布前只需补充实际运行统计，不得编造用户、收入或性能数字。
+> 状态：v0.1.9 对外分发稿，已替换为真实公开链接。发布前只需补充实际运行统计，不得编造用户、收入或性能数字。
 
 ## 统一定位
 
@@ -27,6 +27,7 @@ evidence → structured action → world event → authoritative settlement → 
 - 设计合作伙伴：[公开试点招募议题](https://github.com/tonyhyworld/TraceArena/issues/7)
 - 试点范围与验收：[Agent Evaluation Pilot one-pager](https://github.com/tonyhyworld/TraceArena/blob/main/docs/open_source_release/PILOT_ONE_PAGER.md)
 - 商业支持：[commercial-support.md](https://github.com/tonyhyworld/TraceArena/blob/main/docs/commercial-support.md)
+- 最新发布：[v0.1.9](https://github.com/tonyhyworld/TraceArena/releases/tag/v0.1.9)
 
 已验证的最短路径：
 
@@ -93,6 +94,10 @@ Replay: https://github.com/tonyhyworld/TraceArena/tree/main/examples/market_repl
 Scenario proposal: https://github.com/tonyhyworld/TraceArena/issues/2  
 Pilot: https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml
 Design partner call: https://github.com/tonyhyworld/TraceArena/issues/7
+
+For a bounded enterprise workflow, the standard evaluation pilot starts at RMB
+29,800 and is scoped around an agreed world contract, 10 replayable episodes,
+and a comparison report. Details: https://github.com/tonyhyworld/TraceArena/blob/main/docs/open_source_release/PILOT_ONE_PAGER.md
 
 We are looking for world builders, settlement-verifier authors, tool-adapter maintainers, replay engineers, and reproducible failure cases.
 
