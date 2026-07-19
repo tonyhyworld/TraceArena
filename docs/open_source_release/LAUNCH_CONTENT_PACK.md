@@ -4,7 +4,7 @@
 
 ## 统一定位
 
-**中文**：TraceArena 是面向真实约束世界的、多智能体连续行动与结果验证平台：让 Agent 在真实工具、可执行规则和可验证结果中行动，而不只是回答问题。
+**中文**：TraceArena 是面向物理世界问题的开源 AI World OS：把资源、目标、规则、工具和结果权威加载进可运行的世界，让多个 Agent 通过博弈比较路径、持续执行并接受后果，而不只是回答问题。
 
 **English**: TraceArena is an open runtime for auditable agent worlds with real tools, enforceable rules, and verifiable outcomes.
 
@@ -54,7 +54,7 @@ TraceArena 因此把连续行动拆成严格链路：
 
 每个结果都能追问：谁在何时提交了什么行动？引用了哪些证据？世界产生了什么事件？哪个规则决定了结算？状态、资源或胜负为什么变化？
 
-这让多智能体竞争不再只是“谁的回答更像人”，而是让相同约束、相同资源和相同目标下的行动后果自然涌现，并沉淀为可回放、可比较、可复盘的决策流程数据。这是一种面向 Agent 时代的新训练理念和价值数据沉淀方式。
+这让多智能体竞争不再只是“谁的回答更像人”，而是把资源、目标、规则和结果权威装载进一个 AI World，让不同路径在相同约束下博弈、接受后果并被比较。回放和证据因此成为帮助人类在真实执行前检查方案的依据，而不是脱离问题本身的训练数据产品。
 
 第一版开源聚焦场景包规范、工具与代码接口、证据/事件/结算契约、确定性回放和审计导出。欢迎贡献新的世界、验证器、工具适配器、回放可视化和可复现失败案例。
 
@@ -64,13 +64,13 @@ TraceArena 因此把连续行动拆成严格链路：
 
 ## English developer launch post
 
-### TraceArena: open-source worlds where agent actions produce verifiable outcomes
+### TraceArena: the open-source Physical World OS for multi-agent path selection
 
 Most agent demos end when a model emits an answer. Real systems begin there.
 
 An agent may claim that it researched a fact, called a tool, placed an order, or changed a resource. Unless another system verifies the evidence, validates the action, applies the rules, and records the outcome, that claim is still text.
 
-TraceArena puts multiple agents inside the same stateful world. Agents can inspect evidence, use tools, run code, submit structured actions, receive world feedback, and recover from failure. The world—not the model—decides what actually happened.
+TraceArena loads resources, goals, rules, tools and authoritative outcomes into the same stateful world. Multiple agents can inspect evidence, use tools, run code, submit structured actions, receive world feedback, and recover from failure. The world—not the model—decides what actually happened and which path performed better under the declared constraints.
 
 Every material result is traceable through:
 

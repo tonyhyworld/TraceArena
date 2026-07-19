@@ -7,9 +7,10 @@ rules.
 
 ## Available engagements
 
-- **Agent evaluation pilot:** define one workflow, compare 2–4 agent/model
-  configurations, run at least 10 reproducible episodes, and deliver an
-  evidence-linked report and review session.
+- **Physical-world decision pilot:** define one workflow as a world contract,
+  compare 2–4 agent/model configurations under the same resources, goals and
+  constraints, run reproducible episodes, and deliver an evidence-linked path
+  comparison and review session.
 - **Private scenario design:** model roles, tools, permissions, pressure,
   authoritative outcomes, and acceptance checks for a customer workflow.
 - **Integration and deployment:** connect approved tools or providers, deploy

@@ -6,15 +6,40 @@
 
 ![TraceArena AI World demo](docs/assets/tracearena-demo-poster.png)
 
-**The open-source runtime for auditable multi-agent worlds — real tools, verifiable outcomes, watchable runs.**
+**The open-source Physical World OS for multi-agent decision worlds.**
 
-TraceArena is the open-source runtime behind **AI World**: a shared, constrained world where multiple agents act continuously, compete or cooperate, and leave a verifiable trail. Agents can use real tools, gather evidence, submit structured actions, receive world feedback, and live with the consequences. The world—not the model—decides what actually happened.
+TraceArena is the runtime behind **AI World**: load the resources, goals, rules, tools, information boundaries and authoritative outcomes of a real-world problem into a runnable world. Agents then research, compete, cooperate and act continuously inside that world. The system simulates consequences, settles what actually happened, and compares competing paths under the objective and constraints declared by the world.
 
-### The AI World idea
+### From a physical-world problem to a runnable AI World
 
-Most agent demos stop at a single response. AI World puts agents inside a world with shared rules, limited resources, competing objectives and authoritative settlement. Intelligence is allowed to **emerge through interaction**: agents perceive, research, decide, act, observe the consequences, and adapt while other agents are doing the same. The resulting decision process is more useful than a final answer alone because every claim, tool call, action and outcome can be inspected, replayed and compared.
+The long-term vision is one OS in which different physical worlds—operations, markets, logistics, governance, incident response, research and more—can be loaded as scenario contracts instead of rebuilt as one-off agent demos. A world contract makes the problem executable:
 
-This is a new agent-development and training paradigm: build environments that make agents live under constraints, then retain the resulting episodes as high-quality evaluation and training data. TraceArena makes that loop programmable, watchable and auditable.
+| Physical-world element | Loaded into TraceArena as |
+| --- | --- |
+| resources and state | world objects, budgets, inventories and lifecycle state |
+| goals and priorities | agent objectives and settlement metrics |
+| rules and constraints | validators, permissions, clocks and failure conditions |
+| tools and evidence | capability schemas, observations and provenance |
+| consequences | authoritative events, settlement and resource updates |
+
+This is not a dataset warehouse, a chatbot wrapper or a promise of universal optimality. It is a world runtime: **the best path is the path that performs best under the declared objective, constraints and evidence**. Replayable traces are an auditable by-product that helps people inspect, compare and improve decisions; they are not the product's primary promise.
+
+### Why multi-agent game changes the decision problem
+
+A single agent can describe a plausible plan. In an AI World, several agents face the same state while holding different objectives, information and risk limits. Their alternatives compete through a shared clock, finite resources and world feedback. The world rejects invalid actions, applies consequences and settles outcomes, so a persuasive answer cannot win by rhetoric alone.
+
+```mermaid
+flowchart LR
+  P[Physical-world problem] --> C[World contract]
+  C --> G[Multi-agent game]
+  G --> S[Simulation & settlement]
+  S --> X[Compare paths under constraints]
+  X --> H[Human decision or controlled execution]
+  S --> R[Replayable evidence]
+  R --> G
+```
+
+The result is a new agent-development paradigm: lower the barrier from “how do I make an AI solve this operational problem?” to “how do I declare the world's resources, goals, rules and outcomes?” Then let agents iterate toward a goal through a continuous **perceive → deliberate → act → receive feedback → revise** loop, with checkpoints and permission boundaries.
 
 ### Choose your path
 
@@ -29,11 +54,11 @@ Each path has one next action. You do not need an API key for the public replay.
 
 ```mermaid
 flowchart LR
-  A[Agents] --> B[Perception & evidence]
+  A[Agents with different goals] --> B[Perception & evidence]
   B --> C[Planning & tool use]
   C --> D[World actions]
   D --> E[Authoritative settlement]
-  E --> F[Replayable episode data]
+  E --> F[Path comparison & next goal loop]
   F --> A
 ```
 
@@ -44,8 +69,9 @@ perception → planning → evidence → tools/code → action
            → world facts → settlement → result → replay
 ```
 
-- declarative scenario contracts for roles, actions, tools, visibility and settlement;
+- declarative world contracts for resources, goals, rules, roles, actions, tools, visibility and settlement;
 - a multi-agent tick pipeline with observations, actions, events and authoritative outcomes;
+- game-style comparison of alternative paths under the same world constraints;
 - deterministic replay and evidence-linked traces;
 - validation and purity tools for keeping domain rules out of the generic runtime;
 - a no-key synthetic Market Replay example for local evaluation.
