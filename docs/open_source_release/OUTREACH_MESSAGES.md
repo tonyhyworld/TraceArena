@@ -8,7 +8,7 @@
 
 你好，我在做 AI World / TraceArena：多个 Agent 在共享约束世界中使用工具、提交行动，再由世界验证事件、结算和结果，而不是只评价最终回答。
 
-现在公开了一个无需 API Key 的离线 Market Replay。你如果方便，想请你跑一次并告诉我三件事：从打开到第一个结果花了多久、最容易卡住的地方、你认为它对 Agent 评测/训练/工具编排是否有价值。
+现在公开了一个无需 API Key 的离线 Market Replay。你如果方便，想请你跑一次并告诉我三件事：从打开到第一个结果花了多久、最容易卡住的地方、你认为它对比较 Agent 路径、验证工具或设计领域世界是否有价值。
 
 入口：<https://tonyworld888-tracearena-demo.static.hf.space/index.html>
 文档：<https://github.com/tonyhyworld/TraceArena/blob/main/docs/quickstart.md>
@@ -19,9 +19,9 @@
 
 **Subject: Could you run one auditable multi-agent world?**
 
-I’m building AI World / TraceArena: multiple agents act with tools inside the same constrained world, while the world verifies events, settlement, and outcomes—not only the final answer.
+I’m building AI World / TraceArena: an open-source Physical World OS where multiple agents act with tools inside the same constrained world, while the world verifies events, settlement, and outcomes—not only the final answer.
 
-There is a no-key offline Market Replay. If you have a few minutes, could you run it once and tell me: time to the first result, the first confusing step, and whether this is useful for agent evaluation, training, or tool orchestration?
+There is a no-key offline Market Replay. If you have a few minutes, could you run it once and tell me: time to the first result, the first confusing step, and whether this is useful for comparing agent paths, validating tools, or designing a domain world?
 
 Demo: <https://tonyworld888-tracearena-demo.static.hf.space/index.html>
 Quickstart: <https://github.com/tonyhyworld/TraceArena/blob/main/docs/quickstart.md>
@@ -34,10 +34,10 @@ No private data is required, and this is not investment advice. Your feedback wi
 
 这里有一个无需 API Key 的浏览器回放。它不是模型排行榜，也不连接真实券商；重点是把“看到了什么 → 为什么行动 → 世界发生了什么 → 结果如何结算”保留下来。
 
-如果你愿意，想请你运行一次并告诉我：首个结果耗时、最困惑的一步，以及这条轨迹对你的 Agent 评测/训练/工具编排是否有价值。无需提供私有数据。
+如果你愿意，想请你运行一次并告诉我：首个结果耗时、最困惑的一步，以及这条轨迹对比较 Agent 路径、验证工具或设计领域世界是否有价值。无需提供私有数据。
 
 Demo：<https://tonyworld888-tracearena-demo.static.hf.space/index.html>
-技术讨论：<https://github.com/tonyhyworld/TraceArena/discussions/8>
+技术讨论：<https://github.com/tonyhyworld/TraceArena/discussions/14>
 
 这只是一次技术交流邀请；不会把你的反馈、项目名称或运行数据公开，也不构成投资建议。
 

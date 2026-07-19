@@ -7,8 +7,8 @@
 - Repository: <https://github.com/tonyhyworld/TraceArena>
 - Demo: <https://tonyworld888-tracearena-demo.static.hf.space/index.html>
 - Quickstart: <https://github.com/tonyhyworld/TraceArena/blob/main/docs/quickstart.md>
-- First 10 runs: <https://github.com/tonyhyworld/TraceArena/discussions/6>
-- Technical discussion: <https://github.com/tonyhyworld/TraceArena/discussions/8>
+- Clean-room replay evidence: <https://github.com/tonyhyworld/TraceArena/discussions/13>
+- Technical discussion: <https://github.com/tonyhyworld/TraceArena/discussions/14>
 - Scenario proposal: <https://github.com/tonyhyworld/TraceArena/issues/2>
 - Evaluation pilot: <https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml>
 - Design partner call: <https://github.com/tonyhyworld/TraceArena/issues/7>
@@ -31,7 +31,7 @@
 
 1. 从打开到看到第一个结果花了多久；
 2. 哪一步最容易卡住或看不懂；
-3. 你认为这对 Agent 评测、训练或工具编排有没有实际价值。
+3. 你认为这对比较 Agent 路径、验证工具或设计领域世界有没有实际价值。
 
 入口：<https://tonyworld888-tracearena-demo.static.hf.space/index.html>
 
@@ -43,7 +43,7 @@ There is a no-key offline Market Replay that exposes the full evidence → actio
 
 1. time to the first result;
 2. the first confusing or blocked step;
-3. whether this is useful for agent evaluation, training, or tool orchestration.
+3. whether this is useful for comparing agent paths, validating tools, or designing a domain world.
 
 Demo: <https://tonyworld888-tracearena-demo.static.hf.space/index.html>
 
@@ -56,7 +56,7 @@ Demo: <https://tonyworld888-tracearena-demo.static.hf.space/index.html>
 
 ## 运行记录
 
-公开仓当前基线（2026-07-18）：GitHub stars 2、forks 0、watchers 0；近 14 天 views 0、clones 0。已核验其中 1 个 star 来自非维护者账号（记录时间 2026-07-17 19:38 UTC），但尚无外部运行、评论或试点证据；后续每轮触达后重新记录，避免把单一兴趣信号夸大为采用。
+公开仓当前基线（2026-07-19）：GitHub stars 2、forks 0；GitHub 近 14 天 views 177（4 个独立访客）、clones 826（186 个独立克隆）。这些是访问信号，不等于外部运行；目前仍无外部运行、场景贡献或试点证据，后续每轮触达后重新记录。
 
 | 编号 | 联系对象 | 渠道 | 首次运行时间 | 首个结果耗时 | 卡点 | 是否愿意贡献 | 是否潜在试点 |
 |---|---|---|---|---|---|---|---|
