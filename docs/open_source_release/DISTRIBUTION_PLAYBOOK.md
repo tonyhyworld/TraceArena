@@ -38,6 +38,19 @@ Show HN: TraceArena – an open-source Physical World OS for comparing agent pat
 TraceArena is an open-source Physical World OS for multi-agent decision worlds. Load resources, goals, rules, tools, and outcomes; let agents compete under shared constraints; compare paths before controlled execution.
 ```
 
+首条 Maker 评论草稿：
+
+```text
+I built TraceArena after seeing too many agent demos stop at a convincing answer. In a real workflow, the hard question is whether the world accepted the action, applied the consequence, and can explain the outcome.
+
+TraceArena loads a concrete problem as an AI World: resources, goals, rules, tools, evidence boundaries, and settlement authority. Multiple agents then compare paths under the same constraints. The public demo is synthetic, browser-local, and requires no API key; the open-source runtime includes deterministic replay, a full frontend, and scenario-pack guides.
+
+If you build agents, I would love feedback on the smallest physical-world contract you would load first.
+```
+
+建议标题：`TraceArena — Physical World OS for multi-agent decisions`
+首图：[`tracearena-physical-world-os-thumbnail.png`](../../docs/assets/tracearena-physical-world-os-thumbnail.png)
+
 主要链接应直接指向可体验的 Demo 或 GitHub，而不是只指向邮箱收集页。Product Hunt 要求个人账号发布，建议由创始人本人提交；新账号可能需要完成 onboarding 或等待一周。官方说明：<https://help.producthunt.com/en/articles/479557-how-to-post-a-product>。
 
 CTA：在线 Demo。不要在同一帖里同时要求 Star、贡献代码和购买服务。
