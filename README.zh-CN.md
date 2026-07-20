@@ -105,7 +105,7 @@ TraceArena 不是数据仓库，也不承诺所有问题都有通用最优答案
 | 不安装任何东西先看一次运行 | [打开在线 Demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html) |
 | 本地运行确定性 Replay | [五分钟上手](docs/quickstart.zh-CN.md) |
 | 构建新的 Agent 世界 | [提出场景包](https://github.com/tonyhyworld/TraceArena/issues/2) |
-| 用真实工作流做评测 | [申请评测试点](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml) |
+| 为团队加载一个私有 AI 世界 | [启动 AI World 试点](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml) |
 
 每个入口只有一个下一步动作；公开 Replay 不需要 API Key。
 
@@ -346,7 +346,7 @@ TraceArena 欢迎场景包作者、Agent 开发者、评测人员、研究者，
 [商业支持说明](docs/commercial-support.zh-CN.md)。开源运行时继续采用 Apache-2.0；付费内容是围绕
 开源运行时提供的实施、集成、场景设计和运营支持。
 
-如果你希望先从一个明确范围开始，请阅读 [10 天评测试点说明](docs/agent-evaluation-pilot.md)，其中列出了交付物、验收标准和人民币 29,800 元起的起始价格。
+如果你希望先从一个明确范围开始，请阅读 [10 天 AI World 试点说明](docs/agent-evaluation-pilot.md)，其中列出了交付物、验收标准和人民币 29,800 元起的起始价格。
 
 如果你关心开放基准和开源项目的可持续资金路径，请参阅[资助路线研究笔记](docs/open_source_release/FUNDING_PATHS.md)。
 

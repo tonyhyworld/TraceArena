@@ -50,11 +50,11 @@ The result is a new agent-development paradigm: lower the barrier from “how do
 | See a world run without installing anything | [Open the live Demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html) |
 | Run a deterministic replay locally | [Follow the five-minute Quickstart](docs/quickstart.md) |
 | Build a new agent world | [Propose a scenario pack](https://github.com/tonyhyworld/TraceArena/issues/2) |
-| Evaluate a real workflow with your team | [Request an evaluation pilot](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml) |
+| Load a private AI World with your team | [Start an AI World Pilot](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml) |
 
 Each path has one next action. You do not need an API key for the public replay.
 
-> **For teams:** turn one bounded workflow into a replayable evaluation world, compare 2–4 agent/model configurations, and receive a reviewable evidence report. Pilot engagements start at RMB 29,800; see the [pilot one-pager](docs/open_source_release/PILOT_ONE_PAGER.md) or [request a pilot](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml).
+> **For teams:** load one bounded real-world problem as a private AI World, define its goal, resources and rules, let 2–4 agent/model configurations compete, and receive a reviewable path and outcome report. Pilot engagements start at RMB 29,800; see the [AI World Pilot one-pager](docs/open_source_release/PILOT_ONE_PAGER.md) or [start a pilot](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml).
 
 ```mermaid
 flowchart LR
@@ -232,7 +232,7 @@ this repository** action.
 - Propose an open benchmark using the [benchmark proposal form](.github/ISSUE_TEMPLATE/benchmark-proposal.yml).
 - Report a reproducible bug or request a feature through GitHub Issues.
 - Tell us how the first run went through the [first-run feedback form](https://github.com/tonyhyworld/TraceArena/issues/new?template=first-run-feedback.yml).
-- For a bounded agent-evaluation pilot, use the [pilot request form](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml).
+- To load a bounded private AI World with your team, use the [AI World Pilot request form](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml).
 - For implementation, integration, or evaluation support, see the [commercial support path](docs/commercial-support.md).
 - For a concrete 10-day pilot scope, deliverables, acceptance criteria, and starting price, see the [pilot one-pager](docs/agent-evaluation-pilot.md).
 - For public benchmark and open-source sustainability paths, see the [funding research note](docs/open_source_release/FUNDING_PATHS.md).
@@ -244,7 +244,7 @@ this repository** action.
 For the maintainer-facing first 14-day distribution loop, see the [Growth
 Execution Board](docs/open_source_release/GROWTH_EXECUTION_BOARD.md). It keeps
 the funnel focused on real runs, useful feedback, scenario contributions, and
-qualified evaluation pilots rather than vanity metrics.
+qualified AI World pilots rather than vanity metrics.
 
 ## License
 
