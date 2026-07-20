@@ -46,6 +46,28 @@
 
 这些对象来自 2026-07-20 的公开资料检索，不代表合作意向、用户关系或背书。第一轮仍只选择 2–3 个高度匹配对象，先阅读其近期活动，再发个性化邀请。
 
+## 个性化消息草稿（第一轮）
+
+### 给 LangChain AgentEvals 维护者
+
+> I saw that AgentEvals focuses on evaluating agent trajectories. I’m building TraceArena, an open AI World OS where the trajectory is produced inside a declared world: anyone defines the goal, resources and rules, multiple agents compete, and the world settles accepted or rejected actions and consequences. Would you be open to comparing a trajectory scorer with a world-owned settlement record? The no-key replay is here: <https://tonyworld888-tracearena-demo.static.hf.space/index.html>.
+
+主要问题：轨迹评分之外，哪些世界规则和结果权威才是评测必须显式声明的？
+
+### 给 Snowflake Agent World Model 维护者
+
+> I saw the Agent World Model project’s focus on executable tool-use environments. TraceArena approaches the same problem from the world-contract side: anyone declares a goal, resources, rules, tools and consequences, then multiple agents compete inside one replayable world. I’d value your feedback on where a scenario contract should end and an environment-generation pipeline should begin. Public replay: <https://github.com/tonyhyworld/TraceArena/tree/main/examples/market_replay>.
+
+主要问题：环境生成、能力接口和权威结算之间，怎样划分最容易复用的边界？
+
+### 给 OpenCity 研究者
+
+> I’m exploring TraceArena as an AI World OS for domains such as city governance, capital markets and drug discovery. OpenCity is a useful reference for multi-agent urban simulation; TraceArena adds an explicit goal/resources/rules contract, competing agent paths, and visible evidence-to-outcome replay. Would a small synthetic city-governance scenario be a useful way to compare policy paths before connecting real data?
+
+主要问题：城市治理世界中，哪些目标、资源和约束最适合先做成可复现的合成场景？
+
+发送前检查：先阅读对方近期仓库/论文动态；每次只发一条；只邀请技术交流或一次公开回放，不请求点赞、Star 或转发。
+
 建议第一轮只选择 2–3 个高度匹配对象，并邀请其运行同一个公开 Demo；不要把这张表当作群发名单或客户名单。
 
 ## 首次邀请模板（中文）
