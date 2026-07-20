@@ -267,8 +267,7 @@ PYTHONPATH=backend python backend/scripts/market_replay.py \
   --locale zh-CN
 ```
 
-内置 `capital_market` 回放使用合成 fixture 和模拟账本，不发起模型调用、不需要券商账户，
-也不执行真实下单。它是评测/仿真示例，不构成投资建议。欢迎加入 [Physical World OS 合约讨论](https://github.com/tonyhyworld/TraceArena/discussions/14)，交流首次运行体验和场景包想法。使用 `--locale en-US` 可切换
+内置 [`capital_market` Public Edition](backend/scenarios/capital_market/) 提供两条路径：默认回放使用合成 fixture 和模拟账本，不发起模型调用、不需要券商账户，也不执行真实下单；进阶用户可以自带模型，并在合法授权下启用只读市场研究工具。场景不会连接券商或提交真实订单，不构成投资建议。欢迎加入 [Physical World OS 合约讨论](https://github.com/tonyhyworld/TraceArena/discussions/14)，交流首次运行体验和场景包想法。使用 `--locale en-US` 可切换
 英文呈现文本。
 
 想看非金融示例？请阅读[应急响应世界](examples/incident_response_world/README.md)，运行它的确定性 fixture，并观察一次被明确拒绝的提前结案行动。

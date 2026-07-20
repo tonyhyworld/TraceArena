@@ -2,7 +2,7 @@
   "scenario_id": "capital_market_dual_agent_v0",
   "name": "资本市场投资模拟 v0",
   "version": "0.2.0",
-  "description": "两个投资 Agent 在相同初始资金与工具权限下自主研究并交易：真实行情 + 模拟账本，限时 1 小时按组合总资产分胜负。",
+  "description": "Public Edition：两个投资 Agent 在相同初始资金与工具权限下研究并交易；可使用无 Key 回放，也可由用户自带模型和只读市场工具，始终在模拟账本中结算。",
   "os_version": ">=1.0.0",
   "scenario_api_version": "1.0",
   "required_os_capabilities": [
@@ -20,8 +20,8 @@
   "optional_os_capabilities": [
     "presentation_buffer"
   ],
-  "author": "AI世界",
-  "license": "private",
+  "author": "张诺亚",
+  "license": "Apache-2.0",
   "min_agents": 2,
   "max_agents": 2,
   "default_tick_limit": 120,

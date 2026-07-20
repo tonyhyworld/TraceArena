@@ -108,7 +108,7 @@ The OS does not hard-code a domain. A contributor can add a new world by shippin
 
 ## Quickstart
 
-The public preview includes a deterministic, no-key Market Replay that can be run locally in minutes:
+The public preview includes a deterministic, no-key Market Replay that can be run locally in minutes. The [`capital_market` Public Edition](backend/scenarios/capital_market/) also documents the optional BYO-model/read-only-research path; it always settles against a simulated ledger and never connects to a brokerage or submits real orders:
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/tonyhyworld/TraceArena?quickstart=1)
 
@@ -179,7 +179,7 @@ the private 三子夺嫡 pack.
 # Terminal 1 — backend
 cd backend
 source ../.venv/bin/activate
-AIWORLD_CONFIG=./framework.capital_market.yaml PYTHONPATH=. \
+AIWORLD_CONFIG=./framework.public.yaml PYTHONPATH=. \
   python -m uvicorn app.main:app --host 127.0.0.1 --port 8001
 
 # Terminal 2 — create a local account once, then start the frontend

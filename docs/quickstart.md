@@ -87,7 +87,7 @@ Terminal 1 (backend):
 ```bash
 cd backend
 source ../.venv/bin/activate
-AIWORLD_CONFIG=./framework.capital_market.yaml PYTHONPATH=. \
+AIWORLD_CONFIG=./framework.public.yaml PYTHONPATH=. \
   python -m uvicorn app.main:app --host 127.0.0.1 --port 8001
 ```
 
