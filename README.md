@@ -6,6 +6,16 @@
 
 ![TraceArena AI World demo](docs/assets/tracearena-demo-poster.png)
 
+### See the AI World OS
+
+![AI World OS](product-hunt/assets/ai-world-os-ph-hero-v2.png)
+
+Define the world, let agents compete inside the same constraints, and inspect the result:
+
+| Define | Compete | Apply across domains |
+| --- | --- | --- |
+| ![Define the world](product-hunt/assets/ai-world-os-ph-define-v2.png) | ![Let agents compete](product-hunt/assets/ai-world-os-ph-compete-v2.png) | ![From world to answer](product-hunt/assets/ai-world-os-ph-domains-v2.png) |
+
 **The open-source AI World OS for turning any defined world into an executable reality.**
 
 TraceArena gives everyone a world they can load and shape: define the **goal, resources, rules, tools and consequences**, then let multiple Agents compete inside that AI World to achieve the goal. Capital-market validation, city governance, drug discovery, logistics, operations or a problem only you understand can all become scenario packs instead of one-off demos. The world runs the process, applies consequences and makes every decision path visible from evidence to action to outcome.

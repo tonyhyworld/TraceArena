@@ -24,12 +24,12 @@
 
 ## Gallery order
 
-1. `assets/ai-world-os-hero.png` — AI World OS visual identity and world core.
-2. `assets/ai-world-os-architecture.png` — scenario pack → runtime → evidence/replay.
-3. `assets/ai-world-os-decision-chain.png` — define → observe → compete → act → settle → replay.
-4. `assets/ai-world-os-market-example.png` — concrete synthetic world example.
+1. `assets/ai-world-os-ph-hero-v2.png` — AI World OS visual identity and world core.
+2. `assets/ai-world-os-ph-define-v2.png` — define a world with goals, resources, rules and tools.
+3. `assets/ai-world-os-ph-compete-v2.png` — compare competing agent paths inside the same world.
+4. `assets/ai-world-os-ph-domains-v2.png` — load one runtime across multiple real-world domains.
 
-The first three assets are English-first. The product page and maker comment explain the Chinese/English community context without making the launch depend on a Chinese-only screenshot.
+These four assets use a consistent product-launch visual system: light editorial background, large readable headlines and product-like UI panels. They are English-first so the launch is understandable to the international Product Hunt audience.
 
 ## Launch CTA
 
