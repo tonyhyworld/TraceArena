@@ -46,6 +46,7 @@
 - Product Hunt 草稿已创建并保存，状态为未排期、未公开发布：[TraceArena 草稿页](https://www.producthunt.com/products/tracearena)。
 - 公开落地页已提供在线 Demo、公开版本、场景包指南和企业试点咨询邮件入口：[TraceArena landing page](https://tonyhyworld.github.io/TraceArena/)。
 - 已发布一条公开的 Agent World 互操作性技术讨论，邀请环境与轨迹评估项目围绕世界契约、路径和权威结果交流：[Discussion #16](https://github.com/tonyhyworld/TraceArena/discussions/16)。这不是合作或采用证明。
+- 已发布一条社区世界征集讨论，邀请贡献者从城市治理、医药研发、物流/能源或机器人中选择一个最小可复现世界：[Discussion #17](https://github.com/tonyhyworld/TraceArena/discussions/17)。这不是投票或外部贡献证明。
 - 公开仓库当前 `main` 已完成无 API Key 回放与前端构建复核；外部运行、外部场景贡献、合格试点线索和付费收入仍为 0，不能提前宣传为已获得。
 
 ## 下一步 14 天执行门槛（2026-07-20 起）

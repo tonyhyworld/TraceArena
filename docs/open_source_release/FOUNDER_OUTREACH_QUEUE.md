@@ -10,6 +10,7 @@
 - Clean-room replay evidence: <https://github.com/tonyhyworld/TraceArena/discussions/13>
 - Technical discussion: <https://github.com/tonyhyworld/TraceArena/discussions/14>
 - Public interoperability discussion: <https://github.com/tonyhyworld/TraceArena/discussions/16>
+- Community world request: <https://github.com/tonyhyworld/TraceArena/discussions/17>
 - Scenario proposal: <https://github.com/tonyhyworld/TraceArena/issues/2>
 - Evaluation pilot: <https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml>
 - Design partner call: <https://github.com/tonyhyworld/TraceArena/issues/7>
