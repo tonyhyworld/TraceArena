@@ -23,6 +23,8 @@
 - `PYTHONPATH=backend python3 backend/scripts/market_replay.py --fixture examples/market_replay/fixture.json` 通过，显示 `brokerage: disabled`、`network: disabled`，semantic digest 为 `3250361a904b73688ebebc8a4ef04efb74f312b7f665a82f0224f7f7ccb588cb`；
 - 同一命令运行两次，`deterministic_replay_sha256` 完全一致；
 - `frontend/npm run build` 通过。Vite 仅报告既有的 bundle 大小优化提示，不影响构建成功。
+- 修复并发 agent 提交顺序导致的回放漂移：`./scripts/replay-demo.sh` 连续 15 次运行均得到同一 `deterministic_replay_sha256`：
+  `3250361a904b73688ebebc8a4ef04efb74f312b7f665a82f0224f7f7ccb588cb`；相关 pytest 回放测试 10/10 通过。
 
 这证明公开首跑路径可复现，但**不等于外部采用**。截至本次记录，外部场景包、合格试点线索和付费收入仍按下表如实记录为 0。
 

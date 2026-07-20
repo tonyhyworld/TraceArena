@@ -42,7 +42,25 @@ uv sync --extra dev
 
 ## 2. Run the no-key Market Replay
 
-From the repository root:
+After installation, the shortest path is:
+
+macOS/Linux:
+
+```bash
+./scripts/replay-demo.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\scripts\replay-demo.ps1
+```
+
+The wrapper selects the repository virtual environment when it exists and
+writes artifacts to `runs/market_replay_demo/`. You can pass optional flags
+after the script name.
+
+For a fully explicit invocation, run this from the repository root:
 
 ```bash
 PYTHONPATH=backend python backend/scripts/market_replay.py \

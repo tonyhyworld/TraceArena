@@ -115,11 +115,24 @@ class DirectorRuntime:
         settlements: Sequence[SettlementRecord] = (),
         activities: Sequence[AgentActivityFact] = (),
     ) -> Optional[DirectorPlan]:
-        visible = [event for event in events if event.visibility == "public"]
-        visible_activities = [
-            activity for activity in activities
-            if activity.visibility == "public"
-        ]
+        # Agent/tool work is collected concurrently.  The authoritative facts
+        # are immutable, but their arrival order must not change the watchable
+        # plan or its replay digest.  Use stable contract identifiers for the
+        # presentation order rather than asyncio completion order.
+        visible = sorted(
+            (event for event in events if event.visibility == "public"),
+            key=lambda event: str(event.event_id),
+        )
+        visible_activities = sorted(
+            (
+                activity for activity in activities
+                if activity.visibility == "public"
+            ),
+            key=lambda activity: (
+                str(activity.source_action_ref or ""),
+                str(activity.activity_id),
+            ),
+        )
         visible_settlements = [
             record for record in settlements
             if set(record.source_event_refs).issubset(

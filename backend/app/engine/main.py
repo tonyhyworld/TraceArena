@@ -808,7 +808,11 @@ class EngineOS:
         settlements: List[Any],
     ) -> None:
         pending_root = state.internal.setdefault("pending_action_intents", {})
-        for agent_id, action in (actions or {}).items():
+        # Agent turns are collected concurrently.  Preserve a stable
+        # per-tick commit order so world facts, settlements, and replay files
+        # do not depend on which coroutine completed first.
+        for agent_id in sorted((actions or {}), key=str):
+            action = (actions or {}).get(agent_id)
             if action is None:
                 continue
             actual_id = str(getattr(action, "action_id", "") or "")
@@ -1829,7 +1833,8 @@ class EngineOS:
 
         max_bytes = int(getattr(self._cfg.sandbox, "code_workspace_max_bytes", 65536))
         max_files = int(getattr(self._cfg.sandbox, "code_workspace_max_files", 32))
-        for agent_id, action in valid_actions.items():
+        for agent_id in sorted(valid_actions, key=str):
+            action = valid_actions[agent_id]
             if not agent_id:
                 continue
             ws = self._agent_workspaces.get(agent_id)
@@ -3657,7 +3662,11 @@ class EngineOS:
         valid_actions: Dict[str, Any] = {}  # 通过校验的 action（供 Trace 用）
         planned_transitions: List[Any] = []
 
-        for agent_id, action in (actions or {}).items():
+        # Agent turns are collected concurrently.  Preserve a stable
+        # per-tick commit order so world facts, settlements, and replay files
+        # do not depend on which coroutine completed first.
+        for agent_id in sorted((actions or {}), key=str):
+            action = (actions or {}).get(agent_id)
             if action is None:
                 continue
 
@@ -3774,7 +3783,8 @@ class EngineOS:
         self._apply_workspace_code_writes(valid_actions, tick)
 
         # 平台事务提交成功后再执行工具，避免工具观察到半提交状态。
-        for agent_id, action in valid_actions.items():
+        for agent_id in sorted(valid_actions, key=str):
+            action = valid_actions[agent_id]
             try:
                 from app.mcp.tool_executor import resolve_tool_id
 
@@ -3870,7 +3880,8 @@ class EngineOS:
         # deterministic and hybrid actions are committed as WorldAction facts
         # and resolved exclusively by SettlementRuntime.
         pipeline_results: List[CausalPipelineResult] = []
-        for action in valid_actions.values():
+        for agent_id in sorted(valid_actions, key=str):
+            action = valid_actions[agent_id]
             # challenge 类动作已在 _route_submit_challenge_response_actions 中处理完毕
             if self._is_challenge_action(action.action_id):
                 continue
@@ -5126,7 +5137,8 @@ class EngineOS:
             ))
         self._pending_os2_system_events = []
 
-        for agent_id, action in valid_actions.items():
+        for agent_id in sorted(valid_actions, key=str):
+            action = valid_actions[agent_id]
             if action is None:
                 continue
             result = results.get(str(agent_id))
