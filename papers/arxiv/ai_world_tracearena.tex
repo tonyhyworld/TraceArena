@@ -1,0 +1,519 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\newenvironment{Shaded}{}{}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\BuiltInTok}[1]{\textcolor[rgb]{0.00,0.50,0.00}{#1}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
+\newcommand{\ImportTok}[1]{\textcolor[rgb]{0.00,0.50,0.00}{\textbf{#1}}}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % for unnumbered tables
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={AI World: A Scenario-Pack Framework for Verifiable Multi-Agent Problem Solving},
+  pdfauthor={Bingbing Zhang},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{AI World: A Scenario-Pack Framework for Verifiable Multi-Agent
+Problem Solving}
+\author{Bingbing Zhang\\Independent Researcher, TraceArena Open-source Project\\\texttt{tonyhyworld@gmail.com}}
+\date{2026}
+
+\begin{document}
+\maketitle
+
+\section{AI World: A Scenario-Pack Framework for Verifiable Multi-Agent
+Problem
+Solving}\label{ai-world-a-scenario-pack-framework-for-verifiable-multi-agent-problem-solving}
+
+\subsection{Abstract}\label{abstract}
+
+Large language models are increasingly used as agents, yet most agent
+systems are built around one-shot answers or fixed workflows. This makes
+it difficult for domain experts to encode their own constraints, for
+multiple agents to explore competing strategies, and for users to verify
+how an outcome was produced. We present \textbf{AI World}, implemented
+by the open-source \textbf{TraceArena} runtime, a scenario-pack
+framework for turning domain problems into executable worlds. A scenario
+pack declares goals, roles, resources, rules, tools, external data,
+termination conditions, settlement logic, and presentation metadata.
+Within a loaded world, multiple agents execute a bounded
+observation-\/-planning-\/-action-\/-feedback loop. A world kernel
+validates actions and advances state; a settlement runtime computes
+outcomes from simulation rules, external facts, deterministic verifiers,
+or hybrid combinations; and an event ledger preserves an auditable trace
+that can be replayed visually. The contribution is a reusable interface
+between domain expertise and agent execution: experts define the world,
+while the runtime provides orchestration, verification, and
+observability. We describe the architecture, execution protocol,
+scenario-pack design, and an evaluation methodology for comparing agents
+and strategies under identical constraints. The system is released with
+public examples and reproducibility guidance.
+
+\textbf{Keywords:} multi-agent systems, agent environments, scenario
+packs, agent loop, verifiable execution, AI simulation, decision
+traceability, visual replay
+
+\subsection{1. Introduction}\label{1-introduction}
+
+An agent that produces a plausible paragraph is not necessarily an agent
+that can solve a real problem. Real decisions unfold over time, consume
+resources, face permissions and constraints, interact with other
+decision makers, and produce consequences that may only become visible
+later. Domain experts also need to express what counts as a legal action
+and what counts as a good result. These requirements are difficult to
+satisfy with a single prompt, a one-shot benchmark, or a fixed workflow
+engine.
+
+AI World addresses this gap by providing an executable world abstraction
+for domain experts. A world is defined by a scenario pack rather than
+hard-coded into the operating system. The expert declares the domain
+objective, participants, resources, rules, tools, evidence sources, and
+settlement criteria. Multiple agents can then act in the same world,
+compete or cooperate, receive feedback, revise plans, and continue until
+a goal or termination condition is reached. The runtime makes the entire
+chain visible: what an agent observed, what it decided, what action it
+attempted, how the world responded, and how the final result was
+settled.
+
+Our central thesis is:
+
+\begin{quote}
+A domain expert should be able to turn a real problem into a runnable
+world without first building a complete agent platform, while every
+important action remains verifiable and replayable.
+\end{quote}
+
+This paper makes four contributions:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  A scenario-pack abstraction that separates domain definitions from the
+  general-purpose runtime.
+\item
+  A multi-agent execution loop with explicit world validation, feedback,
+  bounded retries, and termination.
+\item
+  A settlement and trace model that supports simulated,
+  external-reality, deterministic-verifier, and hybrid worlds.
+\item
+  A visual presentation path that converts verified facts into
+  human-readable, replayable decision stories without making the
+  narrator authoritative over the world state.
+\end{enumerate}
+
+\subsection{2. Design Goals and
+Non-Goals}\label{2-design-goals-and-non-goals}
+
+\subsubsection{2.1 Goals}\label{21-goals}
+
+AI World is designed to:
+
+\begin{itemize}
+\tightlist
+\item
+  lower the barrier for domain experts to build agent environments;
+\item
+  support continuous action rather than one-shot completion;
+\item
+  allow multiple agents and strategies to be compared under the same
+  world constraints;
+\item
+  keep world state, actions, events, settlement, and traces auditable;
+\item
+  work with different LLM providers and internal or external tools;
+\item
+  make complex execution understandable through live visualization and
+  replay.
+\end{itemize}
+
+\subsubsection{2.2 Non-goals}\label{22-non-goals}
+
+AI World is not a claim that an LLM is correct, safe, or autonomous in
+every setting. It is not a replacement for production controls,
+regulatory review, human authorization, or physical safety systems. It
+is also not primarily a dataset marketplace. Trajectories and evaluation
+records are useful outputs, but the product\textquotesingle s primary
+value is providing a reusable world framework for solving and inspecting
+domain problems.
+
+\subsection{3. System Model}\label{3-system-model}
+
+Let a scenario pack define a world (W) with state (s\_t), agents (A),
+actions (U), tools (T), observations (O), and a settlement function (S).
+At step (t), agent (a\_i) receives an authorized observation (o\_\{i,t\}
+= V\_i(s\_t)), where (V\_i) is the visibility policy for that role. The
+agent produces a plan and a candidate action (u\_\{i,t\}). The world
+kernel applies a legality function (L(u\_\{i,t\}, s\_t)). If the action
+is legal, the transition function produces (s\_\{t+1\}) and a world
+event (e\_t); otherwise the kernel returns a structured failure that can
+be used by the agent for reflection.
+
+The run ends when a goal predicate, a termination predicate, or a
+resource/time budget is reached. The settlement runtime computes (r =
+S(s\_\{0:T\}, e\_\{0:T\}, x)), where (x) may include external facts such
+as market prices or deterministic verifier outputs. The trace ledger
+stores observations, model decisions, tool calls, actions, failures,
+events, settlement records, and presentation facts.
+
+\subsection{4. Architecture}\label{4-architecture}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{Scenario Pack}
+\NormalTok{  goals / roles / resources / rules / tools / settlement / presentation}
+\NormalTok{                              |}
+\NormalTok{                              v}
+\NormalTok{TraceArena Runtime}
+\NormalTok{  loader {-}\textgreater{} scheduler {-}\textgreater{} agent harness {-}\textgreater{} world kernel {-}\textgreater{} event ledger}
+\NormalTok{                                      |                 |}
+\NormalTok{                                      v                 v}
+\NormalTok{                               LLM providers       settlement runtime}
+\NormalTok{                                      \textbackslash{}                 /}
+\NormalTok{                                       v               v}
+\NormalTok{                                  verified facts and traces}
+\NormalTok{                                             |}
+\NormalTok{                                             v}
+\NormalTok{                              director {-}\textgreater{} renderer {-}\textgreater{} replay / console}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{4.1 Scenario-pack layer}\label{41-scenario-pack-layer}
+
+The scenario pack is the extension boundary. It declares the world
+vocabulary, roles, actions, resources, tools, clocks, goals, settlement
+manifest, and rendering bindings. The runtime does not assume that every
+world has the same action schema or reward function.
+
+\subsubsection{4.2 Agent harness}\label{42-agent-harness}
+
+The harness converts an LLM into a bounded actor. It assembles role
+prompts and world observations, exposes approved capabilities, invokes
+tools, parses structured actions, collects feedback, and controls
+retries and budgets. A failed action is not silently treated as success;
+it becomes an explicit feedback event.
+
+\subsubsection{4.3 World kernel}\label{43-world-kernel}
+
+The world kernel is authoritative for state transitions. It enforces
+permissions, action schemas, resource availability, visibility, phase
+rules, and event creation. This separation prevents a language model or
+a narrative component from directly declaring its own outcome.
+
+\subsubsection{4.4 Settlement runtime}\label{44-settlement-runtime}
+
+Different domains require different sources of truth. AI World supports
+four settlement modes:
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+Mode & Source of outcome & Example \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Simulation & Scenario rules & social influence, resource changes \\
+External reality & External data or service & observed prices, external
+task result \\
+Deterministic verifier & Reproducible checker & tests, schemas, exact
+graders \\
+Hybrid & External facts plus deterministic rules & market price plus
+portfolio ledger \\
+\end{longtable}
+}
+
+\subsubsection{4.5 Trace ledger and
+replay}\label{45-trace-ledger-and-replay}
+
+The ledger records the facts needed to explain a run. A run can be
+inspected as a timeline or replayed from fixtures. This supports
+debugging, model comparison, expert review, and later experimental
+analysis.
+
+\subsubsection{4.6 Director and
+renderer}\label{46-director-and-renderer}
+
+The director translates verified events and settlement records into
+audience-facing descriptions and rendering commands. It may explain why
+an action mattered, but it cannot replace the world kernel or rewrite
+the settlement record. This design separates narrative clarity from
+factual authority.
+
+\subsection{5. Agent Loop Protocol}\label{5-agent-loop-protocol}
+
+The canonical loop is:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{observe {-}\textgreater{} plan {-}\textgreater{} select capability {-}\textgreater{} execute {-}\textgreater{} validate}
+\NormalTok{    \^{}                                         |}
+\NormalTok{    |{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-} feedback / reflect {-}{-}{-}{-}{-}{-}{-}{-}|}
+\end{Highlighting}
+\end{Shaded}
+
+The loop is bounded by explicit policies:
+
+\begin{itemize}
+\tightlist
+\item
+  maximum steps or ticks;
+\item
+  token and tool budgets;
+\item
+  action permissions;
+\item
+  world termination conditions;
+\item
+  retry and failure policies;
+\item
+  human approval gates where required.
+\end{itemize}
+
+This allows ``continuous execution'' to mean sustained goal-directed
+work rather than an unbounded or uncontrolled process.
+
+\subsection{6. Building a Domain Scenario
+Pack}\label{6-building-a-domain-scenario-pack}
+
+A domain team can create a scenario pack in five stages:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{State the problem.} Define a measurable objective and what
+  constitutes completion.
+\item
+  \textbf{Model the world.} Identify actors, resources, time,
+  information, constraints, and external dependencies.
+\item
+  \textbf{Declare actions and tools.} Specify which actions are legal,
+  which tools each role can use, and which side effects require
+  authorization.
+\item
+  \textbf{Define settlement.} Select simulation rules, an external fact
+  source, a deterministic verifier, or a hybrid.
+\item
+  \textbf{Define presentation.} Choose the events, metrics, decisions,
+  and comparisons that experts and viewers need to see.
+\end{enumerate}
+
+The resulting pack can be run repeatedly with different models, prompts,
+seeds, role policies, or tool configurations while keeping the world
+definition fixed.
+
+\subsection{7. Applications}\label{7-applications}
+
+AI World is domain-neutral. Public examples and target applications
+include:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Capital markets:} compare research and portfolio strategies
+  under market data, risk budgets, and trading rules.
+\item
+  \textbf{City governance:} test transport, emergency response, and
+  resource allocation policies with multiple stakeholders.
+\item
+  \textbf{Drug discovery:} plan experiments under budget, evidence, and
+  trial-stage constraints.
+\item
+  \textbf{Logistics:} coordinate orders, inventory, routes, weather, and
+  disruptions.
+\item
+  \textbf{Manufacturing and robotics:} schedule production, handle
+  faults, and respect safety boundaries in a controlled world.
+\item
+  \textbf{Education and research:} create reproducible experimental
+  worlds for teaching, hypothesis testing, and model evaluation.
+\end{itemize}
+
+\subsection{8. Evaluation Methodology}\label{8-evaluation-methodology}
+
+This paper intentionally distinguishes implemented capabilities from
+measured results. A reproducible evaluation should include:
+
+\subsubsection{8.1 Research questions}\label{81-research-questions}
+
+\begin{itemize}
+\tightlist
+\item
+  Does explicit world validation reduce illegal or impossible actions?
+\item
+  Does multi-agent competition discover different and better paths than
+  a single agent?
+\item
+  Does a feedback-and-reflection loop improve recovery after failure?
+\item
+  Does visual replay improve expert ability to identify why a result
+  occurred?
+\item
+  How stable are results across models, seeds, and repeated runs?
+\end{itemize}
+
+\subsubsection{8.2 Conditions}\label{82-conditions}
+
+Compare at least:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  single agent vs. multiple agents;
+\item
+  one-shot response vs. bounded Agent Loop;
+\item
+  no tools vs. approved tools;
+\item
+  no reflection vs. feedback-triggered reflection;
+\item
+  narrative-only judgment vs. authoritative settlement.
+\end{enumerate}
+
+\subsubsection{8.3 Metrics}\label{83-metrics}
+
+Recommended metrics include goal completion, settlement score, resource
+cost, rule-violation rate, recovery rate after failed actions, number of
+tool calls, run-to-run variance, trace completeness, and expert review
+time.
+
+All reported numbers should include the scenario-pack version, runtime
+commit, model and provider, prompts, tool configuration, budget, seed,
+hardware, and raw replay artifacts.
+
+\subsection{9. Limitations and Risks}\label{9-limitations-and-risks}
+
+The quality of a world depends on the quality of its rules, data, tools,
+and settlement design. A poorly specified scenario can produce
+precise-looking but invalid conclusions. External data can be delayed,
+unavailable, or subject to licensing constraints. LLM behavior remains
+probabilistic and can be sensitive to prompts and provider changes. For
+high-impact domains, AI World should be used for analysis, simulation,
+and decision support with appropriate human oversight, not as an
+unreviewed authority.
+
+\subsection{10. Open-source Release}\label{10-open-source-release}
+
+TraceArena is released as the open-source runtime for AI World. The
+repository includes a scenario-pack template, runnable examples, local
+replay paths, deployment documentation, and contribution guidance. The
+community can extend the system by contributing domain packs rather than
+modifying the core runtime for every new use case.
+
+\subsection{11. Conclusion}\label{11-conclusion}
+
+AI World provides a practical interface between domain expertise and
+multi-agent execution. It allows a professional team to define a world,
+load it into a general runtime, let agents act and compete under
+explicit constraints, and inspect the path to the outcome. The central
+object is not a conversational answer but a verifiable run: a sequence
+of observations, decisions, actions, feedback, events, and settlement
+records that can be watched, replayed, compared, and improved.
+
+The long-term vision is an ecosystem of domain-specific AI Worlds built
+on a shared open-source runtime. In this model, a financial expert, a
+city planner, a medical researcher, or a logistics operator can
+contribute a world in which AI works on the problems that matter to that
+field.
+
+\subsection{References}\label{references}
+
+{[}1{]} Yao et al. ReAct: Synergizing Reasoning and Acting in Language
+Models. 2023.\\
+{[}2{]} Wu et al. AutoGen: Enabling Next-Gen LLM Applications. 2023.\\
+{[}3{]} Wang et al. Voyager: An Open-Ended Embodied Agent with Large
+Language Models. 2023.\\
+{[}4{]} Zhou et al. WebArena: A Realistic Web Environment for Building
+Autonomous Agents. 2024.\\
+{[}5{]} TraceArena contributors. TraceArena: Open-source AI World
+runtime and scenario packs. 2026.
+\url{https://github.com/tonyhyworld/TraceArena}
+
+\end{document}
