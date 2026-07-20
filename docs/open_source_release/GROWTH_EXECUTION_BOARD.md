@@ -41,6 +41,12 @@
 
 基线只用于比较变化，不能包装成用户数量、客户数量或性能指标。
 
+## 已完成的运营动作（截至 2026-07-20）
+
+- Product Hunt 草稿已创建并保存，状态为未排期、未公开发布：[TraceArena 草稿页](https://www.producthunt.com/products/tracearena)。
+- 公开落地页已提供在线 Demo、公开版本、场景包指南和企业试点咨询邮件入口：[TraceArena landing page](https://tonyhyworld.github.io/TraceArena/)。
+- 公开仓库当前 `main` 已完成无 API Key 回放与前端构建复核；外部运行、外部场景贡献、合格试点线索和付费收入仍为 0，不能提前宣传为已获得。
+
 ## 下一步 14 天执行门槛（2026-07-20 起）
 
 这不是继续改文档的待办，而是获得外部证据的顺序。每一阶段没有达到门槛，就先修复卡点，不扩大曝光。
