@@ -4,9 +4,9 @@
 
 ## Agent/LLM 开发者（中文）
 
-**主题：想请你帮我跑一次可审计的多 Agent 世界**
+**主题：想请你体验一个可以加载任意世界的 AI World OS**
 
-你好，我在做 AI World / TraceArena：多个 Agent 在共享约束世界中使用工具、提交行动，再由世界验证事件、结算和结果，而不是只评价最终回答。
+你好，我在做 AI World / TraceArena：一套任何人都可以加载不同世界的开源 OS。你定义目标、资源和规则，多个 Agent 在同一个世界里竞争完成目标，世界验证事件和结果，并把整条决策链演绎出来。
 
 现在公开了一个无需 API Key 的离线 Market Replay。你如果方便，想请你跑一次并告诉我三件事：从打开到第一个结果花了多久、最容易卡住的地方、你认为它对比较 Agent 路径、验证工具或设计领域世界是否有价值。
 
@@ -17,9 +17,9 @@
 
 ## Agent/LLM developer (English)
 
-**Subject: Could you run one auditable multi-agent world?**
+**Subject: Could you try an AI World OS where agents compete to reach a goal?**
 
-I’m building AI World / TraceArena: an open-source Physical World OS where multiple agents act with tools inside the same constrained world, while the world verifies events, settlement, and outcomes—not only the final answer.
+I’m building AI World / TraceArena: an open AI World OS where anyone can define a goal, load resources and rules, and let multiple agents compete inside the same world. The world verifies events and outcomes and makes the full decision path visible—not only the final answer.
 
 There is a no-key offline Market Replay. If you have a few minutes, could you run it once and tell me: time to the first result, the first confusing step, and whether this is useful for comparing agent paths, validating tools, or designing a domain world?
 

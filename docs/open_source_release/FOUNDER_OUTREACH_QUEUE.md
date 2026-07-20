@@ -35,11 +35,22 @@
 | AgentScope Runtime | <https://github.com/agentscope-ai/agentscope-runtime> | Agent runtime、工具治理和可观测性，与 OS 层接口有交集。 |
 | Google Cloud race-condition | <https://github.com/GoogleCloudPlatform/race-condition> | 多 Agent 竞争/协作示例，适合交流事件、资源和结算模型。 |
 
+### 2026-07-20 新增候选（仅公开入口，尚未联系）
+
+| 项目 | 公开入口 | 可能的技术交集 |
+| --- | --- | --- |
+| LangChain AgentEvals | <https://github.com/langchain-ai/agentevals> | 已关注 Agent trajectory 评估；可讨论如何从“轨迹评分”扩展到由世界规则裁决的目标、资源和后果。 |
+| Snowflake Agent World Model | <https://github.com/Snowflake-Labs/agent-world-model> | 提供可执行工具环境；可交流环境装载、MCP 能力和 TraceArena 场景契约的边界。 |
+| AgentClash | <https://www.agentclash.dev/> | 关注受约束沙箱中的多轮 Agent 全轨迹；可讨论把竞争目标、资源消耗和权威结算显式化。 |
+| OpenCity | <https://arxiv.org/abs/2410.21286> | 城市活动多 Agent 仿真方向；可作为城市治理世界的潜在技术交流对象。 |
+
+这些对象来自 2026-07-20 的公开资料检索，不代表合作意向、用户关系或背书。第一轮仍只选择 2–3 个高度匹配对象，先阅读其近期活动，再发个性化邀请。
+
 建议第一轮只选择 2–3 个高度匹配对象，并邀请其运行同一个公开 Demo；不要把这张表当作群发名单或客户名单。
 
 ## 首次邀请模板（中文）
 
-你好，我在做 AI World / TraceArena：让多个 Agent 在共享约束世界里使用真实工具、提交结构化行动，并由世界验证事件和结果，而不是只评价最终回答。
+你好，我在做 AI World / TraceArena：一套任何人都可以加载不同世界的开源 OS。你定义目标、资源和规则，多个 Agent 在同一个世界里竞争完成目标，世界验证事件和结果，并把整条决策链演绎出来。
 
 现在有一个无需 API Key 的离线 Market Replay，能在几分钟内看到完整的 evidence → action → event → settlement → outcome 链路。想请你帮我跑一次，只需要告诉我三件事：
 
@@ -51,7 +62,7 @@
 
 ## First-run invitation (English)
 
-I’m building AI World / TraceArena, an open runtime where multiple agents act inside the same constrained world and the world verifies events, settlement, and outcomes—not just the final answer.
+I’m building AI World / TraceArena, an open AI World OS where anyone can define a goal, load resources and rules, and let multiple agents compete inside the same world. The world verifies events and outcomes and makes the full decision path visible—not just the final answer.
 
 There is a no-key offline Market Replay that exposes the full evidence → action → event → settlement → outcome chain. Could you run it once and tell me:
 
