@@ -73,6 +73,11 @@ It contains the summary, manifest, and deterministic event/settlement trace.
 
 ## 3. Open the full local frontend (optional)
 
+For a server or internal deployment, see the full
+[private deployment and first-login manual](私有部署与首次登录手册.md). It covers
+the first administrator account, persistent secrets and user data, reverse proxy,
+permissions, backups, and production security.
+
 The no-key replay is intentionally independent of authentication and model
 providers. If you want to inspect the full watchable viewer and operator console,
 start the public capital-market configuration locally.

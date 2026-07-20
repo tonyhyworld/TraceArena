@@ -143,7 +143,10 @@ PYTHONPATH=backend python backend/scripts/market_replay.py \
 ```
 
 See the full [Quickstart guide](docs/quickstart.md) for determinism checks,
-scenario-pack development, and provider configuration.
+scenario-pack development, and provider configuration. For a private server or
+enterprise deployment, follow the [private deployment and first-login manual](docs/私有部署与首次登录手册.md)
+before opening the frontend: the complete runtime requires an administrator
+account and persistent user data.
 
 Prefer a guided first look? Open the [live demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html), read the [first public replay](https://github.com/tonyhyworld/TraceArena/discussions/4), or inspect [Run of the Week #2](https://github.com/tonyhyworld/TraceArena/discussions/11).
 
