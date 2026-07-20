@@ -4,7 +4,7 @@
 
 ## 统一定位
 
-**中文**：TraceArena 是面向物理世界问题的开源 AI World OS：把资源、目标、规则、工具和结果权威加载进可运行的世界，让多个 Agent 通过博弈比较路径、持续执行并接受后果，而不只是回答问题。
+**中文**：TraceArena 是面向所有人的开源 AI World OS：任何人都可以定义目标、资源和规则，把资本市场、城市治理、医药研发或自己的问题加载成一个世界，让多个 Agent 在其中竞争完成目标，并把证据、行动、反馈和结果全过程演绎出来。
 
 **English**: TraceArena is an open runtime for auditable agent worlds with real tools, enforceable rules, and verifiable outcomes.
 
@@ -49,13 +49,13 @@ cd TraceArena
 
 ## 中文创始人长文
 
-### Agent 会调用工具，不等于它能对结果负责
+### AI World：任何人都可以加载自己的世界，让 Agent 为目标持续行动
 
-过去两个月，我一直在开发一个叫“AI世界”的系统。真正做下去后，我发现最难的问题不是让 Agent 说得像一个角色，而是把它的语言变成可以核验的行动。
+过去两个月，我一直在开发一个叫“AI世界”的系统。它的目标不是再做一个聊天机器人，而是给所有人一套可以加载不同世界的 OS：你定义目标、资源和规则，多个 Agent 在其中竞争完成目标，整个过程都能被演绎、观看和核验。
 
 Agent 可以声称“我研究过了”“我已经下单”“风险已经控制”。如果系统没有核验数据来源、验证行动参数、扣减资源、产生世界事件并由独立规则结算，这些仍然只是文本。
 
-TraceArena 因此把连续行动拆成严格链路：
+TraceArena 因此把一个问题装载成世界，并把连续行动拆成严格链路：
 
 ```text
 感知 → 研究与工具 → 结构化行动 → 世界事实 → 权威结算 → 结果 → 恢复
@@ -73,13 +73,13 @@ TraceArena 因此把连续行动拆成严格链路：
 
 ## English developer launch post
 
-### TraceArena: the open-source Physical World OS for multi-agent path selection
+### TraceArena: an AI World OS where anyone can load a world and define the goal
 
-Most agent demos end when a model emits an answer. Real systems begin there.
+Most agent demos end when a model emits an answer. TraceArena lets anyone define a world and keep the work going.
 
 An agent may claim that it researched a fact, called a tool, placed an order, or changed a resource. Unless another system verifies the evidence, validates the action, applies the rules, and records the outcome, that claim is still text.
 
-TraceArena loads resources, goals, rules, tools and authoritative outcomes into the same stateful world. Multiple agents can inspect evidence, use tools, run code, submit structured actions, receive world feedback, and recover from failure. The world—not the model—decides what actually happened and which path performed better under the declared constraints.
+TraceArena loads a goal, resources, rules, tools and consequences into the same stateful AI World. Anyone can use it for capital-market validation, city governance, drug discovery, logistics, operations or a new domain. Multiple agents can inspect evidence, use tools, run code, submit structured actions, receive world feedback, compete through the shared constraints, and recover from failure. The world—not the model—decides what actually happened and makes the entire path visible.
 
 Every material result is traceable through:
 

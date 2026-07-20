@@ -6,13 +6,13 @@
 
 ![TraceArena AI World demo](docs/assets/tracearena-demo-poster.png)
 
-**The open-source Physical World OS for multi-agent decision worlds.**
+**The open-source AI World OS for turning any defined world into an executable reality.**
 
-TraceArena is the runtime behind **AI World**: load the resources, goals, rules, tools, information boundaries and authoritative outcomes of a real-world problem into a runnable world. Agents then research, compete, cooperate and act continuously inside that world. The system simulates consequences, settles what actually happened, and compares competing paths under the objective and constraints declared by the world.
+TraceArena gives everyone a world they can load and shape: define the **goal, resources, rules, tools and consequences**, then let multiple Agents compete inside that AI World to achieve the goal. Capital-market validation, city governance, drug discovery, logistics, operations or a problem only you understand can all become scenario packs instead of one-off demos. The world runs the process, applies consequences and makes every decision path visible from evidence to action to outcome.
 
-### From a physical-world problem to a runnable AI World
+### Load any world. Define the goal. Let Agents find the path.
 
-The long-term vision is one OS in which different physical worlds—operations, markets, logistics, governance, incident response, research and more—can be loaded as scenario contracts instead of rebuilt as one-off agent demos. A world contract makes the problem executable:
+The long-term vision is one OS in which anyone can load a different world—capital markets, city governance, pharmaceutical research, operations, logistics, robotics or a new domain—by declaring its scenario contract. The contract makes the problem executable:
 
 | Physical-world element | Loaded into TraceArena as |
 | --- | --- |
@@ -22,11 +22,11 @@ The long-term vision is one OS in which different physical worlds—operations, 
 | tools and evidence | capability schemas, observations and provenance |
 | consequences | authoritative events, settlement and resource updates |
 
-This is not a dataset warehouse, a chatbot wrapper or a promise of universal optimality. It is a world runtime: **the best path is the path that performs best under the declared objective, constraints and evidence**. Replayable traces are an auditable by-product that helps people inspect, compare and improve decisions; they are not the product's primary promise.
+TraceArena is not a chatbot wrapper that stops at an answer. It is an AI World OS: **you define what must be achieved and what the world permits; competing Agents search for a path; the world determines what actually happened**. The entire process can be watched and replayed—what each Agent saw, which tools it used, how it acted, what the world accepted or rejected, and why one path achieved the goal. “Best” always means best under the declared goal, resources, rules and evidence, not a claim of universal optimality.
 
-### Why multi-agent game changes the decision problem
+### Why multi-agent competition makes the world useful
 
-A single agent can describe a plausible plan. In an AI World, several agents face the same state while holding different objectives, information and risk limits. Their alternatives compete through a shared clock, finite resources and world feedback. The world rejects invalid actions, applies consequences and settles outcomes, so a persuasive answer cannot win by rhetoric alone.
+A single Agent can describe a plausible plan. In an AI World, several Agents face the same world while pursuing the defined goal through different strategies, information and risk limits. Their paths compete through a shared clock, finite resources and world feedback. The world rejects invalid actions, applies consequences and settles outcomes, so a persuasive answer cannot win by rhetoric alone.
 
 ```mermaid
 flowchart LR
