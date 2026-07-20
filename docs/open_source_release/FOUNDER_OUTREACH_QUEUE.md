@@ -68,6 +68,14 @@
 
 发送前检查：先阅读对方近期仓库/论文动态；每次只发一条；只邀请技术交流或一次公开回放，不请求点赞、Star 或转发。
 
+## 联系渠道核验（2026-07-20）
+
+- LangChain AgentEvals：贡献者公开资料中可核验到 Jacob Lee（GitHub `jacoblee93`，X `@hacubu`），未公开邮箱；优先使用 GitHub 或 X 的公开技术交流入口。
+- Snowflake Agent World Model：贡献者公开资料中可核验到 Zhaoyang Wang（GitHub `sfc-gh-zhawang` / `Raibows`，个人主页 `https://zhaoyang.win/`），未公开邮箱；不要猜测公司邮箱。
+- OpenCity：目前只核验到论文与公开项目入口，未找到适合冷启动合作邀请的公开邮箱；优先先在相关公开论文/仓库渠道建立上下文。
+
+授权发送不等于可以猜测或批量抓取个人联系方式。若没有公开且合适的联系入口，保留草稿并请求创始人选择 GitHub Discussion、X 或其他正式渠道。
+
 建议第一轮只选择 2–3 个高度匹配对象，并邀请其运行同一个公开 Demo；不要把这张表当作群发名单或客户名单。
 
 ## 首次邀请模板（中文）
