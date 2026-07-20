@@ -1,6 +1,6 @@
 # TraceArena 外部分发作战手册
 
-> 目的：把真实可运行的 Physical World OS 交给能试用、能复盘、能贡献的人。每个渠道只使用一个主要 CTA，不购买流量，不请求刷票。
+> 目的：把真实可运行的 AI World OS 交给能加载世界、运行目标、复盘过程并贡献场景的人。每个渠道只使用一个主要 CTA，不购买流量，不请求刷票。
 
 ## 当前统一入口
 
@@ -21,7 +21,7 @@
 建议标题：
 
 ```text
-Show HN: TraceArena – an open-source Physical World OS for comparing agent paths
+Show HN: TraceArena – an open-source AI World OS where agents compete to reach a goal
 ```
 
 首帖只讲一个可验证事实：从干净检出开始，一条安装命令运行无 Key Replay，两次运行产生相同的确定性摘要。CTA 只指向 [Quickstart](https://github.com/tonyhyworld/TraceArena/blob/main/docs/quickstart.md)。
@@ -35,25 +35,36 @@ Show HN: TraceArena – an open-source Physical World OS for comparing agent pat
 产品描述（可作为草稿，发布前由创始人按实际情况修改）：
 
 ```text
-TraceArena is an open-source Physical World OS for multi-agent decision worlds. Load resources, goals, rules, tools, and outcomes; let agents compete under shared constraints; compare paths before controlled execution.
+TraceArena is an open-source AI World OS for everyone. Define a goal, load resources, rules and tools, and let multiple agents compete inside the same world. Capital markets, city governance, drug discovery, logistics—or a problem only you understand—can become a runnable scenario whose full decision path unfolds visibly.
 ```
 
 首条 Maker 评论草稿：
 
 ```text
-I built TraceArena after seeing too many agent demos stop at a convincing answer. In a real workflow, the hard question is whether the world accepted the action, applied the consequence, and can explain the outcome.
+I built TraceArena around a simple idea: anyone should be able to load a problem as an AI World, define the goal, resources and rules, and let agents work toward it continuously. In a real workflow, the hard question is not whether an answer sounds convincing; it is whether the world accepted the action, applied the consequence, and can show the path to the outcome.
 
-TraceArena loads a concrete problem as an AI World: resources, goals, rules, tools, evidence boundaries, and settlement authority. Multiple agents then compare paths under the same constraints. The public demo is synthetic, browser-local, and requires no API key; the open-source runtime includes deterministic replay, a full frontend, and scenario-pack guides.
+TraceArena loads a concrete problem as an AI World: resources, goals, rules, tools, evidence boundaries, and settlement authority. Multiple agents then compete under the same constraints, while every decision, action, world event and outcome can be watched and replayed. The public demo is synthetic, browser-local, and requires no API key; the open-source runtime includes deterministic replay, a full frontend, and scenario-pack guides.
 
-If you build agents, I would love feedback on the smallest physical-world contract you would load first.
+If you build agents or work on a real domain, I would love to know the first world you would load and the goal you would ask agents to achieve.
 ```
 
-建议标题：`TraceArena — Physical World OS for multi-agent decisions`
+建议标题：`TraceArena — Load any world, let agents compete to reach the goal`
 首图：[`tracearena-physical-world-os-thumbnail.png`](../../docs/assets/tracearena-physical-world-os-thumbnail.png)
 
 主要链接应直接指向可体验的 Demo 或 GitHub，而不是只指向邮箱收集页。Product Hunt 要求个人账号发布，建议由创始人本人提交；新账号可能需要完成 onboarding 或等待一周。官方说明：<https://help.producthunt.com/en/articles/479557-how-to-post-a-product>。
 
 CTA：在线 Demo。不要在同一帖里同时要求 Star、贡献代码和购买服务。
+
+#### Product Hunt 首日回复节奏
+
+| 时段 | 动作 | 唯一 CTA |
+| --- | --- | --- |
+| 上线前 | 创始人确认 Demo、Quickstart、草稿图片和首条评论均可打开 | 不发布、不提前请求投票 |
+| 上线后 0–2 小时 | 回复每一条具体问题，优先解释世界如何定义目标、资源和规则 | 在线 Demo |
+| 2–8 小时 | 发布一条真实回放中的决策链截图或摘要，不夸大结果 | 在线 Demo |
+| 8–24 小时 | 汇总最常见的场景建议，邀请一位评论者提交 World Request | 场景提案 |
+
+评论回复原则：先回答对方的问题，再给一个下一步；不把维护者自测说成外部采用，不承诺通用最优解、收益或客户结果。
 
 ### 3. Hugging Face Spaces
 
