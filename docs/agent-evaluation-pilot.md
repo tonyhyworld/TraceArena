@@ -1,14 +1,14 @@
-# TraceArena Agent Evaluation Pilot
+# TraceArena AI World Pilot
 
-TraceArena helps teams test agents inside a constrained, auditable world instead of relying on subjective demos.
+TraceArena helps teams load a real problem into an AI World: define the goal, resources, rules and tools, let multiple agents compete inside the same world, and watch the full path to the outcome. Evaluation is one use of the world, not the product boundary.
 
 ## 10-day pilot
 
-Designed for teams that already have an agent prototype and need evidence before shipping or comparing model versions.
+Designed for teams that want to turn a bounded business problem into a runnable world before controlled execution, whether the goal is model comparison, policy exploration, workflow design, or a new agent capability.
 
 ### Deliverables
 
-- One scoped business scenario with roles, tools, permissions, actions, and authoritative outcomes
+- One scoped AI World with a declared goal, resources, roles, tools, permissions, actions, and authoritative outcomes
 - Two to four agent or model configurations
 - At least ten reproducible evaluation runs
 - Metrics for task completion, tool correctness, recovery, risk, and outcome quality
@@ -41,4 +41,4 @@ Use the [pilot email template](mailto:tonyhyworld@gmail.com?subject=TraceArena%2
 - the evidence and outcome that must be authoritative;
 - the desired deployment and target date.
 
-Teams that only need an open-source scenario pack or adapter are encouraged to contribute through the [scenario-pack guide](scenario-pack-guide.md).
+Teams that only need an open-source scenario pack or adapter are encouraged to contribute through the [scenario-pack guide](scenario-pack-guide.md); teams that want a private world can start with the pilot conversation above.

@@ -1,5 +1,5 @@
-name: Agent evaluation pilot
-description: Request a scoped TraceArena evaluation pilot for an agent, workflow, or model comparison.
+name: AI World pilot
+description: Request a scoped TraceArena AI World for a real goal, workflow, or model comparison.
 title: "[Pilot] "
 labels:
   - pilot
@@ -8,9 +8,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        ## TraceArena Agent Evaluation Pilot
+        ## TraceArena AI World Pilot
         
-        Use this form to request a scoped, evidence-linked evaluation pilot. We will reply with a proposed scope, timeline, and statement of work.
+        Use this form to request a scoped AI World pilot: define the goal, resources, rules and tools, then let Agents compete inside a replayable world. We will reply with a proposed scope, timeline, and statement of work.
         
         If you only want to contribute an open-source scenario pack, use the [scenario-pack guide](../../docs/scenario-pack-guide.md) instead.
   - type: input
@@ -32,7 +32,7 @@ body:
   - type: textarea
     id: decision
     attributes:
-      label: Workflow or decision to evaluate
+      label: Goal or real-world problem to load
       description: What should the agent accomplish, and what decision must be trusted?
       placeholder: Describe the business workflow, user, and authoritative outcome.
     validations:
@@ -102,4 +102,4 @@ body:
   - type: markdown
     attributes:
       value: |
-        Starting pilot engagements are described in [Agent Evaluation Pilot](../../docs/agent-evaluation-pilot.md). For private details, email **tonyhyworld@gmail.com**.
+        Starting pilot engagements are described in [AI World Pilot](../../docs/agent-evaluation-pilot.md). For private details, email **tonyhyworld@gmail.com**.

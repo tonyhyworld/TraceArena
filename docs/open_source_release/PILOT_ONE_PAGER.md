@@ -1,21 +1,21 @@
-# TraceArena Agent Evaluation Pilot
+# TraceArena AI World Pilot
 
 ## 用一句话说明
 
-TraceArena 帮团队把“Agent 看起来会回答”变成“Agent 在约束世界里能行动、被验证、可复盘”。我们为一个真实工作流建立可重复的多智能体评测场景，保留证据、行动、事件、结算和结果链路。
+TraceArena 帮团队把一个真实问题装载成 AI World：共同定义目标、资源、规则、工具和结果标准，让多个 Agent 在这个世界中竞争完成目标，并把证据、行动、事件、结算和结果全过程演绎、观看和复盘。评测是其中一种用途，不是系统的边界。
 
 ## 适合谁
 
-- 正在比较多个模型、Agent 编排方案或工具调用策略的 AI 团队；
-- 需要把 Agent 失误定位到“判断、工具、权限、流程还是世界规则”的企业；
-- 需要可审计评测记录，而不是只看最终答案或一次性 Demo 的研发与治理团队。
+- 希望用 AI 解决资本市场、城市治理、医药研发、物流、运营或其他真实问题的团队；
+- 想把目标、资源、规则和工具装载成一个可运行世界，再比较不同 Agent 路径的企业；
+- 需要在真实执行前看见完整决策链、失败后果和可验证结果的研发与治理团队。
 
 ## 一个标准试点交付什么
 
-1. **工作流建模**：角色、目标、工具权限、约束、压力和权威结果定义；
+1. **世界建模**：目标、资源、角色、工具权限、约束、压力和权威结果定义；
 2. **可重复运行**：至少 10 次受控 episode，固定版本、输入、工具边界和运行配置；
 3. **证据链导出**：evidence → action → event → settlement → outcome，以及失败原因分类；
-4. **对比报告**：对 2–4 个 Agent/模型配置进行同口径比较；
+4. **路径比较报告**：对 2–4 个 Agent/模型配置在同一世界中的策略和结果进行比较；
 5. **复盘会议**：展示关键轨迹、分歧点、回归风险和下一阶段建议。
 
 ## 验收标准示例
@@ -36,7 +36,7 @@ TraceArena 帮团队把“Agent 看起来会回答”变成“Agent 在约束世
 
 ## 如何开始
 
-发送以下信息到 `tonyhyworld@gmail.com`，或提交 [Agent Evaluation Pilot issue form](../../.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml)：
+发送以下信息到 `tonyhyworld@gmail.com`，或提交 [AI World Pilot issue form](../../.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml)：
 
 - 要评估的工作流和权威结果；
 - 参与比较的 Agent/模型及工具；
