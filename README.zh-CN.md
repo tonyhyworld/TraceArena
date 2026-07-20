@@ -340,7 +340,7 @@ your_scenario/
 ## 社区参与与商业支持
 
 TraceArena 欢迎场景包作者、Agent 开发者、评测人员、研究者，以及需要把自己的工具和结果
-规则接入 AI 世界的企业团队。请从[贡献指南](CONTRIBUTING.zh-CN.md)和[场景包开发指南](docs/scenario-pack-development-guide.zh-CN.md)开始。
+规则接入 AI 世界的企业团队。请从[贡献指南](CONTRIBUTING.zh-CN.md)、[场景包开发指南](docs/scenario-pack-development-guide.zh-CN.md)和[世界路线图](docs/open_source_release/WORLD_ROADMAP.md)开始。
 
 如果企业需要定制领域场景、搭建评测套件、接入模型/工具，或部署生产环境，请查看
 [商业支持说明](docs/commercial-support.zh-CN.md)。开源运行时继续采用 Apache-2.0；付费内容是围绕
