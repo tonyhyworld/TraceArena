@@ -10,6 +10,11 @@ or code-execution input.
 The live demo is available at
 [tonyworld888/tracearena-demo](https://huggingface.co/spaces/tonyworld888/tracearena-demo).
 
+The demo links directly to the current [v0.1.10 Capital Market Public
+Edition](https://github.com/tonyhyworld/TraceArena/releases/tag/v0.1.10) and its
+[scenario pack](https://github.com/tonyhyworld/TraceArena/tree/main/backend/scenarios/capital_market)
+so visitors can move from the safe replay to a local, configurable run.
+
 The root `Dockerfile` remains the richer public replay boundary for accounts
 that can host Docker Spaces. It runs `app.public_demo_server:app` on
 `0.0.0.0:7860` as an unprivileged user and accepts only a locale. Hugging Face

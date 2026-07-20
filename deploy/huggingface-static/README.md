@@ -39,6 +39,15 @@ The full open-source runtime, backend, operator console, documentation, and
 scenario-pack guides are available at
 [tonyhyworld/TraceArena](https://github.com/tonyhyworld/TraceArena).
 
+## Continue with the Public Edition
+
+After watching the replay, download [TraceArena v0.1.10 — Capital Market Public
+Edition](https://github.com/tonyhyworld/TraceArena/releases/tag/v0.1.10) and open
+the [scenario pack](https://github.com/tonyhyworld/TraceArena/tree/main/backend/scenarios/capital_market).
+The default local path remains no-key and simulated. Developers can bring their
+own model provider and, where authorized, enable read-only research tools; the
+scenario never connects to a brokerage or submits real orders.
+
 ## For teams
 
 TraceArena can model one bounded workflow as a private evaluation world,

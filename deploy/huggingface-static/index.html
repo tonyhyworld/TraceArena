@@ -16,6 +16,8 @@
   <link rel="canonical" href="https://tonyworld888-tracearena-demo.static.hf.space/index.html">
   <style>
     .footer-links{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:18px}
+    .resource-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:16px}
+    .resource-links a{display:inline-flex;padding:10px 13px;border:1px solid rgba(89,219,255,.35);border-radius:4px;color:#8feeff;text-decoration:none;font:700 10px ui-monospace,SFMono-Regular,monospace;letter-spacing:.1em}
     @media(max-width:640px){.footer{align-items:flex-start;flex-direction:column}.footer-links{justify-content:flex-start;gap:12px}}
   </style>
   <title>TraceArena · Physical World OS for Agents</title>
@@ -85,7 +87,8 @@
           <div class="progress-copy"><span id="progressLabel"></span><strong id="progressValue">0 / 3</strong></div>
           <div class="progress-track"><i id="progressBar"></i></div>
           <button id="runButton" type="button"></button>
-          <p class="safety-note" id="safetyNote"></p>
+        <p class="safety-note" id="safetyNote"></p>
+        <nav class="resource-links" aria-label="Public Edition resources"><a href="https://github.com/tonyhyworld/TraceArena/releases/tag/v0.1.10" target="_blank" rel="noreferrer">GET PUBLIC EDITION ↗</a><a href="https://github.com/tonyhyworld/TraceArena/tree/main/backend/scenarios/capital_market" target="_blank" rel="noreferrer">SCENARIO PACK ↗</a></nav>
         </div>
         <div class="rounds" id="rounds" aria-live="polite"></div>
       </div>
@@ -114,7 +117,7 @@
     </section>
   </main>
 
-  <footer class="footer wrap"><span>OPEN SOURCE · APACHE 2.0</span><nav class="footer-links" aria-label="Developer, feedback, and pilot links"><a href="https://github.com/tonyhyworld/TraceArena/blob/main/docs/quickstart.md" target="_blank" rel="noreferrer">RUN LOCALLY ↗</a><a href="https://github.com/tonyhyworld/TraceArena/issues/new?template=first-run-feedback.yml" target="_blank" rel="noreferrer">REPORT A RUN ↗</a><a href="https://github.com/tonyhyworld/TraceArena/issues/new?template=world-request.yml" target="_blank" rel="noreferrer">BUILD A WORLD ↗</a><a href="https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml" target="_blank" rel="noreferrer">REQUEST A PILOT ↗</a><a href="https://github.com/tonyhyworld/TraceArena" target="_blank" rel="noreferrer">GITHUB ↗</a></nav></footer>
+  <footer class="footer wrap"><span>OPEN SOURCE · APACHE 2.0</span><nav class="footer-links" aria-label="Developer, feedback, and pilot links"><a href="https://github.com/tonyhyworld/TraceArena/releases/tag/v0.1.10" target="_blank" rel="noreferrer">RELEASE v0.1.10 ↗</a><a href="https://github.com/tonyhyworld/TraceArena/blob/main/docs/quickstart.md" target="_blank" rel="noreferrer">RUN LOCALLY ↗</a><a href="https://github.com/tonyhyworld/TraceArena/issues/new?template=first-run-feedback.yml" target="_blank" rel="noreferrer">REPORT A RUN ↗</a><a href="https://github.com/tonyhyworld/TraceArena/issues/new?template=world-request.yml" target="_blank" rel="noreferrer">BUILD A WORLD ↗</a><a href="https://github.com/tonyhyworld/TraceArena/issues/new?template=agent-evaluation-pilot.yml" target="_blank" rel="noreferrer">REQUEST A PILOT ↗</a><a href="https://github.com/tonyhyworld/TraceArena" target="_blank" rel="noreferrer">GITHUB ↗</a></nav></footer>
   <script type="module" src="./assets/app.js"></script>
 </body>
 </html>
