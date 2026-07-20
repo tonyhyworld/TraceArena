@@ -1,6 +1,6 @@
 # TraceArena 开源首发内容包（可直接发布）
 
-> 状态：v0.1.9 对外分发稿，已替换为真实公开链接。发布前只需补充实际运行统计，不得编造用户、收入或性能数字。
+> 状态：v0.1.10 对外分发稿（2026-07-20）。已替换为真实公开链接。发布前只需补充实际运行统计，不得编造用户、收入或性能数字。
 
 ## 统一定位
 
@@ -27,7 +27,15 @@ evidence → structured action → world event → authoritative settlement → 
 - 设计合作伙伴：[公开试点招募议题](https://github.com/tonyhyworld/TraceArena/issues/7)
 - 试点范围与验收：[Agent Evaluation Pilot one-pager](https://github.com/tonyhyworld/TraceArena/blob/main/docs/open_source_release/PILOT_ONE_PAGER.md)
 - 商业支持：[commercial-support.md](https://github.com/tonyhyworld/TraceArena/blob/main/docs/commercial-support.md)
-- 最新发布：[v0.1.9](https://github.com/tonyhyworld/TraceArena/releases/tag/v0.1.9)
+- 最新发布：[v0.1.10](https://github.com/tonyhyworld/TraceArena/releases/tag/v0.1.10)
+
+## Product Hunt 草稿
+
+Product Hunt 草稿已创建并保存，当前尚未排期、尚未公开发布：
+
+- 草稿管理页：[TraceArena](https://www.producthunt.com/products/tracearena)
+- 发布前检查：确认 Demo、仓库、首条评论和缩略图仍可访问；不要在未获得真实运行反馈前宣传用户数、收入或性能结论。
+- 正式上线后唯一首要 CTA：打开无 API Key 的在线回放；评论区再引导技术反馈和场景提案。
 
 已验证的最短路径：
 

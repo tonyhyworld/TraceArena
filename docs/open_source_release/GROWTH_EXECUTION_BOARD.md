@@ -5,9 +5,9 @@
 
 ## 当前基线
 
-记录日期：2026-07-19
+记录日期：2026-07-20
 
-## 最新核验（2026-07-19）
+## 最新核验（2026-07-20）
 
 维护者在公开仓库清洁副本完成了从安装到回放的验证：
 
@@ -16,17 +16,17 @@
 - 两次 `deterministic_replay_sha256` 均为 `3250361a904b73688ebebc8a4ef04efb74f312b7f665a82f0224f7f7ccb588cb`；
 - 公开证据：[Run of the Week #3](https://github.com/tonyhyworld/TraceArena/discussions/13)。
 - Hugging Face 社区入口：[下一类物理世界问题讨论](https://huggingface.co/spaces/tonyworld888/tracearena-demo/discussions/1)。
-- 最新主分支的 CI、前端生产构建、Ubuntu/macOS 公共运行时 smoke test 和 OpenSSF Scorecard 均通过（当前验证提交 `c28ab2a`；当前发布为 [v0.1.9](https://github.com/tonyhyworld/TraceArena/releases/tag/v0.1.9)）。
+- 最新主分支的 CI、前端生产构建、Ubuntu/macOS 公共运行时 smoke test 和 OpenSSF Scorecard 均通过（当前公开分发基线为 [v0.1.10](https://github.com/tonyhyworld/TraceArena/releases/tag/v0.1.10)）。
 
 这证明公开首跑路径可复现，但**不等于外部采用**。截至本次记录，外部场景包、合格试点线索和付费收入仍按下表如实记录为 0。
 
 | 指标 | 当前值 | 目标定义 | 证据来源 |
 | --- | ---: | --- | --- |
-| GitHub stars | 2 | 真实开发者认可 | GitHub repository（2026-07-19） |
-| GitHub forks | 0 | 有人开始改造 | GitHub repository（2026-07-19） |
+| GitHub stars | 2 | 真实开发者认可 | GitHub repository（2026-07-20） |
+| GitHub forks | 0 | 有人开始改造 | GitHub repository（2026-07-20） |
 | GitHub views（近 14 天） | 177 / 4 uniques | 真实访问与独立访客 | GitHub traffic API（截至 2026-07-18） |
 | GitHub clones（近 14 天） | 826 / 186 uniques | 代码被取用；需结合外部反馈判定有效采用 | GitHub traffic API（截至 2026-07-18） |
-| Hugging Face likes | 0 | Demo 被收藏 | HF Space API（2026-07-19） |
+| Hugging Face likes | 0 | Demo 被收藏 | HF Space API（2026-07-20） |
 | Hugging Face Demo | RUNNING；讨论 1 个、维护者跟进 1 条、外部评论 0 | 在线体验和问题征集入口 | [Space](https://tonyworld888-tracearena-demo.static.hf.space/index.html) / [Discussion #1](https://huggingface.co/spaces/tonyworld888/tracearena-demo/discussions/1) |
 | 首次成功运行 | 维护者已验证 | 跑完 replay 并看到结果；外部运行仍待记录 | [Run of the Week #3](https://github.com/tonyhyworld/TraceArena/discussions/13) |
 | 外部场景包 | 0 | 非维护者提交并通过审阅 | GitHub PR |
