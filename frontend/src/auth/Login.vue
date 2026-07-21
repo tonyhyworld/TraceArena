@@ -36,22 +36,26 @@
             <circle cx="6" cy="32" r="1.6" fill="#8b5bff" />
           </svg>
         </div>
-        <div class="login-kicker">AI · WORLD</div>
+        <div class="login-kicker">TRACEARENA · AI WORLD</div>
         <h1>{{ t('login.title') }}</h1>
         <p class="login-tag">{{ t('login.tagline') }}</p>
+        <div class="login-values" :aria-label="t('login.value_label')">
+          <span>{{ t('login.value_define') }}</span>
+          <span>{{ t('login.value_compete') }}</span>
+          <span>{{ t('login.value_visible') }}</span>
+        </div>
       </div>
       <label>
         <span>{{ t('login.username') }}</span>
-        <input v-model="username" autocomplete="username" autofocus :placeholder="t('login.username_placeholder')" />
+        <input v-model="username" autocomplete="username" autofocus required :placeholder="t('login.username_placeholder')" />
       </label>
       <label>
         <span>{{ t('login.password') }}</span>
-        <input v-model="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+        <input v-model="password" type="password" autocomplete="current-password" required placeholder="••••••••" />
       </label>
-      <p v-if="error" class="login-error">{{ error }}</p>
-      <button type="submit" :disabled="loading" class="login-submit">
+      <p v-if="error" class="login-error" role="alert">{{ error }}</p>
+      <button type="submit" :disabled="loading" :aria-busy="loading" class="login-submit">
         <span class="btn-label">{{ loading ? t('login.loading') : t('login.submit') }}</span>
-        <span class="btn-arrow" v-if="!loading">→</span>
         <span class="btn-shine"></span>
       </button>
       <div class="login-footer">
@@ -249,7 +253,8 @@ onMounted(() => {
 /* 登录卡片 */
 .login-card {
   position: relative;
-  width: 380px;
+  box-sizing: border-box;
+  width: min(420px, calc(100vw - 32px));
   display: flex; flex-direction: column; gap: 18px;
   padding: 40px 34px 32px;
   border-radius: 22px;
@@ -281,7 +286,7 @@ onMounted(() => {
   pointer-events: none;
 }
 
-.login-brand { text-align: center; margin-bottom: 6px; }
+.login-brand { text-align: center; margin-bottom: 4px; }
 .login-logo {
   display: inline-flex;
   padding: 6px;
@@ -289,19 +294,43 @@ onMounted(() => {
   margin-bottom: 10px;
 }
 .login-kicker {
-  font-size: 11px; letter-spacing: .35em; font-weight: 800;
+  font-size: 10px; letter-spacing: .25em; font-weight: 800;
   background: linear-gradient(90deg, #69dcff, #8b5bff);
   -webkit-background-clip: text; background-clip: text;
   color: transparent;
 }
 .login-brand h1 {
-  margin: 8px 0 4px;
-  font-size: 20px;
+  margin: 9px 0 5px;
+  font-size: 22px;
   color: #edf3ff;
   font-weight: 600;
   letter-spacing: .04em;
 }
-.login-tag { margin: 0; font-size: 12px; color: #8a94b8; letter-spacing: .03em; }
+.login-tag {
+  max-width: 310px;
+  margin: 0 auto;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #9ca8ca;
+  letter-spacing: .02em;
+}
+.login-values {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 15px;
+}
+.login-values span {
+  padding: 5px 9px;
+  border: 1px solid rgba(105,220,255,.16);
+  border-radius: 999px;
+  background: rgba(105,220,255,.055);
+  color: #aebadc;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: .03em;
+}
 
 label {
   display: flex; flex-direction: column; gap: 6px;
@@ -359,8 +388,6 @@ input:focus {
 }
 .login-submit:active:not(:disabled) { transform: translateY(0); }
 .login-submit:disabled { opacity: .7; cursor: default; animation: none; }
-.btn-arrow { font-size: 16px; transition: transform .2s; }
-.login-submit:hover:not(:disabled) .btn-arrow { transform: translateX(4px); }
 .btn-shine {
   position: absolute; top: 0; left: -60%;
   width: 40%; height: 100%;
@@ -387,4 +414,15 @@ input:focus {
   animation: pulse 2s ease-in-out infinite;
 }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+
+@media (max-width: 480px) {
+  .login-card { padding: 32px 24px 26px; gap: 16px; }
+  .login-locale { top: 12px; right: 12px; }
+  .login-brand h1 { font-size: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-card, .login-glow-1, .login-glow-2, .login-submit,
+  .btn-shine, .dot { animation: none !important; }
+}
 </style>
