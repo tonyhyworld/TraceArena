@@ -1,9 +1,9 @@
 """Scene-selected world execution SPI for AI World OS.
 
 The OS never assumes that an action belongs to a simulated physics world.
-Each scene declares an execution route. Only ``simulation`` routes may load
-RuleWorld; reality and deterministic routes flow directly into the scene's
-SettlementRuntime.
+Each scene declares an execution route. Any settlement mode may optionally
+use a World Adapter to advance an executable world; ``simulation`` must name
+one. SettlementRuntime remains the independent authority for scoring.
 """
 from __future__ import annotations
 
@@ -16,6 +16,8 @@ from app.contracts.settlement_types import (
 )
 from app.core.interfaces import ActionPack, CausalPipelineResult
 from app.engine.scenario_boot.registry import ScenarioRuntime
+from app.engine.world_adapter import get_world_adapter_factory
+from app.engine.world_adapter.provider import WorldAdapterEvaluationProvider
 
 
 class EvaluationProvider(Protocol):
@@ -44,6 +46,15 @@ class EvaluationProvider(Protocol):
     ) -> CausalPipelineResult:
         ...
 
+    async def run_action_batch(
+        self,
+        actions: List[ActionPack],
+        tick: int,
+        state: Any,
+        tool_results: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, CausalPipelineResult]:
+        ...
+
     def export_ledgers(self) -> Dict[str, Any]:
         ...
 
@@ -58,6 +69,12 @@ class EvaluationProvider(Protocol):
         ...
 
     def requires_simulation(self, action_id: str) -> bool:
+        ...
+
+    def observation(self, actor_id: str) -> Any:
+        ...
+
+    def close(self) -> None:
         ...
 
 
@@ -112,6 +129,23 @@ class RuleWorldEvaluationProvider:
             action, tick, state, tool_result=tool_result
         )
 
+    async def run_action_batch(
+        self,
+        actions: List[ActionPack],
+        tick: int,
+        state: Any,
+        tool_results: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, CausalPipelineResult]:
+        results: Dict[str, CausalPipelineResult] = {}
+        for action in actions:
+            results[action.agent_id] = await self.run_causal_pipeline(
+                action,
+                tick,
+                state,
+                tool_result=(tool_results or {}).get(action.agent_id),
+            )
+        return results
+
     def export_ledgers(self) -> Dict[str, Any]:
         if not self._ctx:
             return {}
@@ -135,6 +169,12 @@ class RuleWorldEvaluationProvider:
 
     def requires_simulation(self, action_id: str) -> bool:
         return True
+
+    def observation(self, actor_id: str) -> Any:
+        return None
+
+    def close(self) -> None:
+        return None
 
 
 # 把内置物理引擎登记为**一个可选的内置参考实现**，而不是 OS 的默认评价体系。
@@ -173,35 +213,59 @@ class ScenarioExecutionRouter:
         self._validate_route("default", self._default_route)
         for action_id, route in self._routes.items():
             self._validate_route(action_id, route)
-        uses_simulation = any(
-            str(route.get("mode") or "") == "simulation"
+        uses_world_adapter = any(
+            bool(route.get("world_adapter_id"))
             for route in [self._default_route, *self._routes.values()]
         )
-        self._simulation = (
-            self._resolve_simulation_provider() if uses_simulation else None
+        self._world_adapters = (
+            self._resolve_world_adapters() if uses_world_adapter else {}
+        )
+        # Compatibility for diagnostics/tests written before the execution
+        # axis was decoupled from settlement authority.
+        self._simulation_providers = self._world_adapters
+        # Compatibility for existing diagnostics/tests that inspect the single
+        # provider. New code resolves the provider for every action route.
+        self._simulation = next(
+            iter(self._world_adapters.values()), None
         )
 
-    def _resolve_simulation_provider(self) -> Any:
-        """从内置注册表解析 simulation provider（内置物理引擎不是硬编码默认）。
-
-        优先按 simulation 路由声明的 provider_id 从注册表解析；未注册的
-        provider_id（如场景自命名的 provider）回退到内置参考物理引擎——
-        当前唯一内置。这样 OS 不假设"simulation=必然用某个类"，且为将来注册
-        其它 simulation provider 留出通道。
-        """
-        declared = [
-            str(route.get("provider_id") or "")
+    def _resolve_world_adapters(self) -> Dict[str, Any]:
+        """Resolve declared executable worlds; never silently fall back."""
+        declared = {
+            str(route.get("world_adapter_id") or "")
             for route in [self._default_route, *self._routes.values()]
-            if str(route.get("mode") or "") == "simulation"
-        ]
-        for provider_id in declared:
-            factory = get_builtin_provider_factory(provider_id)
-            if factory is not None:
-                return factory(self._runtime)
-        factory = get_builtin_provider_factory(BUILTIN_RULEWORLD_PHYSICS)
-        if factory is not None:
-            return factory(self._runtime)
-        return RuleWorldEvaluationProvider(self._runtime)
+            if route.get("world_adapter_id")
+        }
+        if len(declared) > 1:
+            raise ValueError(
+                "a scenario may declare only one world_adapter_id; "
+                "compose multiple engines behind one adapter"
+            )
+        resolved: Dict[str, Any] = {}
+        for adapter_id in sorted(declared):
+            builtin_factory = get_builtin_provider_factory(adapter_id)
+            if builtin_factory is not None:
+                routes_for_adapter = [
+                    route
+                    for route in [self._default_route, *self._routes.values()]
+                    if str(route.get("world_adapter_id") or "") == adapter_id
+                ]
+                if any(
+                    str(route.get("mode") or "") != "simulation"
+                    for route in routes_for_adapter
+                ):
+                    raise ValueError(
+                        "builtin RuleWorld may only execute simulation routes"
+                    )
+                resolved[adapter_id] = builtin_factory(self._runtime)
+                continue
+            adapter_factory = get_world_adapter_factory(adapter_id)
+            resolved[adapter_id] = WorldAdapterEvaluationProvider(
+                self._runtime,
+                adapter_factory(),
+                adapter_id,
+            )
+        return resolved
 
     @classmethod
     def _validate_route(cls, action_id: str, route: Dict[str, Any]) -> None:
@@ -210,6 +274,20 @@ class ScenarioExecutionRouter:
             raise ValueError(f"invalid execution mode for {action_id}: {mode}")
         if not route.get("provider_id"):
             raise ValueError(f"execution route missing provider_id: {action_id}")
+        if mode == "simulation" and not route.get("world_adapter_id"):
+            raise ValueError(
+                f"simulation route missing world_adapter_id: {action_id}"
+            )
+
+    def _provider_for_action(self, action_id: str) -> Any:
+        route = self.execution_route(action_id)
+        adapter_id = str(route.get("world_adapter_id") or "")
+        provider = self._world_adapters.get(adapter_id)
+        if provider is None:
+            raise RuntimeError(
+                f"world adapter not resolved for action {action_id}: {adapter_id}"
+            )
+        return provider
 
     def execution_route(self, action_id: str) -> Dict[str, Any]:
         route = dict(self._routes.get(action_id) or self._default_route)
@@ -217,27 +295,29 @@ class ScenarioExecutionRouter:
         return route
 
     def requires_simulation(self, action_id: str) -> bool:
-        return self.execution_route(action_id).get("mode") == "simulation"
+        # Kept for protocol compatibility. It now means the route needs an
+        # executable world pass, independently of settlement authority.
+        return bool(self.execution_route(action_id).get("world_adapter_id"))
 
     def initialize(self) -> None:
-        if self._simulation:
-            self._simulation.initialize()
+        for provider in self._world_adapters.values():
+            provider.initialize()
 
     @property
     def context(self) -> Any:
         return self._simulation.context if self._simulation else None
 
     def set_judge(self, judge: Any, **opts: Any) -> None:
-        if self._simulation:
-            self._simulation.set_judge(judge, **opts)
+        for provider in self._world_adapters.values():
+            provider.set_judge(judge, **opts)
 
     def bind_state(self, state: Any) -> None:
-        if self._simulation:
-            self._simulation.bind_state(state)
+        for provider in self._world_adapters.values():
+            provider.bind_state(state)
 
     def advance_tick(self, tick: int) -> None:
-        if self._simulation:
-            self._simulation.advance_tick(tick)
+        for provider in self._world_adapters.values():
+            provider.advance_tick(tick)
 
     async def run_causal_pipeline(
         self,
@@ -247,17 +327,51 @@ class ScenarioExecutionRouter:
         tool_result: Any = None,
     ) -> CausalPipelineResult:
         route = self.execution_route(action.action_id)
-        if route.get("mode") != "simulation" or self._simulation is None:
+        if not route.get("world_adapter_id"):
             raise RuntimeError(
                 f"action {action.action_id} is owned by settlement provider "
-                f"{route.get('provider_id')}; simulation pipeline is forbidden"
+                f"{route.get('provider_id')}; no world adapter is declared"
             )
-        return await self._simulation.run_causal_pipeline(
+        provider = self._provider_for_action(action.action_id)
+        return await provider.run_causal_pipeline(
             action, tick, state, tool_result=tool_result
         )
 
+    async def run_action_batch(
+        self,
+        actions: List[ActionPack],
+        tick: int,
+        state: Any,
+        tool_results: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, CausalPipelineResult]:
+        grouped: Dict[str, List[ActionPack]] = {}
+        for action in actions:
+            route = self.execution_route(action.action_id)
+            if not route.get("world_adapter_id"):
+                raise RuntimeError(
+                    f"action without world adapter in execution batch: "
+                    f"{action.action_id}"
+                )
+            adapter_id = str(route.get("world_adapter_id") or "")
+            grouped.setdefault(adapter_id, []).append(action)
+        results: Dict[str, CausalPipelineResult] = {}
+        for adapter_id, batch in grouped.items():
+            provider = self._world_adapters[adapter_id]
+            produced = await provider.run_action_batch(
+                batch, tick, state, tool_results or {}
+            )
+            results.update(produced)
+        return results
+
     def export_ledgers(self) -> Dict[str, Any]:
-        return self._simulation.export_ledgers() if self._simulation else {}
+        merged: Dict[str, Any] = {}
+        for provider in self._world_adapters.values():
+            for key, value in provider.export_ledgers().items():
+                if isinstance(value, list):
+                    merged.setdefault(key, []).extend(value)
+                else:
+                    merged[key] = value
+        return merged
 
     @property
     def tools_cfg(self) -> List[Dict[str, Any]]:
@@ -265,3 +379,21 @@ class ScenarioExecutionRouter:
 
     def get_action_rule(self, action_id: str) -> Dict[str, Any]:
         return self._runtime.get_action_rule(action_id)
+
+    def observation(self, actor_id: str) -> Any:
+        observations = []
+        for provider in self._world_adapters.values():
+            item = provider.observation(actor_id)
+            if item is not None:
+                observations.append(item)
+        if not observations:
+            return None
+        if len(observations) == 1:
+            return observations[0]
+        return observations
+
+    def close(self) -> None:
+        for provider in self._world_adapters.values():
+            close = getattr(provider, "close", None)
+            if callable(close):
+                close()

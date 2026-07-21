@@ -16,9 +16,11 @@ Define the world, let agents compete inside the same constraints, and inspect th
 | --- | --- | --- |
 | ![Define the world](product-hunt/assets/ai-world-os-ph-define-v2.png) | ![Let agents compete](product-hunt/assets/ai-world-os-ph-compete-v2.png) | ![From world to answer](product-hunt/assets/ai-world-os-ph-domains-v2.png) |
 
-**The open-source AI World OS for turning any defined world into an executable reality.**
+**The open-source AI World OS that lets domain experts turn professional problems into runnable multi-agent worlds.**
 
-TraceArena gives everyone a world they can load and shape: define the **goal, resources, rules, tools and consequences**, then let multiple Agents compete inside that AI World to achieve the goal. Capital-market validation, city governance, drug discovery, logistics, operations or a problem only you understand can all become scenario packs instead of one-off demos. The world runs the process, applies consequences and makes every decision path visible from evidence to action to outcome.
+TraceArena gives domain experts a reusable AI problem-solving framework: define the **goal, resources, constraints, tools, success criteria and how the world responds**, then let multiple Agents compete inside that AI World to achieve the goal. Capital-market validation, city governance, drug discovery, logistics, operations or a problem only you understand can become scenario packs instead of one-off demos. The system runs the process, compares paths and makes every decision visible from evidence to action to outcome.
+
+The feedback mechanism does not have to be a complete physical twin. A scenario can use **expert rules, deterministic algorithms, a trained World Agent, a professional simulator, a real system, or a traceable hybrid**. TraceArena connects all six through one World Adapter contract and records their provenance, assumptions, confidence, validation evidence and limits. Teams can start with a useful bounded model and increase fidelity over time.
 
 ### Load any world. Define the goal. Let Agents find the path.
 
@@ -30,9 +32,10 @@ The long-term vision is one OS in which anyone can load a different world—capi
 | goals and priorities | agent objectives and settlement metrics |
 | rules and constraints | validators, permissions, clocks and failure conditions |
 | tools and evidence | capability schemas, observations and provenance |
+| world feedback | rules, algorithms, learned models, simulators, real systems or hybrids |
 | consequences | authoritative events, settlement and resource updates |
 
-TraceArena is not a chatbot wrapper that stops at an answer. It is an AI World OS: **you define what must be achieved and what the world permits; competing Agents search for a path; the world determines what actually happened**. The entire process can be watched and replayed—what each Agent saw, which tools it used, how it acted, what the world accepted or rejected, and why one path achieved the goal. “Best” always means best under the declared goal, resources, rules and evidence, not a claim of universal optimality.
+TraceArena is not a chatbot wrapper that stops at an answer. It is an AI World OS: **you define what must be achieved, what the world permits and how feedback is produced; competing Agents search for paths; an independent settlement authority compares the outcomes**. The entire process can be watched and replayed—what each Agent saw, which tools it used, how it acted, what the world model returned, and why one path achieved the goal. “Best” always means best under the declared goal, resources, model assumptions and evidence, not a claim of universal optimality.
 
 ### Why multi-agent competition makes the world useful
 
@@ -42,14 +45,21 @@ A single Agent can describe a plausible plan. In an AI World, several Agents fac
 flowchart LR
   P[Physical-world problem] --> C[World contract]
   C --> G[Multi-agent game]
-  G --> S[Simulation & settlement]
+  G --> W[Pluggable world model]
+  W --> S[Authoritative settlement]
   S --> X[Compare paths under constraints]
   X --> H[Human decision or controlled execution]
-  S --> R[Replayable evidence]
+  W --> R[Replayable evidence]
   R --> G
 ```
 
 The result is a new agent-development paradigm: lower the barrier from “how do I make an AI solve this operational problem?” to “how do I declare the world's resources, goals, rules and outcomes?” Then let agents iterate toward a goal through a continuous **perceive → deliberate → act → receive feedback → revise** loop, with checkpoints and permission boundaries.
+
+### Six world-model implementations, four settlement authorities
+
+The World Adapter execution layer supports `rule_based`, `algorithmic`, `learned`, `simulator`, `reality`, and `hybrid`. This axis answers **how the world changes**. TraceArena's four settlement types—`simulation`, `external_reality`, `deterministic_verifier`, and `hybrid`—answer **who is authorized to prove the result**. Keeping these axes separate lets a learned World Agent help model consequences without pretending its prediction is a physical fact or automatically making it the winner judge.
+
+See the [World Model / Adapter SDK](docs/WORLD_ADAPTER_SDK.md) and the [authoritative product positioning](docs/PRODUCT_POSITIONING.md).
 
 > **Positioning update (July 2026):** Read the [community announcement](https://github.com/tonyhyworld/TraceArena/discussions/12) for the new Physical World OS direction and the next scenarios we want the ecosystem to load.
 
@@ -71,8 +81,9 @@ flowchart LR
   A[Agents with different goals] --> B[Perception & evidence]
   B --> C[Planning & tool use]
   C --> D[World actions]
-  D --> E[Authoritative settlement]
-  E --> F[Path comparison & next goal loop]
+  D --> E[Pluggable world model]
+  E --> S[Authoritative settlement]
+  S --> F[Path comparison & next goal loop]
   F --> A
 ```
 
@@ -80,7 +91,7 @@ flowchart LR
 
 ```text
 perception → planning → evidence → tools/code → action
-           → world facts → settlement → result → replay
+           → world-model feedback → settlement → result → replay
 ```
 
 - declarative world contracts for resources, goals, rules, roles, actions, tools, visibility and settlement;

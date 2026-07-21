@@ -656,6 +656,43 @@ class EngineOS:
                 "mode": mode,
                 "label": authority_labels.get(mode, mode),
             })
+        adapter_cfg = dict(
+            getattr(scenario, "world_adapter_cfg", {}) or {}
+        )
+        world_adapter_id = str(adapter_cfg.get("adapter_id") or "")
+        if not world_adapter_id:
+            execution_cfg = dict(
+                (scenario.settlement_cfg or {}).get("execution", {}) or {}
+            )
+            declared_routes = [
+                dict(execution_cfg.get("default", {}) or {}),
+                *[
+                    dict(item or {})
+                    for item in dict(
+                        execution_cfg.get("routes", {}) or {}
+                    ).values()
+                ],
+            ]
+            world_adapter_id = next((
+                str(route.get("world_adapter_id") or "")
+                for route in declared_routes
+                if route.get("world_adapter_id")
+            ), "")
+        world_model_kind = str(adapter_cfg.get("model_kind") or "")
+        world_adapter_capabilities: List[str] = []
+        if world_adapter_id == "builtin:ruleworld_physics":
+            world_model_kind = world_model_kind or "rule_based"
+        elif world_adapter_id:
+            try:
+                from app.engine.world_adapter import (
+                    get_world_adapter_descriptor,
+                )
+                descriptor = get_world_adapter_descriptor(world_adapter_id)
+                world_model_kind = world_model_kind or descriptor.model_kind
+                world_adapter_capabilities = sorted(descriptor.capabilities)
+            except ValueError:
+                # Scenario compilation remains the strict validation gate.
+                pass
         return {
             "scenario": {
                 "id": scenario.manifest.scenario_id,
@@ -685,6 +722,12 @@ class EngineOS:
             "execution": dict(
                 (scenario.settlement_cfg or {}).get("execution", {}) or {}
             ),
+            "world_adapter": {
+                "adapter_id": world_adapter_id,
+                "model_kind": world_model_kind,
+                "capabilities": world_adapter_capabilities,
+                "configured": bool(adapter_cfg),
+            },
             "victory": dict(
                 (scenario.settlement_cfg or {}).get("victory", {}) or {}
             ),
@@ -808,9 +851,8 @@ class EngineOS:
         settlements: List[Any],
     ) -> None:
         pending_root = state.internal.setdefault("pending_action_intents", {})
-        # Agent turns are collected concurrently.  Preserve a stable
-        # per-tick commit order so world facts, settlements, and replay files
-        # do not depend on which coroutine completed first.
+        # Agent turns are collected concurrently. Preserve a stable per-tick
+        # commit order so facts and replay do not depend on coroutine timing.
         for agent_id in sorted((actions or {}), key=str):
             action = (actions or {}).get(agent_id)
             if action is None:
@@ -913,6 +955,21 @@ class EngineOS:
             if not is_open:
                 base["tradable"] = False
                 base["live_window_closed_reason"] = closed_reason
+                # Do not expose a generic continuous-trading label while the
+                # scenario's authoritative live window is closed.
+                base["name"] = "研究与观望"
+                base["description"] = (
+                    f"当前不可交易：{closed_reason}。可继续研究、核验数据和制定计划；"
+                    "仅在交易窗口开放后才可提交可成交订单。"
+                )
+                # Do not leave the scenario's generic "continuous trading"
+                # label visible when its authoritative live window is closed.
+                # It made agents (and viewers) believe an order could fill.
+                base["name"] = "研究与观望"
+                base["description"] = (
+                    f"当前不可交易：{closed_reason}。可继续研究、核验数据和制定计划；"
+                    "仅在交易窗口开放后才可提交可成交订单。"
+                )
             elif "tradable" not in base:
                 # 未声明阶段 flags 时，窗口开放即视为可交易
                 base["tradable"] = True
@@ -1525,6 +1582,13 @@ class EngineOS:
         # tick=0 时终局结算不会执行，按局日志 handler 不会被摘除；
         # __init__ 会再挂一个 → 多次 reset 后 root logger 堆积 handler。这里显式摘除。
         self._detach_run_logfile()
+
+        # 外部模拟器可能持有进程、socket 或大量内存。重建引擎前必须关闭，
+        # 不能依赖 Python 垃圾回收碰运气释放资源。
+        try:
+            self._evaluation.close()
+        except Exception as exc:
+            logger.warning("[EngineOS] world adapter 关闭失败: %s", exc)
 
         cfg = self._cfg
         loaded = self._loaded
@@ -3307,6 +3371,25 @@ class EngineOS:
             agent_roles_map=role_map,
             agent_names=self._role_names,
         )
+        # External executable worlds expose actor-scoped observations through
+        # the adapter boundary. They enter the private brief verbatim; the OS
+        # does not interpret domain fields or manufacture missing values.
+        for actor_id, brief in briefs.items():
+            adapter_observation = self._evaluation.world_observation(actor_id)
+            if adapter_observation is None:
+                continue
+            if isinstance(adapter_observation, list):
+                brief.raw_context["world_adapter_observations"] = [
+                    item.model_dump(mode="json")
+                    if hasattr(item, "model_dump") else item
+                    for item in adapter_observation
+                ]
+            else:
+                brief.raw_context["world_adapter_observation"] = (
+                    adapter_observation.model_dump(mode="json")
+                    if hasattr(adapter_observation, "model_dump")
+                    else adapter_observation
+                )
         current_challenge = self._world_state.get_scene_state(
             "current_challenge"
         )
@@ -3662,9 +3745,7 @@ class EngineOS:
         valid_actions: Dict[str, Any] = {}  # 通过校验的 action（供 Trace 用）
         planned_transitions: List[Any] = []
 
-        # Agent turns are collected concurrently.  Preserve a stable
-        # per-tick commit order so world facts, settlements, and replay files
-        # do not depend on which coroutine completed first.
+        # Preserve deterministic transaction order across concurrent turns.
         for agent_id in sorted((actions or {}), key=str):
             action = (actions or {}).get(agent_id)
             if action is None:
@@ -3876,36 +3957,107 @@ class EngineOS:
         self._penalize_challenge_delay(valid_actions, tick)
 
         # ━━ World execution: the scene owns the route for every action ━━
-        # Simulation actions enter the scene's physics provider. Reality,
-        # deterministic and hybrid actions are committed as WorldAction facts
-        # and resolved exclusively by SettlementRuntime.
+        # A route may use a World Adapter regardless of settlement mode.
+        # Routes without one are committed as WorldAction facts and resolved
+        # by SettlementRuntime.  Adapter transitions are facts consumed by the
+        # same independent settlement layer; they do not grant scoring authority.
         pipeline_results: List[CausalPipelineResult] = []
+        world_execution_actions: List[ActionPack] = []
         for agent_id in sorted(valid_actions, key=str):
             action = valid_actions[agent_id]
             # challenge 类动作已在 _route_submit_challenge_response_actions 中处理完毕
             if self._is_challenge_action(action.action_id):
                 continue
+            execution_route = self._evaluation.execution_route(
+                action.action_id
+            )
+            if not self._evaluation.requires_simulation(action.action_id):
+                # 记忆不再写"已交由场景结算"占位——结算完成后
+                # _write_settlement_memory 会把真实 outcome+理由写进记忆。
+                self._write_diagnostic({
+                    "event_type": "scene_execution_routed",
+                    "tick": tick,
+                    "agent_id": action.agent_id,
+                    "action_id": action.action_id,
+                    "mode": execution_route.get("mode"),
+                    "provider_id": execution_route.get("provider_id"),
+                })
+                continue
+            world_execution_actions.append(action)
+
+        batch_results: Dict[str, CausalPipelineResult] = {}
+        if world_execution_actions:
             try:
-                execution_route = self._evaluation.execution_route(
-                    action.action_id
+                batch_results = await self._evaluation.run_action_batch(
+                    world_execution_actions,
+                    tick,
+                    state,
+                    tool_results,
                 )
-                if not self._evaluation.requires_simulation(action.action_id):
-                    # 记忆不再写"已交由场景结算"占位——结算完成后
-                    # _write_settlement_memory 会把真实 outcome+理由写进记忆，
-                    # agent 才能跨拍学到"我的单被拒了、为什么"。
-                    self._write_diagnostic({
-                        "event_type": "scene_execution_routed",
-                        "tick": tick,
-                        "agent_id": action.agent_id,
-                        "action_id": action.action_id,
-                        "mode": execution_route.get("mode"),
-                        "provider_id": execution_route.get("provider_id"),
-                    })
-                    continue
-                result = await self._evaluation.run_causal_pipeline(
-                    action, tick, state,
-                    tool_result=tool_results.get(action.agent_id),
+            except Exception as exc:
+                logger.error(
+                    "[EngineOS] world execution batch 异常 tick=%s: %s",
+                    tick,
+                    exc,
+                    exc_info=True,
                 )
+                from app.contracts.world_adapter import (
+                    WorldAdapterActionReceipt,
+                )
+                for action in world_execution_actions:
+                    batch_results[action.agent_id] = CausalPipelineResult(
+                        tick=tick,
+                        action_id=action.action_id,
+                        agent_id=action.agent_id,
+                        outcome="error",
+                        errors=[f"world_adapter_batch_failed:{exc}"],
+                        action=action,
+                        world_action_receipt=WorldAdapterActionReceipt(
+                            receipt_id=(
+                                f"receipt:adapter-command:{tick}:"
+                                f"{action.agent_id}"
+                            ),
+                            command_id=(
+                                f"adapter-command:{tick}:{action.agent_id}"
+                            ),
+                            world_tick=tick,
+                            actor_id=action.agent_id,
+                            action_type=action.action_id,
+                            status="failed",
+                            reasons=["world_adapter_batch_failed"],
+                            details={"error": str(exc)},
+                        ),
+                    )
+
+        for action in world_execution_actions:
+            try:
+                result = batch_results.get(action.agent_id)
+                if result is None:
+                    from app.contracts.world_adapter import (
+                        WorldAdapterActionReceipt,
+                    )
+                    result = CausalPipelineResult(
+                        tick=tick,
+                        action_id=action.action_id,
+                        agent_id=action.agent_id,
+                        outcome="error",
+                        errors=["world_adapter_missing_result"],
+                        action=action,
+                        world_action_receipt=WorldAdapterActionReceipt(
+                            receipt_id=(
+                                f"receipt:adapter-command:{tick}:"
+                                f"{action.agent_id}"
+                            ),
+                            command_id=(
+                                f"adapter-command:{tick}:{action.agent_id}"
+                            ),
+                            world_tick=tick,
+                            actor_id=action.agent_id,
+                            action_type=action.action_id,
+                            status="failed",
+                            reasons=["world_adapter_missing_result"],
+                        ),
+                    )
                 pipeline_results.append(result)
                 self._record_tick_verdict(action, result, tick)
                 interaction_applied = self._apply_agent_interaction(
@@ -4006,6 +4158,14 @@ class EngineOS:
                     "metrics": [
                         item.model_dump(mode="json") for item in result.metrics
                     ],
+                    "world_action_receipt": (
+                        result.world_action_receipt.model_dump(mode="json")
+                        if result.world_action_receipt else None
+                    ),
+                    "world_transition": (
+                        result.world_transition.model_dump(mode="json")
+                        if result.world_transition else None
+                    ),
                     "errors": list(result.errors),
                 })
             except Exception as e:
@@ -5154,6 +5314,19 @@ class EngineOS:
                     getattr(action, "target_agent_id", None),
                 ) if item
             ]
+            adapter_receipt = (
+                getattr(result, "world_action_receipt", None)
+                if result is not None else None
+            )
+            action_status = "executed"
+            rejection_reasons: List[str] = []
+            if adapter_receipt is not None:
+                if adapter_receipt.status == "rejected":
+                    action_status = "rejected"
+                    rejection_reasons = list(adapter_receipt.reasons)
+                elif adapter_receipt.status == "failed":
+                    action_status = "failed"
+                    rejection_reasons = list(adapter_receipt.reasons)
             os2_action = OS2WorldAction(
                 action_id=action_ref,
                 run_id=run_id,
@@ -5170,10 +5343,11 @@ class EngineOS:
                 ),
                 harness_trace_ref=harness_ref,
                 visibility="public",
-                # valid_actions already passed deterministic L4 preconditions
-                # and the platform transaction. L5 quality judgment is sidecar
-                # data and cannot revoke the accepted world command.
-                status="executed",
+                # L4 acceptance only means the OS accepted the command for
+                # submission. An external world adapter may still reject or
+                # fail it, and that authoritative receipt must win here.
+                status=action_status,
+                rejection_reasons=rejection_reasons,
             )
             world_actions.append(os2_action)
             execution_route = self._scene_execution_route(
@@ -5367,6 +5541,12 @@ class EngineOS:
                         metric.model_dump(mode="json")
                         if hasattr(metric, "model_dump") else dict(metric)
                     )
+                adapter_transition = getattr(
+                    result, "world_transition", None
+                )
+                if adapter_transition is not None:
+                    state_before = dict(adapter_transition.state_before)
+                    state_after = dict(adapter_transition.state_after)
 
             interaction_fact: Dict[str, Any] = {}
             for candidate in reversed(
@@ -5412,7 +5592,11 @@ class EngineOS:
             public_reasoning = str(
                 getattr(action, "public_reasoning_summary", "") or ""
             ).strip()
-            status = "fallback" if _is_network_fallback(action) else "executed"
+            status = "fallback" if _is_network_fallback(action) else (
+                "rejected"
+                if os2_action.status in {"rejected", "failed"}
+                else "executed"
+            )
             try:
                 activity = AgentActivityFact(
                     activity_id=f"activity:{tick}:{agent_id}",
@@ -5460,7 +5644,10 @@ class EngineOS:
                 state_after=state_after,
                 deltas={
                     "action_type": os2_action.action_type,
-                    "outcome": "accepted",
+                    "outcome": (
+                        adapter_receipt.status
+                        if adapter_receipt is not None else "accepted"
+                    ),
                     "execution": {
                         "mode": execution_route.get("mode"),
                         "provider_id": execution_route.get("provider_id"),
@@ -5475,6 +5662,16 @@ class EngineOS:
                     "interaction": interaction_fact or None,
                     "object_deltas": object_deltas,
                     "metric_deltas": metric_deltas,
+                    "world_action_receipt": (
+                        adapter_receipt.model_dump(mode="json")
+                        if adapter_receipt is not None else None
+                    ),
+                    "world_transition": (
+                        result.world_transition.model_dump(mode="json")
+                        if result is not None
+                        and result.world_transition is not None
+                        else None
+                    ),
                 },
                 visibility="public",
                 public_summary=(interaction_fact.get("summary") or (

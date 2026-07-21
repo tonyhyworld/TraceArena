@@ -51,6 +51,7 @@ class ScenarioRuntime:
         self.director_cfg: Dict[str, Any] = {}
         self.presentation: Any = None
         self.world_variables: List[Any] = []
+        self.world_adapter_cfg: Dict[str, Any] = {}
         self.prompt_contract: Dict[str, Any] = {}
         self.visibility_rules: List[Dict[str, Any]] = []
         self.causal_physics_config: Dict[str, Any] = {}
@@ -132,6 +133,7 @@ class ScenarioRuntime:
         rt.director_cfg = dict(scenario.director_cfg)
         rt.presentation = scenario.presentation
         rt.world_variables = list(scenario.world_variables)
+        rt.world_adapter_cfg = dict(scenario.world_adapter_cfg)
         rt.prompt_contract = dict(scenario.prompt_contract)
         rt.visibility_rules = list(scenario.visibility_rules)
         rt.causal_physics_config = dict(scenario.causal_physics_config)

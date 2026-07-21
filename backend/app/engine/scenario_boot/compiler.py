@@ -272,6 +272,11 @@ class ScenarioCompiler:
             provider_id = str(route.get("provider_id") or "")
             if mode not in valid_modes:
                 errors.append(f"execution route {action_id} mode 不支持: {mode}")
+            if mode == "simulation" and not route.get("world_adapter_id"):
+                errors.append(
+                    f"execution route {action_id} 为 simulation 时必须声明 "
+                    "world_adapter_id"
+                )
             if provider_id not in provider_ids:
                 errors.append(
                     f"execution route {action_id} 引用了未声明 provider: {provider_id}"
@@ -280,6 +285,77 @@ class ScenarioCompiler:
                 errors.append(
                     f"execution route {action_id} mode 与 provider {provider_id} 权限不一致"
                 )
+        adapter_cfg = getattr(scenario, "world_adapter_cfg", {}) or {}
+        supported_model_kinds = {
+            "rule_based",
+            "algorithmic",
+            "learned",
+            "simulator",
+            "reality",
+            "hybrid",
+        }
+        configured_kind = str(adapter_cfg.get("model_kind") or "").strip()
+        if configured_kind and configured_kind not in supported_model_kinds:
+            errors.append(
+                "world/adapter.yaml.model_kind 不支持: " + configured_kind
+            )
+        declared_adapters = {
+            str(route.get("world_adapter_id") or "")
+            for _, route in route_items
+            if isinstance(route, dict)
+            and route.get("world_adapter_id")
+        }
+        if declared_adapters:
+            if len(declared_adapters) > 1:
+                errors.append(
+                    "一个场景当前只能声明一个 world_adapter_id；多个引擎应由复合适配器统一封装"
+                )
+            configured_id = str(adapter_cfg.get("adapter_id") or "")
+            # 内置 RuleWorld 继续读取原有 world/*.yaml，不要求额外 adapter.yaml。
+            non_ruleworld = declared_adapters - {"builtin:ruleworld_physics"}
+            if non_ruleworld and not configured_id:
+                errors.append(
+                    "非内置执行路由必须提供 world/adapter.yaml.adapter_id"
+                )
+            if configured_id and configured_id not in declared_adapters:
+                errors.append(
+                    "world/adapter.yaml.adapter_id 未被任何 simulation 路由引用: "
+                    + configured_id
+                )
+            for adapter_id in sorted(declared_adapters):
+                if not adapter_id:
+                    continue
+                if adapter_id == "builtin:ruleworld_physics":
+                    invalid_ruleworld_routes = [
+                        action_id
+                        for action_id, route in route_items
+                        if isinstance(route, dict)
+                        and str(route.get("world_adapter_id") or "") == adapter_id
+                        and str(route.get("mode") or "") != "simulation"
+                    ]
+                    if invalid_ruleworld_routes:
+                        errors.append(
+                            "builtin:ruleworld_physics 只能用于 simulation 路由: "
+                            + ",".join(invalid_ruleworld_routes)
+                        )
+                    continue
+                try:
+                    from app.engine.world_adapter import (
+                        get_world_adapter_descriptor,
+                        get_world_adapter_factory,
+                    )
+                    get_world_adapter_factory(adapter_id)
+                    descriptor = get_world_adapter_descriptor(adapter_id)
+                    if configured_kind and configured_kind != descriptor.model_kind:
+                        errors.append(
+                            "world/adapter.yaml.model_kind 与注册实现不一致: "
+                            f"config={configured_kind}, "
+                            f"registry={descriptor.model_kind}"
+                        )
+                except ValueError:
+                    errors.append(
+                        "simulation world_adapter_id 未注册: " + adapter_id
+                    )
         observation_ids: Set[str] = set()
         for observation in observations:
             if not isinstance(observation, dict):

@@ -22,6 +22,8 @@
 
 通用 OS 负责装载、调度、感知隔离、行动校验、事件/轨迹记录、结算路由和回放。场景包负责世界里的角色、对象、行动、资源、权限、工具、业务算法、胜负、结算规则和呈现词汇。
 
+场景还必须明确“世界如何产生反馈”。专家规则、算法、训练后的 World Agent、专业模拟器、真实系统和混合模型统一通过 `WorldAdapter` 接入；不要把世界推进逻辑塞进结算插件。World Adapter 负责产生状态变化，Settlement 负责判断这些事实如何形成结果，二者是不同职责。
+
 ```mermaid
 flowchart TB
   P["场景包\n角色 · 世界规则 · 行动 · 工具 · 结算 · 测试"] --> O["TraceArena OS\n装载 → 状态 → 感知 → Agent → 行动 → 结算 → 回放"]
@@ -77,6 +79,7 @@ backend/scenarios/<scenario-slug>/
 │   ├── permissions.yaml            # 启用 permissions 时需要
 │   ├── visibility.yaml             # 启用 visibility 时需要
 │   ├── tools.yaml                  # 启用 tools 时需要
+│   ├── adapter.yaml                # 使用可插拔世界模型时需要
 │   ├── clock.yaml                  # 可选 tick/墙钟节奏
 │   └── locations.yaml              # 启用 map 时需要
 ├── settlement/
@@ -93,6 +96,20 @@ backend/scenarios/<scenario-slug>/
 ```
 
 不要为了“目录完整”机械创建空文件。`enabled_features` 启用了什么，编译器就要求相应区段存在；以 [`capital_market`](../backend/scenarios/capital_market/) 为参考实现。
+
+## 选择世界模型实现
+
+`world/adapter.yaml` 的 `model_kind` 支持 `rule_based`、`algorithmic`、`learned`、`simulator`、`reality` 和 `hybrid`。例如：
+
+```yaml
+adapter_id: builtin:grid2op
+model_kind: simulator
+seed: 42
+config:
+  environment: l2rpn_case14_sandbox
+```
+
+执行路由用 `world_adapter_id` 指向注册实现。`simulation` 路由必须显式声明；其他结算类型可按需使用。配置、注册表和运行 provenance 的类型不一致时，编译或启动会失败。学习型世界模型还必须记录模型身份、版本、验证依据和局限；其预测不能自动作为真实物理事实或唯一胜负权威。完整契约见 [World Model / Adapter SDK](WORLD_ADAPTER_SDK.md)。
 
 ## 固定加载路径：`entry_files` 不是重定向器
 

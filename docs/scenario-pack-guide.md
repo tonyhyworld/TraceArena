@@ -23,8 +23,12 @@ it belongs in the pack rather than in `backend/app/engine`.
    the runtime can decide what each actor can perceive and do.
 4. Choose the settlement authority under `settlement/`: deterministic verifier,
    scenario rules, externally verifiable facts, or an explicit hybrid.
-5. Add validation, a sample run, and replay expectations under `tests/`.
-6. Add only assets you have a right to redistribute; document provenance in an
+5. Choose how the world produces feedback. Register a `WorldAdapter` as
+   `rule_based`, `algorithmic`, `learned`, `simulator`, `reality`, or `hybrid`,
+   and reference it with `world_adapter_id`. This is independent of settlement
+   authority; see the [World Model / Adapter SDK](WORLD_ADAPTER_SDK.md).
+6. Add validation, a sample run, and replay expectations under `tests/`.
+7. Add only assets you have a right to redistribute; document provenance in an
    adjacent `PROVENANCE.md`.
 
 ## Design for auditability

@@ -10,6 +10,11 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 import time
 
+from app.contracts.world_adapter import (
+    WorldAdapterActionReceipt,
+    WorldAdapterTransition,
+)
+
 
 # ---------------------------------------------------------------------------
 # 层1 ↔ 层2：Agent Contract
@@ -579,6 +584,11 @@ class CausalPipelineResult(BaseModel):
 
     # 原始动作保留用于可追溯世界事实转换。
     action: Optional[ActionPack] = None
+
+    # 外部可执行世界的权威回执。RuleWorld 旧路径保持为 None；外部适配器
+    # 必须返回结构化 transition，OS 不根据 LLM 文本猜测世界变化。
+    world_action_receipt: Optional[WorldAdapterActionReceipt] = None
+    world_transition: Optional[WorldAdapterTransition] = None
 
 
 # ---------------------------------------------------------------------------

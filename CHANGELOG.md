@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased — 2026-07-21
+
+- Added a unified World Adapter contract for rule-based, algorithmic, learned,
+  simulator, reality-connected and hybrid world models.
+- Separated world execution from the four settlement-authority modes so any
+  settlement route may consume adapter transitions without granting the
+  adapter automatic scoring authority.
+- Added provenance and assurance contracts for model identity, confidence,
+  validation evidence, assumptions and limitations.
+- Added an optional Grid2Op adapter, deterministic reference adapter, smoke
+  test and public SDK documentation.
+- Updated the product positioning around giving domain experts a reusable AI
+  framework instead of requiring a complete physical simulator.
+
 ## v0.1.5 — 2026-07-18
 
 - Audited and repaired public Markdown links (clean audit: 0 missing internal links).

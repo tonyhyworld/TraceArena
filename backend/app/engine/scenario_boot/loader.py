@@ -47,6 +47,7 @@ OS_CAPABILITIES = {
     "resource_lifecycle",
     "cooldown_lifecycle",
     "settlement_runtime",
+    "world_adapter",
     "director_plan",
     "render_commands",
     "trace_export",
@@ -346,6 +347,8 @@ class LoadedScenario(BaseModel):
     # 渲染
     presentation: PresentationConfig = Field(default_factory=PresentationConfig)
     world_variables: List[WorldVariable] = Field(default_factory=list)
+    # 可执行世界适配器。它只负责环境状态转移，不拥有结算权威。
+    world_adapter_cfg: Dict[str, Any] = Field(default_factory=dict)
     # 场景结算权限、Provider 与胜负口径
     settlement_cfg: Dict[str, Any] = Field(default_factory=dict)
     # 场景
@@ -539,6 +542,15 @@ class ScenarioBootKernel:
         if vars_path.exists():
             raw_vars = yaml.safe_load(vars_path.read_text(encoding="utf-8")) or []
             world_variables = [WorldVariable(**v) for v in raw_vars]
+
+        world_adapter_cfg: Dict[str, Any] = {}
+        adapter_path = root / "world" / "adapter.yaml"
+        if adapter_path.exists():
+            world_adapter_cfg = yaml.safe_load(
+                adapter_path.read_text(encoding="utf-8")
+            ) or {}
+            if not isinstance(world_adapter_cfg, dict):
+                raise ScenarioLoadError("world/adapter.yaml 必须是对象")
 
         settlement_cfg: Dict[str, Any] = {}
         settlement_path = root / "settlement" / "manifest.yaml"
@@ -851,6 +863,7 @@ class ScenarioBootKernel:
             director_cfg=director_cfg,
             presentation=presentation,
             world_variables=world_variables,
+            world_adapter_cfg=world_adapter_cfg,
             settlement_cfg=settlement_cfg,
             scene_config=scene_config,
             scene_theme=scene_theme,

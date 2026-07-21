@@ -92,6 +92,27 @@ class EvaluationEngine:
             action, tick, state, tool_result=tool_result
         )
 
+    async def run_action_batch(
+        self,
+        actions: List[ActionPack],
+        tick: int,
+        state: Any,
+        tool_results: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, CausalPipelineResult]:
+        """Execute a complete world tick without advancing adapters per agent."""
+        runner = getattr(self._provider, "run_action_batch", None)
+        if callable(runner):
+            return await runner(actions, tick, state, tool_results or {})
+        results: Dict[str, CausalPipelineResult] = {}
+        for action in actions:
+            results[action.agent_id] = await self.run_causal_pipeline(
+                action,
+                tick,
+                state,
+                tool_result=(tool_results or {}).get(action.agent_id),
+            )
+        return results
+
     def export_ledgers(self) -> Dict[str, Any]:
         return self._provider.export_ledgers()
 
@@ -125,3 +146,12 @@ class EvaluationEngine:
 
     def requires_simulation(self, action_id: str) -> bool:
         return self._provider.requires_simulation(action_id)
+
+    def world_observation(self, actor_id: str) -> Any:
+        getter = getattr(self._provider, "observation", None)
+        return getter(actor_id) if callable(getter) else None
+
+    def close(self) -> None:
+        close = getattr(self._provider, "close", None)
+        if callable(close):
+            close()
