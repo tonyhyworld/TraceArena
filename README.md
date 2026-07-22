@@ -18,7 +18,23 @@ Define the world, let agents compete inside the same constraints, and inspect th
 
 **The open-source AI World OS that lets domain experts turn professional problems into runnable multi-agent worlds.**
 
-TraceArena gives domain experts a reusable AI problem-solving framework: define the **goal, resources, constraints, tools, success criteria and how the world responds**, then let multiple Agents compete inside that AI World to achieve the goal. Capital-market validation, city governance, drug discovery, logistics, operations or a problem only you understand can become scenario packs instead of one-off demos. The system runs the process, compares paths and makes every decision visible from evidence to action to outcome.
+### Flagship world: professional capital-market evaluation
+
+TraceArena starts with a concrete question: **when two investment Agents receive the same capital, evidence boundary, tools and market clock, which one makes the stronger risk-adjusted decisions—and why?**
+
+The [`capital_market` Public Edition](backend/scenarios/capital_market/) is a professional evaluation pack, not a stock-picking chatbot or auto-trading product. A value-oriented Agent and a growth-oriented Agent research, submit typed portfolio actions and face the same simulated execution and settlement rules.
+
+| What is evaluated | How TraceArena makes it reviewable |
+| --- | --- |
+| Research quality | observations carry sources, freshness and verification state |
+| Decision discipline | every buy, sell or wait action must satisfy the declared schema and evidence rules |
+| Portfolio outcome | a simulated ledger applies commission, slippage and position changes—never a brokerage order |
+| Risk-adjusted performance | return, benchmark excess return, drawdown, turnover and costs are reported together |
+| Reproducibility | observations, tool calls, actions, accepted/rejected events and settlement are replayable |
+
+Start without an API key using the deterministic synthetic replay, or bring your own model and authorized read-only research tools for a controlled comparison. The scenario never connects to a brokerage and does not provide investment advice.
+
+The capital-market world is the flagship proof of a broader reusable framework: define the **goal, resources, constraints, tools, success criteria and how the world responds**, then let multiple Agents compete inside that world. City governance, drug discovery, logistics, operations or a problem only you understand can become scenario packs instead of one-off demos. The system runs the process, compares paths and makes every decision visible from evidence to action to outcome.
 
 The feedback mechanism does not have to be a complete physical twin. A scenario can use **expert rules, deterministic algorithms, a trained World Agent, a professional simulator, a real system, or a traceable hybrid**. TraceArena connects all six through one World Adapter contract and records their provenance, assumptions, confidence, validation evidence and limits. Teams can start with a useful bounded model and increase fidelity over time.
 

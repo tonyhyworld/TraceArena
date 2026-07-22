@@ -3,24 +3,24 @@
 ## Product
 
 - Name: `TraceArena`
-- Tagline: `Open-source AI World OS for real-world problems`
+- Tagline: `Audit competing AI investment strategies, decision by decision`
 - Website: <https://tonyhyworld.github.io/TraceArena>
 - Demo: <https://tonyworld888-tracearena-demo.static.hf.space/index.html>
 - Repository: <https://github.com/tonyhyworld/TraceArena>
 
 ## Product description (under 500 characters)
 
-> TraceArena is an open-source AI World OS for simulating real-world problems. Define a goal, resources, rules and tools, load a scenario pack, configure your LLM, and let multiple agents compete inside the same world. Every observation, decision, action, consequence and settlement is visible and replayable. Start with a no-key synthetic world, then build your own for capital markets, city governance, drug discovery, logistics or robotics.
+> TraceArena is an open-source runtime for professional multi-agent evaluation. Its flagship capital-market world gives investment Agents the same capital, evidence boundary, tools and clock, then audits research, validates actions, simulates trades and settles return, benchmark excess, drawdown, turnover and costs. Replay every decision with no brokerage and no investment advice—then build another world on the same OS.
 
 ## Maker comment
 
 > Hi Product Hunt — I’m Tony, creator of TraceArena.
 >
-> Most agents are tested in chat, where they can sound right without changing a world. AI World OS gives them a defined world: goals, resources, rules, tools and an authoritative settlement.
+> Product Hunt feedback kept returning to our investment world, so here is the clearest way to understand TraceArena: it is a professional evaluation environment where competing investment Agents face the same capital, evidence, tools, clock and execution rules.
 >
-> You can load a scenario pack, connect your LLM, let agents compete over paths, and watch the entire chain from evidence to outcome. We built this so researchers, developers and domain experts can turn a real problem into a runnable world without building an entire simulator from scratch.
+> A value Agent and a growth Agent research, submit structured buy/sell/wait actions, pay simulated commission and slippage, and are compared on return, benchmark excess, drawdown, turnover and costs. Every observation, tool call, action, rejection and settlement stays replayable. It never connects to a brokerage and is not investment advice.
 >
-> Start with the no-key replay, then tell us what world you want to load next. TraceArena is open source under Apache 2.0.
+> This is the flagship proof of the broader AI World OS: start with the no-key capital-market replay, bring your own model for a controlled comparison, then use the same scenario contract to build another professional world. TraceArena is open source under Apache 2.0.
 
 ## Gallery order
 
