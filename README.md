@@ -200,6 +200,8 @@ the private 三子夺嫡 pack.
 # Terminal 1 — backend
 cd backend
 source ../.venv/bin/activate
+# Copy .env.example to .env and set AIWORLD_JWT_SECRET (32+ random characters)
+# plus AIWORLD_SECRET_KEY (a Fernet key) before using local authentication.
 AIWORLD_CONFIG=./framework.public.yaml PYTHONPATH=. \
   python -m uvicorn app.main:app --host 127.0.0.1 --port 8001
 

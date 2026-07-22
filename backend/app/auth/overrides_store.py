@@ -14,13 +14,15 @@ from pathlib import Path
 from threading import Lock
 from typing import Dict
 
+from app.core.path_safety import path_beneath
+
 logger = logging.getLogger(__name__)
 
 _lock = Lock()
 
 
 def _path(user_id: str) -> Path:
-    return Path("./user_data") / user_id / "framework_overrides.json"
+    return path_beneath("./user_data", user_id, "framework_overrides.json")
 
 
 def get_user_overrides(user_id: str) -> Dict[str, Dict[str, str]]:

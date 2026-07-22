@@ -20,6 +20,7 @@ from typing import Awaitable, Callable, Dict, Optional
 from app.config import AgentSlotConfig, FrameworkConfig, load_config
 from app.engine.main import EngineOS, UserSettingsProvider
 from app.engine.scenario_boot.loader import ScenarioBootKernel
+from app.core.path_safety import path_beneath, safe_path_component
 
 logger = logging.getLogger(__name__)
 
@@ -142,8 +143,11 @@ class EngineManager:
         self._assemble_agent_slots(cfg, scenario)
         # 每用户独立落盘目录：engine/main.py 内部写盘逻辑零改动，
         # 只靠 log_dir / persistent_memory_root 指向不同路径就实现了数据隔离。
-        cfg.log_dir = str(Path("./runs") / user_id)
-        cfg.persistent_memory_root = str(Path("./agents_persistent") / user_id)
+        safe_user_id = safe_path_component(user_id, label="user_id")
+        cfg.log_dir = str(path_beneath("./runs", safe_user_id))
+        cfg.persistent_memory_root = str(
+            path_beneath("./agents_persistent", safe_user_id)
+        )
         Path(cfg.log_dir).mkdir(parents=True, exist_ok=True)
         Path(cfg.persistent_memory_root).mkdir(parents=True, exist_ok=True)
 
@@ -202,11 +206,19 @@ class EngineManager:
 
     def _resolve_scenario_path(self, user_id: str, scenario_name: str) -> str:
         """场景包优先在该用户私有目录找，找不到再退回全局公共目录"""
-        private_path = Path("./user_data") / user_id / "scenarios" / scenario_name
+        safe_user_id = safe_path_component(user_id, label="user_id")
+        safe_scenario_name = safe_path_component(
+            scenario_name, label="scenario_name"
+        )
+        private_path = path_beneath(
+            "./user_data", safe_user_id, "scenarios", safe_scenario_name
+        )
         if (private_path / "manifest.json").is_file():
             return str(private_path)
         base_cfg = self._load_base_cfg()
-        public_path = Path(base_cfg.scenario_path).parent / scenario_name
+        public_path = path_beneath(
+            Path(base_cfg.scenario_path).parent, safe_scenario_name
+        )
         return str(public_path)
 
     async def rebuild_engine(

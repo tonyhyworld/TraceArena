@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Centralized validation for user, scenario, agent, run and dataset path components.
+- Replaced bulk ZIP extraction with bounded, traversal-safe extraction that rejects
+  symlinks, special files and oversized expanded archives.
+- Stopped archive review endpoints from following local filesystem paths stored in
+  run manifests.
+- Required deployment-managed JWT and Fernet secrets instead of generating and
+  writing authentication secrets to local files.
+- Removed tainted WebSocket values from console format strings and added security
+  boundary regression tests to CI.
+
 ## v0.1.11 — 2026-07-22
 
 - Added the professional capital-market evaluation scenario and its complete

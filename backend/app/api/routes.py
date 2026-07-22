@@ -7,12 +7,13 @@ import uuid
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.auth.dependencies import get_current_user, require_permission
 from app.auth.models import User
 from app.auth.permissions import Permission
 from app.engine_manager import UserEngineContext
+from app.core.path_safety import path_beneath, safe_path_component
 
 _PROVIDERS = ["mock", "openai", "deepseek", "anthropic", "minimax", "huggingface"]
 
@@ -258,6 +259,13 @@ class BenchmarkStartRequest(BaseModel):
     agent_timeout_sec: float = 30.0
     validity_policy: Dict[str, Any] = Field(default_factory=dict)
 
+    @field_validator("scenario_name")
+    @classmethod
+    def validate_scenario_name(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        return safe_path_component(value, label="scenario_name")
+
 
 @router.patch("/config/agents/{agent_id}")
 async def update_agent_config(agent_id: str, update: AgentConfigUpdate, user: User = Depends(require_permission(Permission.EDIT_MODEL_CONFIG))) -> Dict[str, Any]:
@@ -297,8 +305,16 @@ async def start_benchmark(req: BenchmarkStartRequest, user: User = Depends(requi
     )
     from app.benchmark.runner import BenchmarkRunner
 
-    scenario_name = req.scenario_name or engine.scenario_directory_name
-    scenario_path = Path(engine.scenario_definition.scenario_dir).parent / scenario_name
+    try:
+        scenario_name = safe_path_component(
+            req.scenario_name or engine.scenario_directory_name,
+            label="scenario_name",
+        )
+    except ValueError as exc:
+        raise HTTPException(400, "非法场景名") from exc
+    scenario_path = path_beneath(
+        Path(engine.scenario_definition.scenario_dir).parent, scenario_name
+    )
     if not scenario_path.exists():
         raise HTTPException(404, f"场景不存在: {scenario_name}")
 
@@ -486,7 +502,9 @@ def _dir_scenario_names(base: Path) -> List[str]:
 async def list_scenarios(user: User = Depends(get_current_user)) -> Dict[str, Any]:
     """列出可用场景包：全局公共场景 + 该用户私有上传的场景（同名时私有优先加载）"""
     public_names = _dir_scenario_names(Path("./scenarios"))
-    private_names = _dir_scenario_names(Path("./user_data") / user.user_id / "scenarios")
+    private_names = _dir_scenario_names(
+        path_beneath("./user_data", user.user_id, "scenarios")
+    )
     names = sorted(set(public_names) | set(private_names))
     ctx = _get_existing_ctx(user)  # 只读查询，避免为了列列表而拉起引擎
     current = ctx.engine.scenario_directory_name if ctx is not None else ""
@@ -499,6 +517,11 @@ async def list_scenarios(user: User = Depends(get_current_user)) -> Dict[str, An
 
 class LoadScenarioRequest(BaseModel):
     scenario_name: str
+
+    @field_validator("scenario_name")
+    @classmethod
+    def validate_scenario_name(cls, value: str) -> str:
+        return safe_path_component(value, label="scenario_name")
 
 
 @router.post("/control/load-scenario")

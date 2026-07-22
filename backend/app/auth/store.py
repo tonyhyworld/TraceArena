@@ -19,6 +19,7 @@ from typing import Dict, List, Optional
 import bcrypt
 
 from app.auth.models import User, UserRecord
+from app.core.path_safety import safe_path_component
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,9 @@ class UserStore:
             data = self._load()
             if any(u.get("username") == username for u in data.values()):
                 raise ValueError(f"用户名已存在: {username}")
-            uid = user_id or f"u_{uuid.uuid4().hex[:12]}"
+            uid = safe_path_component(
+                user_id or f"u_{uuid.uuid4().hex[:12]}", label="user_id"
+            )
             password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
             record = UserRecord(
                 user_id=uid, username=username, password_hash=password_hash,

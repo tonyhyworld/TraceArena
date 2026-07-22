@@ -9,7 +9,9 @@ from __future__ import annotations
 import time
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.core.path_safety import safe_path_component
 
 
 class User(BaseModel):
@@ -22,6 +24,11 @@ class User(BaseModel):
     # 功能权限：细粒度勾选清单，key 见 app/auth/permissions.py。
     # is_admin=True 的账号绕过所有权限检查，这个字段对它无意义。
     permissions: List[str] = Field(default_factory=list)
+
+    @field_validator("user_id")
+    @classmethod
+    def validate_user_id(cls, value: str) -> str:
+        return safe_path_component(value, label="user_id")
 
 
 class UserRecord(User):

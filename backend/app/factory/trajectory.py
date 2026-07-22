@@ -6,6 +6,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
 
+from app.core.path_safety import path_beneath, safe_path_component
+
 
 PURITY_DETERMINISTIC = "deterministic"
 PURITY_SIMULATION = "simulation"
@@ -137,6 +139,7 @@ def load_trajectory(
     **_ignored: Any,
 ) -> Trajectory:
     root = Path(run_dir)
+    agent_id = safe_path_component(agent_id, label="agent_id")
     meta = meta or _read_json(root / "meta.json") or {}
     model_info = (meta.get("agent_models") or {}).get(agent_id, {}) or {}
     trajectory = Trajectory(
@@ -174,7 +177,7 @@ def load_trajectory(
     for record in _read_jsonl(root / "ledgers" / "settlements.jsonl"):
         for ref in record.get("source_event_refs") or []:
             settlements_by_event.setdefault(str(ref), []).append(record)
-    logs = _read_jsonl(root / "agents" / agent_id / "harness_io.jsonl")
+    logs = _read_jsonl(path_beneath(root, "agents", agent_id, "harness_io.jsonl"))
     logs_by_tick = {int(item.get("tick", -1)): item for item in logs}
     actions_by_tick = {
         int(item.get("world_tick", 0) or 0): item for item in actions

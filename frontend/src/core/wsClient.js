@@ -56,14 +56,14 @@ function _buildWSClient(channel = 'viewer') {
       try {
         h(data)
       } catch (err) {
-        console.error(`[ws] handler error type=${type}`, err)
+        console.error('[ws] handler error', { type: String(type) }, err)
       }
     }
     for (const h of [...(handlers['*'] || [])]) {
       try {
         h(type, data)
       } catch (err) {
-        console.error(`[ws] wildcard handler error type=${type}`, err)
+        console.error('[ws] wildcard handler error', { type: String(type) }, err)
       }
     }
   }

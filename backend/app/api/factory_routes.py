@@ -27,6 +27,7 @@ from pydantic import BaseModel, Field
 from app.auth.dependencies import require_permission
 from app.auth.models import User
 from app.auth.permissions import Permission
+from app.core.path_safety import path_beneath
 
 router = APIRouter(prefix="/factory")
 
@@ -46,11 +47,13 @@ _dep = Depends(require_permission(Permission.EXPORT_DATA.value))
 
 
 def _runs_base(user_id: str) -> Path:
-    return (Path(os.environ.get("AIWORLD_LOG_DIR", "./runs")).resolve() / user_id)
+    return path_beneath(
+        Path(os.environ.get("AIWORLD_LOG_DIR", "./runs")), user_id
+    )
 
 
 def _exports_base(user_id: str) -> Path:
-    base = _runs_base(user_id).parent / "exports" / user_id
+    base = path_beneath(_runs_base(user_id).parent, "exports", user_id)
     base.mkdir(parents=True, exist_ok=True)
     return base
 
@@ -59,7 +62,10 @@ def _safe_run_dir(run_id: str, user_id: str) -> Path:
     if not _RUN_ID_RE.match(run_id):
         raise HTTPException(400, "非法 run_id")
     base = _runs_base(user_id)
-    run_dir = (base / run_id).resolve()
+    try:
+        run_dir = path_beneath(base, run_id)
+    except ValueError as exc:
+        raise HTTPException(400, "非法 run_id") from exc
     if base not in run_dir.parents:
         raise HTTPException(400, "非法 run_id")
     if not run_dir.is_dir():
@@ -71,7 +77,10 @@ def _safe_dataset_dir(dataset_id: str, user_id: str) -> Path:
     if not _DATASET_ID_RE.match(dataset_id):
         raise HTTPException(400, "非法 dataset_id")
     base = _exports_base(user_id)
-    ds_dir = (base / dataset_id).resolve()
+    try:
+        ds_dir = path_beneath(base, dataset_id)
+    except ValueError as exc:
+        raise HTTPException(400, "非法路径") from exc
     if base not in ds_dir.parents:
         raise HTTPException(400, "非法路径")
     if not ds_dir.is_dir():

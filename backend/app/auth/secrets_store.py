@@ -19,6 +19,7 @@ from threading import Lock
 from typing import Dict, Optional
 
 from app.auth import crypto
+from app.core.path_safety import path_beneath
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ _lock = Lock()
 
 
 def _path(user_id: str) -> Path:
-    return Path("./user_data") / user_id / "secrets.json"
+    return path_beneath("./user_data", user_id, "secrets.json")
 
 
 def _load(user_id: str) -> Dict[str, str]:
