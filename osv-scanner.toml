@@ -1,0 +1,28 @@
+# OSV-Scanner currently evaluates the Python range manifest separately from
+# uv.lock and reports MCP advisories that are already fixed by the resolved
+# mcp 1.28.1 dependency. Keep these exceptions narrow and time-bounded.
+
+[[IgnoredVulns]]
+id = "GHSA-3qhf-m339-9g5v"
+ignoreUntil = 2026-10-22
+reason = "mcp is constrained and locked to 1.28.1; OSV marks this issue fixed in 1.9.4."
+
+[[IgnoredVulns]]
+id = "GHSA-9h52-p55h-vw2f"
+ignoreUntil = 2026-10-22
+reason = "mcp is constrained and locked to 1.28.1; OSV marks this issue fixed in 1.23.0."
+
+[[IgnoredVulns]]
+id = "GHSA-j975-95f5-7wqh"
+ignoreUntil = 2026-10-22
+reason = "mcp is constrained and locked to 1.28.1; OSV marks this issue fixed in 1.10.0."
+
+[[IgnoredVulns]]
+id = "GHSA-jpw9-pfvf-9f58"
+ignoreUntil = 2026-10-22
+reason = "mcp is constrained and locked to 1.28.1; OSV marks this issue fixed in 1.27.2."
+
+[[IgnoredVulns]]
+id = "GHSA-vj7q-gjh5-988w"
+ignoreUntil = 2026-10-22
+reason = "mcp is constrained and locked to 1.28.1; OSV marks this issue fixed in 1.28.1."
