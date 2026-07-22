@@ -44,10 +44,18 @@ export function setLocale(next) {
   locale.value = next
   if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, next)
   document.documentElement.lang = next
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('tracearena:locale-changed', { detail: { locale: next } }))
+  }
 }
 
 export function t(key, fallback = key) {
   return messages[locale.value]?.[key] || messages[fallbackLocale]?.[key] || fallback
+}
+
+/** Inline bilingual copy for scenario-specific screens that do not need a global key. */
+export function tr(zh, en) {
+  return locale.value === 'en-US' ? en : zh
 }
 
 export function useI18n() {

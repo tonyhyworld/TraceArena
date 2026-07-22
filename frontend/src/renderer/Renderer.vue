@@ -27,8 +27,8 @@
                   <div class="sd-role">{{ agent.roleTitle }}</div>
                 </div>
                 <div class="sd-rank" :class="{ hot: agent.leading }">
-                  {{ agent.eliminated ? uiText('ranking_eliminated', '已退出')
-                     : (agent.leading ? uiText('ranking_leading', '领先') : ('第 ' + agent.rank)) }}
+                  {{ agent.eliminated ? uiText('ranking_eliminated', tr('已退出', 'Stopped'))
+                     : (agent.leading ? uiText('ranking_leading', tr('领先', 'Leading')) : (tr('第 ', '#') + agent.rank)) }}
                 </div>
               </header>
               <div class="sd-primary">
@@ -53,24 +53,24 @@
                       <b>{{ h.name || formatHoldingName(h.asset_id) }}</b>
                       <i v-if="h.name">{{ formatHoldingName(h.asset_id) }}</i>
                     </span>
-                    <span class="sd-holding-qty">{{ formatHoldingQty(h.quantity) }}股</span>
-                    <span class="sd-holding-cost">买入 {{ formatHoldingPrice(h.avg_cost) }}</span>
+                    <span class="sd-holding-qty">{{ formatHoldingQty(h.quantity) }} {{ tr('股', 'shares') }}</span>
+                    <span class="sd-holding-cost">{{ tr('买入', 'Cost') }} {{ formatHoldingPrice(h.avg_cost) }}</span>
                   </div>
                 </div>
                 <div v-else class="sd-holdings-empty">{{ uiText('holdings_empty', '') }}</div>
               </div>
               <div class="sd-strategy">
-                <div class="sd-strategy-label">{{ uiText('thoughts_title', '操盘思路') }}</div>
+                <div class="sd-strategy-label">{{ uiText('thoughts_title', tr('操盘思路', 'Trading rationale')) }}</div>
                 <p v-if="agent.monologue" class="sd-strategy-text">{{ agent.monologue }}</p>
-                <p v-else class="sd-strategy-empty">等待本回合独白…</p>
+                <p v-else class="sd-strategy-empty">{{ tr('等待本回合独白…', 'Waiting for this cycle’s rationale…') }}</p>
               </div>
               <div class="sd-strategy sd-invest">
                 <div class="sd-strategy-label">
-                  {{ uiText('strategy_title', '投资策略') }}
-                  <em>{{ uiText('strategy_source', '思维链') }}</em>
+                  {{ uiText('strategy_title', tr('投资策略', 'Investment strategy')) }}
+                  <em>{{ uiText('strategy_source', tr('思维链', 'Reasoning trace')) }}</em>
                 </div>
                 <p v-if="agent.strategy" class="sd-strategy-text">{{ agent.strategy }}</p>
-                <p v-else class="sd-strategy-empty">等待本回合策略摘要…</p>
+                <p v-else class="sd-strategy-empty">{{ tr('等待本回合策略摘要…', 'Waiting for the strategy summary…') }}</p>
               </div>
             </article>
           </div>
@@ -93,8 +93,8 @@
             <div class="loading-ring r3"></div>
             <div class="loading-core"></div>
           </div>
-          <div class="loading-text">{{ scenarioSwitching ? '正在切换世界…' : (waitingMessage || 'AI 智能体正在推演中...') }}</div>
-          <div class="loading-hint">{{ scenarioSwitching ? '正在原子加载场景规则、角色与视听资源' : '每个回合需要调用 AI 模型进行决策，请耐心等待' }}</div>
+          <div class="loading-text">{{ scenarioSwitching ? tr('正在切换世界…', 'Switching world…') : (waitingMessage || tr('AI 智能体正在推演中...', 'AI agents are evaluating…')) }}</div>
+          <div class="loading-hint">{{ scenarioSwitching ? tr('正在原子加载场景规则、角色与视听资源', 'Loading scenario rules, roles, and media atomically') : tr('每个回合需要调用 AI 模型进行决策，请耐心等待', 'Each cycle calls AI models for decisions. This may take a moment.') }}</div>
         </div>
 
         <!-- 场景右下角持续加载指示器 -->
@@ -147,19 +147,19 @@
           </div>
           <span v-if="snapshot.tick > 0" class="tick-pill tick-pill-playback" title="前台画面和导演演出当前播放到的回合">
             <span class="tick-dot"></span>
-            <span class="tick-label">播放</span>T{{ snapshot.tick }}
+            <span class="tick-label">{{ tr('播放', 'VIEW') }}</span>T{{ snapshot.tick }}
           </span>
           <span v-if="computedTick > snapshot.tick" class="tick-pill tick-pill-engine" title="后台引擎已经计算完成、正在等待前台播放的回合">
-            <span class="tick-label">计算</span>T{{ computedTick }}
+            <span class="tick-label">{{ tr('计算', 'ENGINE') }}</span>T{{ computedTick }}
           </span>
           <span v-if="snapshot.is_game_over" class="win-pill">
             <svg class="win-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.39 4.84 5.34.78-3.87 3.77.91 5.32L10 13.27l-4.77 2.51.91-5.32L2.27 6.69l5.34-.78z"/></svg>
-            {{ agentName(snapshot.winner_id) }} 胜出
+            {{ agentName(snapshot.winner_id) }} {{ tr('胜出', 'wins') }}
           </span>
           <!-- Buffer 状态指示 -->
           <span v-if="isComputing" class="computing-pill">
             <span class="computing-dot"></span>
-            <span class="computing-text">推演中</span>
+            <span class="computing-text">{{ tr('推演中', 'Evaluating') }}</span>
           </span>
           <span v-if="waitingMessage && !isComputing" class="computing-pill computing-waiting">
             <span class="computing-dot"></span>
@@ -173,25 +173,25 @@
           </span>
         </div>
 
-        <button class="scene-notice-book" :title="uiText('notice_tooltip', '查看场景说明')" @click="openScenarioNotice">
+        <button class="scene-notice-book" :title="uiText('notice_tooltip', tr('查看场景说明', 'View scenario brief'))" @click="openScenarioNotice">
           <svg viewBox="0 0 32 32" aria-hidden="true">
             <path d="M5.5 5.5c4.2-.8 7.3.1 10.5 2.5v18c-3.2-2.4-6.3-3.3-10.5-2.5v-18Z"/>
             <path d="M26.5 5.5c-4.2-.8-7.3.1-10.5 2.5v18c3.2-2.4 6.3-3.3 10.5-2.5v-18Z"/>
             <path d="M8.5 10.5c1.8-.1 3.3.3 4.8 1.2M8.5 14c1.8-.1 3.3.3 4.8 1.2M23.5 10.5c-1.8-.1-3.3.3-4.8 1.2M23.5 14c-1.8-.1-3.3.3-4.8 1.2"/>
           </svg>
-          <span>{{ uiText('notice_label', '场景说明') }}</span>
+          <span>{{ uiText('notice_label', tr('场景说明', 'Scenario brief')) }}</span>
         </button>
 
         <div class="hud-tr">
-          <button class="hud-btn" :disabled="isResetting" title="开始 / 继续推演" @click="handlePlay()">▶</button>
-          <button class="hud-btn" :disabled="isResetting" title="暂停" @click="handlePause()">⏸</button>
-          <button class="hud-btn" :disabled="isResetting" title="重置本局" @click="handleReset()">↺</button>
+          <button class="hud-btn" :disabled="isResetting" :title="tr('开始 / 继续推演', 'Start / continue')" @click="handlePlay()">▶</button>
+          <button class="hud-btn" :disabled="isResetting" :title="tr('暂停', 'Pause')" @click="handlePause()">⏸</button>
+          <button class="hud-btn" :disabled="isResetting" :title="tr('重置本局', 'Reset run')" @click="handleReset()">↺</button>
           <div class="hud-sep"></div>
-          <button :class="['hud-btn', 'btn-cfg', { active: showConfig }]" title="模型配置" @click="showConfig = !showConfig">⚙</button>
+          <button :class="['hud-btn', 'btn-cfg', { active: showConfig }]" :title="tr('模型配置', 'Model settings')" @click="showConfig = !showConfig">⚙</button>
           <button
             v-if="canAccessOperator"
             class="hud-btn hud-switch"
-            title="切换到运营台（无需重新登录）"
+            :title="tr('切换到运营台（无需重新登录）', 'Switch to operations without signing in again')"
             @click="goToOperator"
           >
             <svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true">
@@ -200,7 +200,7 @@
               <rect x="3" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.6" fill="none"/>
               <rect x="11" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.6" fill="currentColor" opacity=".8"/>
             </svg>
-            <span class="hud-switch-label">运营台</span>
+            <span class="hud-switch-label">{{ tr('运营台', 'Operations') }}</span>
             <svg viewBox="0 0 20 20" width="12" height="12" class="hud-switch-arrow" aria-hidden="true">
               <path d="M8 4L14 10L8 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
             </svg>
@@ -468,11 +468,11 @@
       <div class="oracle-zone">
         <span class="oracle-label">⚡ {{ uiText('intervention_label', '世界干预') }}</span>
         <select v-model="oracleTarget" class="oracle-select">
-          <option value="all">全体</option>
-          <option v-for="a in snapshot.agents" :key="a.agent_id" :value="a.agent_id">{{ a.name }}</option>
+          <option value="all">{{ tr('全体', 'All') }}</option>
+          <option v-for="a in snapshot.agents" :key="a.agent_id" :value="a.agent_id">{{ agentName(a.agent_id) }}</option>
         </select>
         <input v-model="oracleText" class="oracle-input" :placeholder="uiText('intervention_placeholder', '输入一条世界事件，回车发送…')" @keyup.enter="sendOracle" />
-        <button class="oracle-send" @click="sendOracle">注入</button>
+        <button class="oracle-send" @click="sendOracle">{{ tr('注入', 'Inject') }}</button>
       </div>
       <div class="vars-zone" v-if="worldVariables.length">
         <span class="vars-label">{{ uiText('variables_label', '世界变量') }}</span>
@@ -573,6 +573,7 @@ import { createPresentationExecutor } from './presentationExecutor'
 import { createAudioEngine } from './audioEngine'
 import { createEffectEngine } from './effectEngine'
 import { navigateView } from '@/core/viewNav.js'
+import { locale, tr } from '@/core/i18n.js'
 import {
   saveNarrativeFeed,
   loadNarrativeFeed,
@@ -623,7 +624,7 @@ const noticeActiveChunk = ref(-1)
 const settlementTrends = ref({})
 const computedTick = ref(0)
 
-const LEDGER_LABELS = { action:'行动', state_delta:'状态', metric_derivation:'派生', tool:'工具', evidence:'证据', settlement:'结算' }
+const LEDGER_LABELS = computed(() => ({ action:tr('行动', 'Actions'), state_delta:tr('状态', 'State'), metric_derivation:tr('派生', 'Derived'), tool:tr('工具', 'Tools'), evidence:tr('证据', 'Evidence'), settlement:tr('结算', 'Settlement') }))
 const sceneState = computed(() => snapshot.value.scene_state || {})
 const ledgerCounts = computed(() => sceneState.value.ledger_counts || {})
 const hasRuleWorld = computed(() => Object.keys(ledgerCounts.value).length > 0)
@@ -665,7 +666,7 @@ function roundDisplayNumber(value, digits = 2) {
 
 function formatDisplayNumber(value, digits = 2) {
   const rounded = roundDisplayNumber(value, digits)
-  return rounded.toLocaleString('zh-CN', {
+  return rounded.toLocaleString(locale.value, {
     minimumFractionDigits: 0,
     maximumFractionDigits: digits,
   })
@@ -696,12 +697,24 @@ const settlementStandings = computed(() => {
     .filter(e => e && e.agent_id).map(e => e.agent_id)
   const items = (snapshot.value.agents || []).map(agent => {
     const aid = agent.agent_id
-    const settlement = settlementRows.get(aid) || { value: 0, values: {}, pending: true }
     const currentMetrics = snapshot.value.agent_metrics?.[aid] || {}
+    // A simulator can expose live, authoritative per-agent metrics before a
+    // terminal settlement exists.  Render that generic contract directly so
+    // scenario packs do not need a bespoke frontend merely to show their
+    // external world feedback.
+    const primaryMetric = uiConfig?.metrics?.primary || ''
+    const livePrimary = Number(currentMetrics[primaryMetric])
+    const hasLivePrimary = primaryMetric && Number.isFinite(livePrimary)
+    const settlement = settlementRows.get(aid) || {
+      value: hasLivePrimary ? livePrimary : 0,
+      values: hasLivePrimary ? currentMetrics : {},
+      pending: !hasLivePrimary,
+      label: hasLivePrimary ? (metricLabel(primaryMetric) || '世界指标') : '',
+    }
     const isElim = eliminatedOrder.includes(aid)
     return {
       agentId: aid,
-      name: agent.name || aid,
+      name: agentName(aid),
       color: agent.color || '#7dd3fc',
       isAlive: agent.is_alive,
       eliminated: isElim,
@@ -1567,7 +1580,7 @@ function buildAgentMesh(agent) {
   }
   const ld = document.createElement('div')
   ld.className = 'agent-label'
-  ld.textContent = agent.name || slot?.name || agent.agent_id
+  ld.textContent = agentName(agent.agent_id) || slot?.name || agent.agent_id
   const lb = new CSS2DObject(ld)
   lb.position.y = 2.6
   group.add(lb)
@@ -1734,7 +1747,11 @@ function animate(t=0){ animId=requestAnimationFrame(animate); const dt=Math.min(
 
 function onResize(){ const el=mountEl.value; if(!el)return; const w=el.clientWidth,h=el.clientHeight; camera.value.aspect=w/h; camera.value.updateProjectionMatrix(); renderer.value.setSize(w,h); labelRdr.value.setSize(w,h); composer.value.setSize(w,h) }
 
-function agentName(id){ return snapshot.value.agents?.find(a=>a.agent_id===id)?.name||id }
+function agentName(id){
+  return scenarioRoles.value.find(role => (role.id || role.slot_id) === id)?.name
+    || snapshot.value.agents?.find(a=>a.agent_id===id)?.name
+    || id
+}
 function agentColor(id){ return snapshot.value.agents?.find(a=>a.agent_id===id)?.color||'#ccc' }
 function isEliminated(id){ return (snapshot.value.eliminated||[]).some(e=>e&&e.agent_id===id) }
 // 角色内心 / 投资策略同步：写进对应卡片。

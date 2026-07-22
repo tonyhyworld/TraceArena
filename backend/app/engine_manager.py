@@ -58,6 +58,7 @@ class EngineManager:
         self._sweep_interval = sweep_interval_sec
         self._user_settings_provider = user_settings_provider
         self._contexts: Dict[str, UserEngineContext] = {}
+        self._preferred_locales: Dict[str, str] = {}
         # Python 3.9 binds asyncio primitives to the current loop at creation
         # time.  Test runners and short-lived CLI tasks may have closed that
         # loop already, so ensure a usable loop before constructing the lock.
@@ -125,9 +126,16 @@ class EngineManager:
             slots.append(AgentSlotConfig(**payload))
         cfg.agents = slots
 
-    async def _build_context(self, user_id: str, scenario_path: Optional[str] = None) -> UserEngineContext:
+    async def _build_context(
+        self,
+        user_id: str,
+        scenario_path: Optional[str] = None,
+        locale: Optional[str] = None,
+    ) -> UserEngineContext:
         # Always resolve through scenario runtime profile (see _load_scenario_cfg).
         cfg = self._load_scenario_cfg(scenario_path)
+        if locale in {"zh-CN", "en-US"}:
+            cfg.scenario_locale = locale
         scenario = ScenarioBootKernel.load(
             cfg.scenario_path, locale=cfg.scenario_locale
         )
@@ -166,7 +174,9 @@ class EngineManager:
         logger.info(f"[EngineManager] 为用户 {user_id} 创建引擎实例")
         return UserEngineContext(user_id=user_id, engine=engine, cfg=cfg)
 
-    async def get_or_create(self, user_id: str) -> UserEngineContext:
+    async def get_or_create(self, user_id: str, locale: Optional[str] = None) -> UserEngineContext:
+        if locale in {"zh-CN", "en-US"}:
+            self._preferred_locales[user_id] = locale
         ctx = self._contexts.get(user_id)
         if ctx is not None:
             ctx.touch()
@@ -183,7 +193,10 @@ class EngineManager:
                     raise RuntimeError(
                         f"当前并发对局数已达上限（{self._max_instances}），请稍后再试"
                     )
-            ctx = await self._build_context(user_id)
+            ctx = await self._build_context(
+                user_id,
+                locale=self._preferred_locales.get(user_id, locale),
+            )
             self._contexts[user_id] = ctx
             return ctx
 
@@ -196,13 +209,18 @@ class EngineManager:
         public_path = Path(base_cfg.scenario_path).parent / scenario_name
         return str(public_path)
 
-    async def rebuild_engine(self, user_id: str, scenario_name: str) -> UserEngineContext:
+    async def rebuild_engine(
+        self,
+        user_id: str,
+        scenario_name: str,
+        locale: Optional[str] = None,
+    ) -> UserEngineContext:
         """构建成功后再原子替换，切换窗口内读请求始终看到完整旧实例。"""
         async with self._creation_lock:
             old = self._contexts.get(user_id)
             new_scenario_path = self._resolve_scenario_path(user_id, scenario_name)
             # 构建失败时保留旧世界；绝不能先 pop 后让并发轮询创建默认场景。
-            ctx = await self._build_context(user_id, scenario_path=new_scenario_path)
+            ctx = await self._build_context(user_id, scenario_path=new_scenario_path, locale=locale)
             self._contexts[user_id] = ctx
         if old is not None:
             try:
@@ -215,6 +233,31 @@ class EngineManager:
     def get_existing(self, user_id: str) -> Optional[UserEngineContext]:
         """只读查询，不触发创建（用于健康检查等不想意外拉起引擎的场景）"""
         return self._contexts.get(user_id)
+
+    def set_preferred_locale(self, user_id: str, locale: str) -> None:
+        if locale not in {"zh-CN", "en-US"}:
+            raise ValueError(f"Unsupported locale: {locale}")
+        self._preferred_locales[user_id] = locale
+
+    def get_preferred_locale(self, user_id: str) -> str:
+        ctx = self._contexts.get(user_id)
+        return self._preferred_locales.get(
+            user_id,
+            ctx.cfg.scenario_locale if ctx is not None else "zh-CN",
+        )
+
+    async def reset_for_new_run(self, user_id: str) -> UserEngineContext:
+        """Reset using the preferred language without mutating a live run mid-flight."""
+        ctx = await self.get_or_create(user_id)
+        locale = self.get_preferred_locale(user_id)
+        if ctx.cfg.scenario_locale != locale:
+            return await self.rebuild_engine(
+                user_id,
+                ctx.engine.scenario_directory_name,
+                locale=locale,
+            )
+        await ctx.engine.reset()
+        return ctx
 
     # ------------------------------------------------------------------
     async def _evict_one_idle(self) -> bool:

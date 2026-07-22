@@ -5,13 +5,13 @@
         <div class="op-logo">AI</div>
         <div>
           <div class="op-title">AI World</div>
-          <div class="op-subtitle">运营后台</div>
+          <div class="op-subtitle">{{ tr('运营后台', 'OPERATIONS') }}</div>
         </div>
       </div>
       <button
         v-if="canAccessViewer"
         class="op-switch-btn"
-        title="切换到观众端（无需重新登录）"
+        :title="tr('切换到观众端（无需重新登录）', 'Switch to viewer without signing in again')"
         @click="goToViewer"
       >
         <svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true">
@@ -20,7 +20,7 @@
         <span class="op-switch-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="16" height="16"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="12" cy="12" r="3" fill="currentColor" opacity=".7"/></svg>
         </span>
-        <span class="op-switch-label">观众端</span>
+        <span class="op-switch-label">{{ tr('观众端', 'Viewer') }}</span>
         <span class="op-switch-shine"></span>
       </button>
       <nav class="op-nav">
@@ -34,7 +34,7 @@
             @click="item.ready && go(item.key)"
           >
             <span>{{ item.label }}</span>
-            <span v-if="!item.ready" class="op-soon">即将上线</span>
+            <span v-if="!item.ready" class="op-soon">{{ tr('即将上线', 'Soon') }}</span>
           </button>
         </template>
       </nav>
@@ -51,7 +51,7 @@
       <UserManagement v-else-if="section === 'users'" />
       <div v-else class="op-placeholder">
         <h2>{{ currentLabel }}</h2>
-        <p>该模块尚未实现，将在后续迭代上线。</p>
+        <p>{{ tr('该模块尚未实现，将在后续迭代上线。', 'This module is planned for a future release.') }}</p>
       </div>
     </main>
   </div>
@@ -67,6 +67,7 @@ import UserManagement from './UserManagement.vue'
 import UserAccountMenu from '../components/UserAccountMenu.vue'
 import { getCurrentUser, hasPermission } from '../core/authStore.js'
 import { navigateView } from '../core/viewNav.js'
+import { tr } from '../core/i18n.js'
 
 defineOptions({ name: 'OperatorShell' })
 
@@ -76,25 +77,25 @@ function goToViewer() {
   navigateView('viewer')
 }
 
-const NAV = [
-  { label: '实时', items: [
-    { key: 'live', label: '实时对局', ready: true },
+const NAV = computed(() => [
+  { label: tr('实时', 'LIVE'), items: [
+    { key: 'live', label: tr('实时评测', 'Live evaluation'), ready: true },
   ] },
-  { label: '档案', items: [
-    { key: 'archive', label: '对局档案', ready: true },
+  { label: tr('档案', 'ARCHIVE'), items: [
+    { key: 'archive', label: tr('评测档案', 'Evaluation archive'), ready: true },
   ] },
-  { label: '分析', items: [
-    { key: 'assessment', label: '模型分析', ready: true },
+  { label: tr('分析', 'ANALYSIS'), items: [
+    { key: 'assessment', label: tr('模型分析', 'Model analysis'), ready: true },
   ] },
-  // 决策证据工厂：有 export_data 权限或超管可见
-  ...((hasPermission('export_data') || getCurrentUser()?.is_admin) ? [{ label: '数据', items: [
-    { key: 'factory', label: '决策证据', ready: true },
+  // 训练数据工厂：有 export_data 权限或超管可见
+  ...((hasPermission('export_data') || getCurrentUser()?.is_admin) ? [{ label: tr('数据', 'DATA'), items: [
+    { key: 'factory', label: tr('训练数据', 'Training data'), ready: true },
   ] }] : []),
   // 用户管理仅超管可见——is_admin 之外没有任何权限能打开这一入口
-  ...(getCurrentUser()?.is_admin ? [{ label: '系统', items: [
-    { key: 'users', label: '用户管理', ready: true },
+  ...(getCurrentUser()?.is_admin ? [{ label: tr('系统', 'SYSTEM'), items: [
+    { key: 'users', label: tr('用户管理', 'User management'), ready: true },
   ] }] : []),
-]
+])
 
 const section = ref('live')
 const runId = ref(null)
@@ -112,7 +113,7 @@ function go(key) {
 }
 
 const currentLabel = computed(() => {
-  for (const g of NAV) {
+  for (const g of NAV.value) {
     const hit = g.items.find(i => i.key === section.value)
     if (hit) return hit.label
   }
@@ -130,23 +131,23 @@ onUnmounted(() => window.removeEventListener('hashchange', parseHash))
 .op-shell {
   display: flex;
   height: 100vh;
-  background: #070510;
-  color: #ece6fb;
+  background: #070a10;
+  color: #e8eef7;
   font-family: 'PingFang SC','Microsoft YaHei',system-ui,sans-serif;
   font-size: 13px;
 }
 .op-sidebar {
-  width: 220px;
+  width: 188px;
   flex-shrink: 0;
-  background: linear-gradient(170deg,#120c28,#0a0717);
-  border-right: 1px solid rgba(139,63,251,.18);
-  padding: 18px 12px;
+  background: linear-gradient(180deg,#0d1320,#080c14);
+  border-right: 1px solid rgba(148,163,184,.10);
+  padding: 20px 12px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   overflow-y: auto;
 }
-.op-brand { display: flex; align-items: center; gap: 11px; margin-bottom: 22px; padding: 0 6px; }
+.op-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; padding: 0 6px; }
 .op-switch-btn {
   position: relative;
   overflow: hidden;
@@ -154,10 +155,10 @@ onUnmounted(() => window.removeEventListener('hashchange', parseHash))
   margin-bottom: 18px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(105,220,255,.22);
+  border: 1px solid rgba(103,232,249,.16);
   background:
-    linear-gradient(135deg, rgba(105,220,255,.10) 0%, rgba(139,91,255,.10) 100%);
-  color: #a8ebff;
+    linear-gradient(135deg, rgba(103,232,249,.07) 0%, rgba(94,234,212,.035) 100%);
+  color: #94d8e5;
   font-size: 12px; font-weight: 700; letter-spacing: .04em;
   cursor: pointer;
   display: flex; align-items: center; gap: 8px;
@@ -184,29 +185,30 @@ onUnmounted(() => window.removeEventListener('hashchange', parseHash))
 }
 .op-switch-btn:hover .op-switch-shine { left: 120%; }
 .op-logo {
-  width: 38px; height: 38px; border-radius: 10px;
-  background: linear-gradient(135deg,#8b3ffb,#49d8ff);
+  width: 36px; height: 36px; border-radius: 11px;
+  background: linear-gradient(145deg,#3d74d8,#46d7dc);
   display: flex; align-items: center; justify-content: center;
   font-weight: 700; color: #fff; letter-spacing: 1px;
 }
-.op-title { font-size: 15px; font-weight: 600; }
-.op-subtitle { font-size: 11px; color: #9b8fc0; }
+.op-title { font-size: 14px; font-weight: 680; }
+.op-subtitle { margin-top: 2px; font-size: 10px; color: #617087; }
 .op-nav-group {
-  font-size: 11px; color: #6b6190; letter-spacing: 2px;
+  font-size: 9px; color: #4e5b70; letter-spacing: 2px;
   margin: 14px 8px 4px;
 }
 .op-nav-item {
   width: 100%; text-align: left;
   display: flex; align-items: center; justify-content: space-between;
   padding: 9px 12px; border-radius: 8px;
-  background: transparent; border: none; color: #c7bff0;
-  cursor: pointer; font-size: 13px; transition: background .15s;
+  background: transparent; border: 1px solid transparent; color: #9ba8bc;
+  cursor: pointer; font-size: 12px; transition: background .15s, border-color .15s;
 }
-.op-nav-item:hover:not(.disabled) { background: rgba(139,63,251,.12); }
+.op-nav-item:hover:not(.disabled) { background: rgba(103,232,249,.045); color: #d5e4ee; }
 .op-nav-item.active {
-  background: rgba(73,216,255,.14);
-  color: #8cecff;
-  box-shadow: inset 2px 0 0 #49d8ff;
+  border-color: rgba(103,232,249,.12);
+  background: rgba(103,232,249,.08);
+  color: #82e4ef;
+  box-shadow: inset 2px 0 0 #67e8f9;
 }
 .op-nav-item.disabled { color: #5a5378; cursor: default; }
 .op-sidebar-foot {

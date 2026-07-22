@@ -2,12 +2,12 @@
   <div class="df-root">
     <header class="df-hero">
       <div>
-        <span class="kicker">决策证据工厂</span>
-        <h1>评测工件导出</h1>
-        <p>把对局整理成可复盘轨迹、路径比较、完整运行、能力评测和 OS 2.0 可追溯因果链。</p>
+        <span class="kicker">{{ tr('Agent 训练数据工厂', 'AGENT TRAINING DATA FACTORY') }}</span>
+        <h1>{{ tr('训练数据导出', 'Training data export') }}</h1>
+        <p>{{ tr('把对局沉淀成优秀轨迹、偏好对、完整对局、能力样本和 OS 2.0 可追溯因果链。', 'Convert evaluations into high-quality trajectories, preference pairs, episodes, capability samples, and OS 2.0 causal traces.') }}</p>
       </div>
       <button class="df-refresh" @click="loadRuns" :disabled="loadingRuns">
-        {{ loadingRuns ? '加载中…' : '刷新对局' }}
+        {{ loadingRuns ? tr('加载中…', 'Loading…') : tr('刷新对局', 'Refresh runs') }}
       </button>
     </header>
 
@@ -16,75 +16,75 @@
     <div class="df-grid">
       <!-- 左：选对局 -->
       <section class="df-panel">
-        <h2>1 · 选择对局</h2>
-        <p class="df-hint">勾选要导出的对局。良品率低的局（大量失败/兜底）建议不选。</p>
-        <div v-if="!runs.length" class="df-empty">暂无对局，跑完至少一局后出现。</div>
+        <h2>1 · {{ tr('选择对局', 'Select runs') }}</h2>
+        <p class="df-hint">{{ tr('勾选要导出的对局。良品率低的局（大量失败/兜底）建议不选。', 'Select runs to export. Exclude low-quality runs with frequent failures or fallbacks.') }}</p>
+        <div v-if="!runs.length" class="df-empty">{{ tr('暂无对局，跑完至少一局后出现。', 'No runs yet. Complete at least one evaluation.') }}</div>
         <label v-for="r in runs" :key="r.run_id" class="df-run"
                :class="{ dim: r.good_rate === 0 }">
           <input type="checkbox" :value="r.run_id" v-model="selected" />
           <span class="df-run-id">{{ r.run_id }}</span>
           <span class="df-run-rate" :class="rateClass(r.good_rate)">
-            良品 {{ r.clean_agents }}/{{ r.total_agents }}
+            {{ tr('良品', 'Clean') }} {{ r.clean_agents }}/{{ r.total_agents }}
           </span>
         </label>
       </section>
 
       <!-- 中：筛选 + 预览 -->
       <section class="df-panel wide">
-        <h2>2 · 预览样本（决策卡）</h2>
+        <h2>2 · {{ tr('预览样本（决策卡）', 'Preview samples') }}</h2>
         <div class="df-filters">
-          <label>工件类型
+          <label>{{ tr('数据类型', 'Data type') }}
             <select v-model="fmt">
-              <option value="sft">高质量轨迹（评测）</option>
-              <option value="dpo">路径偏好对（比较）</option>
-              <option value="episodes">完整对局（回放）</option>
-              <option value="eval">能力评测</option>
-              <option value="trace">OS 2.0 可追溯链路</option>
+              <option value="sft">{{ tr('优秀轨迹（SFT）', 'High-quality trajectories (SFT)') }}</option>
+              <option value="dpo">{{ tr('偏好对（DPO）', 'Preference pairs (DPO)') }}</option>
+              <option value="episodes">{{ tr('完整对局（RL）', 'Complete episodes (RL)') }}</option>
+              <option value="eval">{{ tr('能力评测', 'Capability evaluation') }}</option>
+              <option value="trace">{{ tr('OS 2.0 可追溯链路', 'OS 2.0 trace chain') }}</option>
             </select>
           </label>
           <button class="df-btn" @click="doPreview" :disabled="!selected.length || previewing">
-            {{ previewing ? '预览中…' : '预览' }}
+            {{ previewing ? tr('预览中…', 'Loading preview…') : tr('预览', 'Preview') }}
           </button>
-          <span v-if="previewTotal !== null" class="df-count">共 {{ previewTotal }} 条</span>
+          <span v-if="previewTotal !== null" class="df-count">{{ previewTotal }} {{ tr('条', 'samples') }}</span>
         </div>
 
-        <div v-if="!cards.length" class="df-empty">选好对局与类型后点“预览”，这里会列出决策卡。</div>
+        <div v-if="!cards.length" class="df-empty">{{ tr('选好对局与类型后点“预览”，这里会列出决策卡。', 'Select runs and a data type, then preview the decision cards.') }}</div>
         <div v-else class="df-cards">
           <article v-for="c in cards" :key="c.sample_id" class="df-card">
             <template v-if="c.类型 === 'OS2可追溯链路'">
               <div class="df-card-tag trace">OS 2.0 TRACE</div>
-              <p class="df-sit">第 {{ c.回合 }} 回合：{{ c.世界行动 }} 个行动 → {{ c.世界事件 }} 个事件 → {{ c.结算记录 }} 条结算</p>
-              <p class="df-why">外部事实 {{ c.外部事实 }} 条 · 结算权限 {{ (c.结算权限 || []).join(' / ') || '无' }} · 导演计划 {{ c.导演计划 ? '已生成' : '无' }}</p>
+              <p class="df-sit">{{ tr('第', 'Cycle') }} {{ c.回合 }}: {{ c.世界行动 }} {{ tr('个行动', 'actions') }} → {{ c.世界事件 }} {{ tr('个事件', 'events') }} → {{ c.结算记录 }} {{ tr('条结算', 'settlements') }}</p>
+              <p class="df-why">{{ tr('外部事实', 'External facts') }} {{ c.外部事实 }} · {{ tr('结算权限', 'Authority') }} {{ (c.结算权限 || []).join(' / ') || tr('无', 'None') }} · {{ tr('导演计划', 'Director plan') }} {{ c.导演计划 ? tr('已生成', 'Generated') : tr('无', 'None') }}</p>
             </template>
             <template v-else-if="c.对照类型">
               <div class="df-card-tag contrast">{{ c.对照类型 }}</div>
               <div class="df-vs">
-                <div class="vs-good"><b>更优</b> {{ c['更好(chosen)'] }}</div>
-                <div class="vs-bad"><b>更差</b> {{ c['更差(rejected)'] }}</div>
+                <div class="vs-good"><b>{{ tr('更优', 'Preferred') }}</b> {{ c['更好(chosen)'] }}</div>
+                <div class="vs-bad"><b>{{ tr('更差', 'Rejected') }}</b> {{ c['更差(rejected)'] }}</div>
               </div>
               <p class="df-why">{{ c['为什么更好'] }}</p>
             </template>
             <template v-else-if="c.整局概述">
-              <div class="df-card-tag ep">完整对局</div>
+              <div class="df-card-tag ep">{{ tr('完整对局', 'Complete episode') }}</div>
               <p class="df-sit">{{ c.整局概述 }}</p>
-              <p class="df-why">{{ c.终局 }} · 客观奖励 {{ c['客观奖励占比'] }} · {{ c.步数 }} 步</p>
+              <p class="df-why">{{ c.终局 }} · {{ tr('客观奖励', 'Objective reward') }} {{ c['客观奖励占比'] }} · {{ c.步数 }} {{ tr('步', 'steps') }}</p>
             </template>
             <template v-else-if="c.类型 === '能力探针作答'">
-              <div class="df-card-tag eval">能力评测</div>
+              <div class="df-card-tag eval">{{ tr('能力评测', 'Capability evaluation') }}</div>
               <p class="df-sit">{{ c.作答摘要 }}</p>
-              <p class="df-why">模型：{{ c.模型 }}</p>
+              <p class="df-why">{{ tr('模型：', 'Model: ') }}{{ c.模型 }}</p>
             </template>
             <template v-else>
               <div class="df-card-head">
-                <span class="df-card-tag sft">优秀轨迹</span>
-                <span class="df-card-meta">契合度 {{ pct(c.元信息?.situational_fit) }} · {{ c.元信息?.reward_purity }}</span>
+                <span class="df-card-tag sft">{{ tr('优秀轨迹', 'High-quality trajectory') }}</span>
+                <span class="df-card-meta">{{ tr('契合度', 'Fit') }} {{ pct(c.元信息?.situational_fit) }} · {{ c.元信息?.reward_purity }}</span>
               </div>
               <p class="df-sit">📍 {{ c.局面 }}</p>
               <p class="df-dec">🎯 {{ c.决策 }}</p>
               <ul class="df-reasons">
                 <li v-for="(r, i) in c.为什么" :key="i">{{ r }}</li>
               </ul>
-              <p v-if="c.证据?.length" class="df-evi">证据：{{ c.证据.join('；') }}</p>
+              <p v-if="c.证据?.length" class="df-evi">{{ tr('证据：', 'Evidence: ') }}{{ c.证据.join('；') }}</p>
             </template>
           </article>
         </div>
@@ -92,26 +92,26 @@
 
       <!-- 右：导出 + 数据集 -->
       <section class="df-panel">
-        <h2>3 · 导出评测工件</h2>
-        <label class="df-name">工件包名称
-          <input v-model="datasetName" placeholder="如：AI World 跨场景轨迹 v1" />
+        <h2>3 · {{ tr('导出数据集', 'Export dataset') }}</h2>
+        <label class="df-name">{{ tr('数据集名称', 'Dataset name') }}
+          <input v-model="datasetName" :placeholder="tr('如：AI World 跨场景轨迹 v1', 'e.g. AI World cross-scenario traces v1')" />
         </label>
         <button class="df-btn primary" @click="doExport" :disabled="!selected.length || exporting">
-          {{ exporting ? '导出封装中…' : '导出 + 封装' }}
+          {{ exporting ? tr('导出封装中…', 'Packaging…') : tr('导出 + 封装', 'Export + package') }}
         </button>
         <p v-if="exportResult" class="df-export-ok">
-          ✅ {{ exportResult.total_samples }} 条 · 良品率 {{ pct(exportResult.good_rate) }}
+          ✅ {{ exportResult.total_samples }} {{ tr('条', 'samples') }} · {{ tr('良品率', 'clean rate') }} {{ pct(exportResult.good_rate) }}
         </p>
 
-        <h3>已导出的工件包</h3>
-        <div v-if="!datasets.length" class="df-empty sm">还没有工件包。</div>
+        <h3>{{ tr('已导出数据集', 'Exported datasets') }}</h3>
+        <div v-if="!datasets.length" class="df-empty sm">{{ tr('还没有数据集。', 'No datasets yet.') }}</div>
         <article v-for="d in datasets" :key="d.dataset_id" class="df-dataset">
           <div class="df-ds-head">
             <b>{{ d.name }}</b>
-            <span>{{ d.total_samples }} 条 · 良品 {{ pct(d.good_rate) }}</span>
+            <span>{{ d.total_samples }} {{ tr('条', 'samples') }} · {{ tr('良品', 'clean') }} {{ pct(d.good_rate) }}</span>
           </div>
           <div class="df-ds-actions">
-            <button class="df-link" @click="viewCard(d.dataset_id)">证据卡</button>
+            <button class="df-link" @click="viewCard(d.dataset_id)">{{ tr('数据卡', 'Data card') }}</button>
             <a class="df-link" :href="fileUrl(d.dataset_id, 'sft_train.jsonl')" target="_blank">SFT</a>
             <a class="df-link" :href="fileUrl(d.dataset_id, 'dpo_train.jsonl')" target="_blank">DPO</a>
             <a class="df-link" :href="fileUrl(d.dataset_id, 'os2_traces.jsonl')" target="_blank">OS2 Trace</a>
@@ -135,6 +135,7 @@
 import { ref, onMounted } from 'vue'
 import { apiGet, apiPost, API_BASE } from '../api.js'
 import { getToken } from '../../core/authStore.js'
+import { tr } from '../../core/i18n.js'
 
 const runs = ref([])
 const datasets = ref([])

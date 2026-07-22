@@ -2,8 +2,8 @@
   <div class="pc-overlay" @click.self="$emit('close')">
     <div class="pc-dialog">
       <header class="pc-head">
-        <h2>个人中心</h2>
-        <button class="pc-close" @click="$emit('close')" aria-label="关闭">×</button>
+        <h2>{{ tr('个人中心', 'Profile') }}</h2>
+        <button class="pc-close" @click="$emit('close')" :aria-label="tr('关闭', 'Close')">×</button>
       </header>
 
       <div class="pc-body">
@@ -12,39 +12,39 @@
           <div class="pc-meta">
             <div class="pc-name">{{ user.display_name || user.username }}</div>
             <div class="pc-username">@{{ user.username }}</div>
-            <span v-if="user.is_admin" class="pc-badge admin">超级管理员</span>
-            <span v-else class="pc-badge">普通用户</span>
+            <span v-if="user.is_admin" class="pc-badge admin">{{ tr('超级管理员', 'Administrator') }}</span>
+            <span v-else class="pc-badge">{{ tr('普通用户', 'User') }}</span>
           </div>
         </section>
 
         <section class="pc-section">
-          <h3>账号信息</h3>
+          <h3>{{ tr('账号信息', 'Account') }}</h3>
           <dl class="pc-dl">
-            <dt>用户 ID</dt>
+            <dt>{{ tr('用户 ID', 'User ID') }}</dt>
             <dd>{{ user.user_id }}</dd>
-            <dt>数据权限</dt>
-            <dd>仅可查看本人对局数据</dd>
+            <dt>{{ tr('数据权限', 'Data access') }}</dt>
+            <dd>{{ tr('仅可查看本人对局数据', 'Only your own evaluation data is visible') }}</dd>
           </dl>
         </section>
 
         <section class="pc-section">
-          <h3>功能权限</h3>
-          <p v-if="user.is_admin" class="pc-hint">超级管理员拥有全部功能权限。</p>
+          <h3>{{ tr('功能权限', 'Permissions') }}</h3>
+          <p v-if="user.is_admin" class="pc-hint">{{ tr('超级管理员拥有全部功能权限。', 'Administrators have all permissions.') }}</p>
           <div v-else-if="permLabels.length" class="pc-tags">
             <span v-for="label in permLabels" :key="label" class="pc-tag">{{ label }}</span>
           </div>
-          <p v-else class="pc-hint">暂未分配功能权限，请联系管理员。</p>
+          <p v-else class="pc-hint">{{ tr('暂未分配功能权限，请联系管理员。', 'No permissions assigned. Contact an administrator.') }}</p>
         </section>
 
         <section class="pc-section">
-          <h3>修改密码</h3>
+          <h3>{{ tr('修改密码', 'Change password') }}</h3>
           <div class="pc-form">
-            <input v-model="newPassword" type="password" placeholder="新密码（至少 6 位）" />
-            <input v-model="confirmPassword" type="password" placeholder="确认新密码" />
+            <input v-model="newPassword" type="password" :placeholder="tr('新密码（至少 6 位）', 'New password (6+ characters)')" />
+            <input v-model="confirmPassword" type="password" :placeholder="tr('确认新密码', 'Confirm new password')" />
           </div>
           <p v-if="pwdMsg" class="pc-msg" :class="{ err: pwdErr }">{{ pwdMsg }}</p>
           <button class="pc-btn primary" :disabled="pwdSaving" @click="submitPassword">
-            {{ pwdSaving ? '保存中…' : '更新密码' }}
+            {{ pwdSaving ? tr('保存中…', 'Saving…') : tr('更新密码', 'Update password') }}
           </button>
         </section>
       </div>
@@ -55,6 +55,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { authedFetch, getCurrentUser, refreshCurrentUser } from '../core/authStore.js'
+import { tr } from '../core/i18n.js'
 
 defineEmits(['close'])
 
@@ -97,12 +98,12 @@ async function submitPassword() {
   pwdMsg.value = ''
   pwdErr.value = false
   if (newPassword.value.length < 6) {
-    pwdMsg.value = '密码至少 6 位'
+    pwdMsg.value = tr('密码至少 6 位', 'Password must be at least 6 characters')
     pwdErr.value = true
     return
   }
   if (newPassword.value !== confirmPassword.value) {
-    pwdMsg.value = '两次输入的密码不一致'
+    pwdMsg.value = tr('两次输入的密码不一致', 'Passwords do not match')
     pwdErr.value = true
     return
   }
@@ -115,7 +116,7 @@ async function submitPassword() {
     })
     const data = await resp.json().catch(() => ({}))
     if (!resp.ok) throw new Error(data.detail || `修改失败(${resp.status})`)
-    pwdMsg.value = '密码已更新'
+    pwdMsg.value = tr('密码已更新', 'Password updated')
     newPassword.value = ''
     confirmPassword.value = ''
   } catch (e) {

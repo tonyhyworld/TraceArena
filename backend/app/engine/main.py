@@ -89,6 +89,9 @@ class EngineOS:
     ):
         self._cfg = cfg
         self._loaded = scenario
+        self._localized_scene_cache: Dict[str, LoadedScenario] = {
+            scenario.locale: scenario,
+        }
         # The generic runtime accepts user settings through an injected
         # boundary.  Authentication/storage implementations stay outside the
         # public engine package.
@@ -636,16 +639,34 @@ class EngineOS:
             "agents": agents_out,
         }
 
-    def get_operator_schema(self) -> Dict[str, Any]:
+    def localized_scenario(self, locale: Optional[str] = None) -> LoadedScenario:
+        """Return a presentation-localized view without changing runtime state."""
+        requested = locale if locale in {"zh-CN", "en-US"} else self._loaded.locale
+        cache = getattr(self, "_localized_scene_cache", None)
+        if cache is None:
+            cache = {self._loaded.locale: self._loaded}
+            self._localized_scene_cache = cache
+        cached = cache.get(requested)
+        if cached is None:
+            cached = ScenarioBootKernel.load(str(self._loaded.scenario_dir), locale=requested)
+            cache[requested] = cached
+        return cached
+
+    def get_operator_schema(self, locale: Optional[str] = None) -> Dict[str, Any]:
         """Build the operator UI contract entirely from the loaded scene."""
-        scenario = self._loaded
+        scenario = self.localized_scenario(locale)
         metrics = list((scenario.metrics_cfg or {}).get("metrics", []) or [])
-        authority_labels = {
+        authority_labels = ({
+            "simulation": "Simulation rules",
+            "external_reality": "External real-world data",
+            "deterministic_verifier": "Deterministic verifier",
+            "hybrid": "Real-world data + deterministic rules",
+        } if scenario.locale == "en-US" else {
             "simulation": "模拟世界规则",
             "external_reality": "外部真实数据",
             "deterministic_verifier": "确定性验证器",
             "hybrid": "真实数据 + 确定性规则",
-        }
+        })
         providers = []
         for item in (scenario.settlement_cfg or {}).get("providers", []) or []:
             if not isinstance(item, dict):
@@ -699,6 +720,11 @@ class EngineOS:
                 "name": scenario.manifest.name,
                 "description": scenario.manifest.description,
             },
+            "agents": [{
+                "id": role.agent_slot_id,
+                "label": role.display_name,
+                "role_title": role.role_title,
+            } for role in scenario.agent_roles],
             "metrics": [{
                 "id": str(item.get("id") or item.get("metric_id") or ""),
                 "label": str(item.get("name") or item.get("id") or ""),

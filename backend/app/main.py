@@ -35,6 +35,7 @@ from app.config import load_config
 from app.engine.scenario_boot.loader import ScenarioBootKernel
 from app.engine_manager import EngineManager
 from app.mcp.client import get_mcp_manager, init_mcp_manager, set_mcp_manager
+from app.agent_os.scheduler import AutonomousScheduler
 
 _log_dir = os.environ.get("AIWORLD_LOG_DIR", "./runs")
 os.makedirs(_log_dir, exist_ok=True)
@@ -69,6 +70,7 @@ logger = logging.getLogger(__name__)
 
 # 多用户引擎实例池（阶段2起替代原来的全局单例 _engine）
 engine_manager: EngineManager | None = None
+autonomous_scheduler: AutonomousScheduler | None = None
 
 
 def _make_broadcast(user_id: str):
@@ -89,7 +91,7 @@ def _user_settings_provider(user_id: str):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global engine_manager
+    global engine_manager, autonomous_scheduler
 
     cfg_path = os.environ.get("AIWORLD_CONFIG", "./framework.yaml")
     try:
@@ -113,6 +115,26 @@ async def lifespan(app: FastAPI):
     register_engine_manager(engine_manager)
     engine_manager.start_sweeper()
     logger.info("[startup] EngineManager 就绪（多用户引擎实例池，惰性创建）")
+
+    async def _run_autonomous_task(task: Dict[str, Any]) -> Dict[str, Any]:
+        """默认自主任务处理器：把目标作为世界公告注入，再启动当前用户世界。
+
+        领域特定的长期规划仍由场景包负责；OS 只提供统一触发入口，并返回
+        run_id 供审计与前端追踪。生产部署可替换为队列/工作进程处理器。
+        """
+        if engine_manager is None:
+            raise RuntimeError("engine_manager_not_ready")
+        ctx = await engine_manager.get_or_create(str(task["user_id"]))
+        await ctx.engine.inject_oracle("all", str(task["goal"]))
+        await ctx.engine.start()
+        return {"status": "started", "run_id": ctx.engine.run_id, "scenario_id": ctx.engine.scenario_directory_name}
+
+    autonomous_scheduler = AutonomousScheduler(
+        os.environ.get("AIWORLD_SCHEDULER_PATH", "./os_scheduler/tasks.json"),
+        handler=_run_autonomous_task,
+    )
+    autonomous_scheduler.start()
+    logger.info("[startup] Autonomous Scheduler 就绪")
 
     try:
         mcp_manager = await init_mcp_manager(
@@ -143,6 +165,9 @@ async def lifespan(app: FastAPI):
                 await engine_manager.shutdown_all()
         except Exception as exc:  # 收尾失败不应阻塞关闭
             logger.warning(f"[shutdown] 终局审计收尾失败: {exc}")
+    if autonomous_scheduler is not None:
+        await autonomous_scheduler.stop()
+        autonomous_scheduler = None
     mcp_mgr = get_mcp_manager()
     if mcp_mgr is not None:
         await mcp_mgr.close()
@@ -171,6 +196,8 @@ from app.api.factory_routes import router as factory_router  # noqa: E402
 app.include_router(factory_router)
 from app.agent_gateway.routes import router as agent_gateway_router  # noqa: E402
 app.include_router(agent_gateway_router)
+from app.api.os_capability_routes import router as os_capability_router  # noqa: E402
+app.include_router(os_capability_router)
 
 _scenarios_root = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scenarios")
 if os.path.isdir(_scenarios_root):
@@ -187,6 +214,7 @@ async def ws_endpoint(
     ws: WebSocket,
     channel: str = Query("viewer"),
     token: str = Query(...),
+    locale: str = Query("zh-CN"),
 ):
     user = decode_ws_token(token)
     if user is None:
@@ -201,7 +229,7 @@ async def ws_endpoint(
         return
 
     try:
-        ctx = await engine_manager.get_or_create(user_id)
+        ctx = await engine_manager.get_or_create(user_id, locale=locale)
     except RuntimeError as exc:
         logger.warning(f"[ws] user={user_id} 引擎实例创建失败: {exc}")
         await ws.close(code=4503)
@@ -297,7 +325,8 @@ async def _handle_command(user_id: str, raw: str) -> None:
         elif action == "step":
             await engine.step()
         elif action == "reset":
-            await engine.reset()
+            ctx = await engine_manager.reset_for_new_run(user_id)
+            engine = ctx.engine
         elif action == "replay":
             await engine.start_replay(cmd.get("run_id"))
         elif action == "oracle":

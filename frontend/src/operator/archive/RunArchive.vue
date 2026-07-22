@@ -3,14 +3,15 @@
     <!-- 左栏：对局列表 -->
     <aside class="ra-list">
       <div class="ra-list-head">
-        <div>
-          <span>RUN ARCHIVE</span>
-          <h2>对局档案</h2>
+        <div class="ra-list-title">
+          <span>EVALUATION ARCHIVE</span>
+          <h2>{{ tr('评测档案', 'Evaluation archive') }}</h2>
+          <small>{{ runs.length }} {{ tr('条可审计记录', 'auditable records') }}</small>
         </div>
-        <button class="ra-refresh" @click="loadRuns">刷新</button>
+        <button class="ra-refresh" :title="tr('刷新评测档案', 'Refresh archive')" @click="loadRuns">↻</button>
       </div>
-      <div v-if="loadingRuns" class="ra-empty">载入对局列表…</div>
-      <div v-else-if="!runs.length" class="ra-empty">还没有已存档的对局。跑完一局（终局或重置）后会自动落盘到这里。</div>
+      <div v-if="loadingRuns" class="ra-empty">{{ tr('载入对局列表…', 'Loading evaluations…') }}</div>
+      <div v-else-if="!runs.length" class="ra-empty">{{ tr('还没有已存档的对局。跑完一局（终局或重置）后会自动落盘到这里。', 'No archived evaluations yet. A completed or reset run will be saved here automatically.') }}</div>
       <article
         v-for="run in runs"
         :key="run.run_id"
@@ -20,42 +21,50 @@
       >
         <div class="ra-run-top">
           <b>{{ run.scenario || run.run_id }}</b>
-          <em v-if="run.finalized" class="ra-badge done">已终局</em>
-          <em v-else class="ra-badge">中断局</em>
+          <em v-if="run.finalized" class="ra-badge done">{{ tr('已完成', 'Completed') }}</em>
+          <em v-else class="ra-badge">{{ tr('未完成', 'Incomplete') }}</em>
         </div>
         <p class="ra-run-time">{{ formatTime(run.created_at) }} · {{ run.run_id }}</p>
-        <p v-if="run.winner" class="ra-run-winner">🏆 {{ agentNameOf(run, run.winner) }} 胜出</p>
+        <p v-if="run.winner" class="ra-run-winner"><span>{{ tr('领先', 'LEAD') }}</span>{{ agentNameOf(run, run.winner) }}</p>
         <small class="ra-run-models">{{ modelsLine(run) }}</small>
       </article>
     </aside>
 
     <!-- 主区：单局回顾（实时对局同款） -->
     <section class="ra-main">
-      <div v-if="!activeRunId" class="ra-empty big">从左侧选择一局开始回顾。</div>
-      <div v-else-if="loadingTimeline" class="ra-empty big">载入对局数据…</div>
+      <div v-if="!activeRunId" class="ra-empty big">{{ tr('从左侧选择一条评测记录开始回顾。', 'Select an evaluation on the left to begin the review.') }}</div>
+      <div v-else-if="loadingTimeline" class="ra-empty big">{{ tr('载入评测数据…', 'Loading evaluation data…') }}</div>
 
       <template v-else-if="timeline && timeline.available">
         <!-- 局头 -->
         <header class="ra-head">
           <div>
-            <span class="ra-kicker">MATCH REVIEW</span>
+            <span class="ra-kicker">EVALUATION REVIEW</span>
             <h2>{{ timeline.summary?.scenario || activeRunId }}</h2>
-            <p>{{ formatTime(timeline.summary?.created_at) }} · 共 {{ ticks.length }} 回合 · {{ agentsLine }}</p>
+            <div class="ra-head-meta">
+              <span>{{ formatTime(timeline.summary?.created_at) }}</span>
+              <span>{{ ticks.length }} {{ tr('个评测周期', 'evaluation cycles') }}</span>
+              <span>{{ agentsLine }}</span>
+            </div>
           </div>
-          <div v-if="winnerName" class="ra-winner-pill">🏆 {{ winnerName }} 胜出</div>
-          <div v-else class="ra-winner-pill muted">本局未走到终局</div>
+          <div v-if="winnerName" class="ra-winner-pill"><small>{{ tr('领先策略', 'Leading strategy') }}</small><strong>{{ winnerName }}</strong></div>
+          <div v-else class="ra-winner-pill muted"><small>{{ tr('评测状态', 'Evaluation status') }}</small><strong>{{ tr('尚未完成', 'In progress') }}</strong></div>
         </header>
 
-        <!-- 终局裁定·胜负溯源 -->
+        <!-- 专业评测结论 -->
         <div v-if="finalAttribution.length" class="ra-final">
-          <span class="ra-sec-title">🏆 终局裁定 · 胜负溯源</span>
+          <div class="ra-section-head">
+            <span class="ra-sec-title">{{ tr('评测结论与指标归因', 'Evaluation findings and attribution') }}</span>
+            <small>{{ tr('基于场景结算记录生成', 'Generated from scenario settlement records') }}</small>
+          </div>
           <div class="ra-final-grid">
             <div v-for="item in finalAttribution" :key="item.agent_id" class="ra-vr-card" :class="{ champ: item.rank === 1 }">
+              <span class="ra-rank">{{ item.rank === 1 ? 'LEAD' : `#${item.rank}` }}</span>
               <strong>{{ item.headline }}</strong>
               <p class="vr-plus" v-for="s in item.strengths" :key="'s'+s">＋ {{ s }}</p>
               <p class="vr-weak" v-for="w in item.weaknesses" :key="'w'+w">－ {{ w }}</p>
               <p class="vr-fatal" v-if="item.fatal">✖ {{ item.fatal }}</p>
-              <small>终局结果以本场景结算记录和胜负规则为准</small>
+              <small>{{ tr('评测结果以场景结算记录和专业指标规则为准', 'Results follow the scenario ledger and professional metric rules.') }}</small>
             </div>
           </div>
         </div>
@@ -63,12 +72,12 @@
         <!-- 回合导航 -->
         <div class="ra-nav">
           <div class="ra-nav-info">
-            <span>回合回放</span>
-            <strong>正在回看 T{{ activeTick }}</strong>
+            <span>{{ tr('评测周期', 'EVALUATION CYCLE') }}</span>
+            <strong>{{ tr('正在查看', 'Reviewing') }} T{{ activeTick }}</strong>
           </div>
           <div class="ra-nav-btns">
-            <button :disabled="tickIndex <= 0" @click="stepTick(-1)">上一回合</button>
-            <button :disabled="tickIndex >= ticks.length - 1" @click="stepTick(1)">下一回合</button>
+            <button :disabled="tickIndex <= 0" @click="stepTick(-1)">{{ tr('上一回合', 'Previous') }}</button>
+            <button :disabled="tickIndex >= ticks.length - 1" @click="stepTick(1)">{{ tr('下一回合', 'Next') }}</button>
           </div>
           <div class="ra-chip-row">
             <button
@@ -80,8 +89,11 @@
         </div>
 
         <div class="ra-trace">
-          <span class="ra-sec-title">本回合可追溯链路</span>
-          <div v-if="!traceNodes.length" class="ra-empty">该回合是旧版存档，或尚未写入 OS 2.0 契约记录。</div>
+          <div class="ra-section-head">
+            <span class="ra-sec-title">{{ tr('本周期证据链', 'Evidence chain for this cycle') }}</span>
+            <small>{{ tr('证据 → 动作 → 事件 → 结算', 'Evidence → action → event → settlement') }}</small>
+          </div>
+          <div v-if="!traceNodes.length" class="ra-empty">{{ tr('该回合是旧版存档，或尚未写入 OS 2.0 契约记录。', 'This is a legacy cycle or it has no OS 2.0 contract records.') }}</div>
           <div v-else class="trace-flow">
             <template v-for="(node, index) in traceNodes" :key="node.id">
               <details class="trace-node" :class="`trace-${node.kind}`">
@@ -95,8 +107,11 @@
 
         <!-- 本回合全过程（按场景结算类型动态套用 OS 链路模型） -->
         <div class="ra-process">
-          <span class="ra-sec-title">本回合全过程 · {{ processChainProfile.label }} · {{ turnProcess.length }} 个模型</span>
-          <div v-if="!turnProcess.length" class="ra-empty">本回合没有模型决策记录（可能是开场或收尾帧）。</div>
+          <div class="ra-section-head">
+            <span class="ra-sec-title">{{ tr('策略决策全过程', 'Complete strategy decision process') }}</span>
+            <small>{{ processChainProfile.label }} · {{ turnProcess.length }} {{ tr('个模型', 'models') }}</small>
+          </div>
+          <div v-if="!turnProcess.length" class="ra-empty">{{ tr('本回合没有模型决策记录（可能是开场或收尾帧）。', 'No model decision was recorded in this cycle.') }}</div>
           <article
             v-for="p in turnProcess" :key="p.key"
             class="process-card" :style="{ '--pc-color': p.color }"
@@ -118,7 +133,7 @@
                 <div>
                   <template v-if="step.id === 'perceive'">
                     <p>{{ p.perceive }}</p>
-                    <details v-if="p.perceptionRaw"><summary>完整输入</summary><pre>{{ p.perceptionRaw }}</pre></details>
+                    <details v-if="p.perceptionRaw"><summary>{{ tr('完整输入', 'Full input') }}</summary><pre>{{ p.perceptionRaw }}</pre></details>
                   </template>
                   <template v-else-if="step.id === 'loop'">
                     <p v-if="p.loop.summary" class="think-summary">{{ p.loop.summary }}</p>
@@ -130,23 +145,23 @@
                         <p v-if="hs.text">{{ hs.text }}</p>
                       </li>
                     </ol>
-                    <p v-else class="pc-muted">本回合没有记录到 Agent Loop / 工具取证步骤。</p>
-                    <details v-if="p.loop.raw"><summary>Harness 轨迹原文</summary><pre>{{ pretty(p.loop.raw) }}</pre></details>
+                    <p v-else class="pc-muted">{{ tr('本回合没有记录到 Agent Loop / 工具取证步骤。', 'No agent-loop or tool-evidence steps were recorded.') }}</p>
+                    <details v-if="p.loop.raw"><summary>{{ tr('Harness 轨迹原文', 'Raw harness trace') }}</summary><pre>{{ pretty(p.loop.raw) }}</pre></details>
                   </template>
                   <template v-else-if="step.id === 'think'">
                     <p v-if="p.think.summary" class="think-summary">{{ p.think.summary }}</p>
-                    <details v-if="p.think.chain"><summary>展开完整思维链</summary><pre>{{ p.think.chain }}</pre></details>
-                    <p v-if="!p.think.summary && !p.think.chain" class="pc-muted">该模型此局未捕获思维链（旧对局，或模型未暴露思考过程）。</p>
+                    <details v-if="p.think.chain"><summary>{{ tr('展开完整思维链', 'Show full reasoning trace') }}</summary><pre>{{ p.think.chain }}</pre></details>
+                    <p v-if="!p.think.summary && !p.think.chain" class="pc-muted">{{ tr('该模型此局未捕获思维链（旧对局，或模型未暴露思考过程）。', 'No reasoning trace was captured for this model.') }}</p>
                   </template>
                   <template v-else-if="step.id === 'said'">
                     <p>{{ p.said || '（没有可展示的输出文本）' }}</p>
-                    <details v-if="p.raw"><summary>模型原始输出</summary><pre>{{ p.raw }}</pre></details>
+                    <details v-if="p.raw"><summary>{{ tr('模型原始输出', 'Raw model output') }}</summary><pre>{{ p.raw }}</pre></details>
                   </template>
                   <template v-else-if="step.id === 'parsed'">
                     <p>{{ p.parsed }}</p>
                     <p v-if="p.orderParams" class="think-summary">{{ p.orderParams }}</p>
-                    <p v-if="p.parseErrors" class="pc-warn">解析修复：{{ p.parseErrors }}</p>
-                    <details v-if="p.actionRaw"><summary>结构化动作</summary><pre>{{ p.actionRaw }}</pre></details>
+                    <p v-if="p.parseErrors" class="pc-warn">{{ tr('解析修复：', 'Parse repairs: ') }}{{ p.parseErrors }}</p>
+                    <details v-if="p.actionRaw"><summary>{{ tr('结构化动作', 'Structured action') }}</summary><pre>{{ p.actionRaw }}</pre></details>
                   </template>
                   <template v-else-if="step.id === 'settle'">
                     <p v-for="line in p.judgeLines" :key="line">{{ line }}</p>
@@ -155,8 +170,8 @@
                     <div v-if="p.metrics.length" class="ra-metric-pills">
                       <span v-for="m in p.metrics" :key="m" :class="{ neg: m.includes('-') }">{{ m }}</span>
                     </div>
-                    <p v-else class="pc-muted">本步没有引起指标变化</p>
-                    <p v-if="p.degraded" class="pc-muted">（本回合为超时兜底动作，非主动选择）</p>
+                    <p v-else class="pc-muted">{{ tr('本步没有引起指标变化', 'No metric changes in this step') }}</p>
+                    <p v-if="p.degraded" class="pc-muted">{{ tr('（本回合为超时兜底动作，非主动选择）', '(Timeout fallback; not an intentional choice)') }}</p>
                   </template>
                 </div>
               </li>
@@ -166,8 +181,8 @@
       </template>
 
       <div v-else class="ra-empty big">
-        本局没有留存演绎档案（可能是进程被强制中断，未走正常终局/重置流程）。<br />
-        仅有账本与诊断数据，可在服务器 runs/{{ activeRunId }}/ 下查看原始文件。
+        {{ tr('本局没有留存演绎档案（可能是进程被强制中断，未走正常终局/重置流程）。', 'This run has no presentation archive, likely because it ended unexpectedly.') }}<br />
+        {{ tr('仅有账本与诊断数据，可在服务器查看原始文件。', 'Ledger and diagnostic files remain available on the server.') }} runs/{{ activeRunId }}/
       </div>
     </section>
   </div>
@@ -176,6 +191,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { apiGet } from '../api.js'
+import { locale, tr } from '../../core/i18n.js'
 import {
   processChainTypeFromSchema,
   resolveProcessChainProfile,
@@ -384,10 +400,10 @@ function perceiveSummary(log) {
 }
 function pretty(v) { try { return JSON.stringify(v, null, 2) } catch { return String(v) } }
 function formatTime(ts) {
-  if (!ts) return '时间未知'
+  if (!ts) return tr('时间未知', 'Unknown time')
   try {
     const d = new Date(typeof ts === 'number' ? ts * 1000 : ts)
-    return d.toLocaleString('zh-CN', { hour12: false })
+    return d.toLocaleString(locale.value, { hour12: false })
   } catch { return String(ts) }
 }
 function modelsLine(run) {
@@ -437,139 +453,183 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.ra-root { display: flex; height: 100%; min-height: 0; gap: 0; }
-.ra-empty { padding: 20px; color: #8a93ad; font-size: 12px; line-height: 1.8; }
-.ra-empty.big { padding: 60px 40px; font-size: 13px; }
-.ra-sec-title { display: block; font-size: 11px; font-weight: 800; letter-spacing: .12em; color: #ffd060; margin-bottom: 10px; }
-
-/* 左栏 */
-.ra-list { width: 300px; flex-shrink: 0; overflow-y: auto; border-right: 1px solid rgba(255,255,255,.06); padding: 16px 12px; }
-.ra-list-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.ra-list-head span { font-size: 10px; letter-spacing: .16em; color: #69dcff; font-weight: 800; }
-.ra-list-head h2 { margin: 4px 0 0; font-size: 16px; }
-.ra-refresh { border: 1px solid rgba(255,255,255,.14); background: transparent; color: #aeb8d3; font-size: 11px; padding: 5px 12px; border-radius: 8px; cursor: pointer; }
-.ra-refresh:hover { color: #fff; border-color: rgba(105,220,255,.4); }
-.ra-run-card { border: 1px solid rgba(255,255,255,.07); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; transition: all .15s ease; }
-.ra-run-card:hover { background: rgba(255,255,255,.04); }
-.ra-run-card.active { border-color: rgba(105,220,255,.45); background: rgba(105,220,255,.06); }
-.ra-run-top { display: flex; align-items: center; gap: 8px; }
-.ra-run-top b { font-size: 12.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ra-badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,.08); color: #8a93ad; font-style: normal; }
-.ra-badge.done { background: rgba(139,226,139,.14); color: #8be28b; }
-.ra-run-time { margin: 5px 0 0; font-size: 10.5px; color: #6b7690; }
-.ra-run-winner { margin: 4px 0 0; font-size: 11px; color: #ffd060; }
-.ra-run-models { display: block; margin-top: 4px; font-size: 10px; color: #6b7690; }
-
-/* 主区 */
-.ra-main { flex: 1; min-width: 0; overflow-y: auto; padding: 18px 22px; }
-.ra-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
-.ra-kicker { font-size: 10px; letter-spacing: .16em; color: #69dcff; font-weight: 800; }
-.ra-head h2 { margin: 6px 0 4px; font-size: 20px; }
-.ra-head p { margin: 0; font-size: 11.5px; color: #8a93ad; }
-.ra-winner-pill { flex-shrink: 0; font-size: 13px; font-weight: 800; color: #1a1206; background: linear-gradient(135deg, #ffe39a, #ffc24d); padding: 8px 16px; border-radius: 10px; }
-.ra-winner-pill.muted { background: rgba(255,255,255,.08); color: #8a93ad; }
-.ra-trace { margin:16px 0; padding:15px; border:1px solid rgba(105,220,255,.16); border-radius:12px; background:rgba(8,14,23,.46); }
-.trace-flow { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:20px; align-items:start; }
-.trace-node { position:relative; min-width:0; border:1px solid rgba(255,255,255,.1); border-radius:9px; background:rgba(255,255,255,.03); overflow:hidden; }
-.trace-node summary { cursor:pointer; list-style:none; padding:11px; }
-.trace-node summary span { display:block; color:#69dcff; font-size:9px; letter-spacing:.1em; }
-.trace-node summary b { display:block; margin-top:5px; color:#eef3ff; font-size:12px; line-height:1.4; }
-.trace-node summary p { margin:4px 0 0; color:#7f8ba3; font-size:10px; }
-.trace-node pre { max-height:240px; overflow:auto; margin:0; padding:10px; background:#080d15; color:#b8c5d8; font-size:9px; white-space:pre-wrap; word-break:break-word; }
-.trace-observation { border-color:rgba(80,225,177,.3); }
-.trace-settlement { border-color:rgba(255,208,96,.35); }
-.trace-director { border-color:rgba(183,126,255,.3); }
-.trace-edge { display:none; }
-
-/* 终局溯源 */
-.ra-final { border: 1px solid rgba(255,208,96,.3); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
-.ra-final-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
-.ra-vr-card { border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 10px 12px; background: rgba(255,255,255,.03); }
-.ra-vr-card.champ { border-color: rgba(255,208,96,.45); background: rgba(255,208,96,.06); }
-.ra-vr-card strong { display: block; font-size: 12.5px; margin-bottom: 5px; }
-.ra-vr-card p { margin: 2px 0; font-size: 11px; line-height: 1.6; }
-.vr-plus { color: #8be28b; }
-.vr-weak { color: #e0b36a; }
-.vr-fatal { color: #ff5f52; font-weight: 700; }
-.ra-vr-card small { color: #6b7690; font-size: 10px; }
-
-/* 回合导航 */
-.ra-nav { border: 1px solid rgba(255,255,255,.07); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
-.ra-nav-info span { font-size: 10px; letter-spacing: .12em; color: #69dcff; font-weight: 800; display: block; }
-.ra-nav-info strong { font-size: 14px; }
-.ra-nav-btns { display: inline-flex; gap: 8px; margin-top: 8px; }
-.ra-nav-btns button { border: 1px solid rgba(255,255,255,.14); background: transparent; color: #cdd6ee; font-size: 11px; padding: 5px 14px; border-radius: 8px; cursor: pointer; }
-.ra-nav-btns button:disabled { opacity: .35; cursor: default; }
-.ra-nav-btns button:not(:disabled):hover { border-color: rgba(105,220,255,.4); color: #fff; }
-.ra-chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.ra-chip { border: 1px solid rgba(255,255,255,.1); background: transparent; color: #8a93ad; font-size: 11px; padding: 4px 10px; border-radius: 999px; cursor: pointer; }
-.ra-chip.active { border-color: rgba(105,220,255,.55); color: #69dcff; background: rgba(105,220,255,.08); }
-
-/* 导演旁白 */
-.ra-frames { border: 1px solid rgba(255,255,255,.07); border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; }
-.ra-frames p { margin: 6px 0; font-size: 12px; line-height: 1.75; color: #c3cbe0; }
-.ra-frames p b { display: block; color: #ffd060; font-size: 11.5px; margin-bottom: 2px; }
-.ra-frames p.oracle b { color: #b48bff; }
-.ra-frames p.elim b { color: #ff5f52; }
-
-/* 流水卡（实时对局同款） */
-.ra-process { display: flex; flex-direction: column; gap: 12px; }
-.process-card { border: 1px solid rgba(255,255,255,.07); border-left: 3px solid var(--pc-color, #69dcff); border-radius: 12px; background: rgba(255,255,255,.025); padding: 12px 14px; }
-.pc-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-.pc-name { color: var(--pc-color, #fff); font-size: 14px; }
-.pc-action { font-size: 13px; font-weight: 700; color: #e6ecff; }
-.pc-action i { font-style: normal; color: #ffd66b; }
-.pc-outcome { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.08); color: #9aa6c0; }
-.pc-outcome.good { background: rgba(139,226,139,.16); color: #8be28b; }
-.pc-outcome.bad { background: rgba(255,95,82,.16); color: #ff5f52; }
-.pc-meta { margin-left: auto; font-size: 10px; color: #6b7690; }
-.pc-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.pc-steps li { position: relative; display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 6px 0 6px 14px; }
-.pc-steps li::before { content: ''; position: absolute; left: 3px; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,.1); }
-.pc-steps li:first-child::before { top: 14px; }
-.pc-steps li:last-child::before { bottom: auto; height: 14px; }
-.pc-steps li::after { content: ''; position: absolute; left: 0; top: 11px; width: 7px; height: 7px; border-radius: 50%; background: var(--step-color, #69dcff); box-shadow: 0 0 6px var(--step-color, #69dcff); }
-.pc-steps li.step-see { --step-color: #69dcff; }
-.pc-steps li.step-loop { --step-color: #5eead4; }
-.pc-steps li.step-think { --step-color: #c48bff; }
-.pc-steps li.step-say { --step-color: #b48bff; }
-.think-summary { white-space: pre-line; color: #d9c8ff !important; }
-.pc-steps li.step-parse { --step-color: #ffd66b; }
-.pc-steps li.step-judge { --step-color: #8be28b; }
-.pc-steps li.step-metric { --step-color: #ff6fa7; }
-.loop-steps {
-  list-style: none;
-  margin: 6px 0 0;
-  padding: 0;
+.ra-root {
+  --ra-cyan: #67e8f9;
+  --ra-teal: #5eead4;
+  --ra-gold: #f7c96b;
+  --ra-text: #e9f0fb;
+  --ra-muted: #8190a8;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  height: 100%;
+  min-height: 0;
+  background:
+    radial-gradient(circle at 74% -20%, rgba(30, 154, 181, .12), transparent 38%),
+    #070a10;
 }
-.loop-steps li {
-  margin: 0;
-  padding: 6px 8px;
-  border-left: 2px solid rgba(94, 234, 212, 0.45);
-  background: rgba(94, 234, 212, 0.06);
-  border-radius: 0 6px 6px 0;
+.ra-empty { padding: 24px; color: var(--ra-muted); font-size: 12px; line-height: 1.8; }
+.ra-empty.big { display: grid; min-height: 320px; place-items: center; padding: 60px 40px; font-size: 13px; text-align: center; }
+.ra-sec-title { display: block; margin: 0; color: var(--ra-text); font-size: 13px; font-weight: 750; letter-spacing: .02em; }
+.ra-section-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.ra-section-head small { color: #607089; font-size: 10px; letter-spacing: .05em; }
+
+/* 左侧档案索引 */
+.ra-list {
+  width: 318px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-right: 1px solid rgba(148, 163, 184, .10);
+  padding: 24px 16px;
+  background: rgba(5, 8, 14, .74);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(103, 232, 249, .18) transparent;
 }
-.loop-steps li::before,
-.loop-steps li::after { display: none !important; }
-.loop-steps b { font-size: 11px; color: #9ff0e0; margin-right: 6px; }
-.loop-steps em { font-style: normal; font-size: 10px; opacity: 0.75; margin-right: 6px; }
-.loop-steps span { font-size: 10px; color: #7a8aa8; }
-.loop-steps p { margin: 4px 0 0 !important; font-size: 11px !important; color: #c5d0e4 !important; }
-.loop-st.failed,
-.loop-st.blocked { color: #ff8f8f; }
-.loop-st.succeeded { color: #8be28b; }
-.pc-steps label { font-size: 11px; font-weight: 800; color: var(--step-color, #9aa6c0); padding-top: 3px; letter-spacing: .08em; }
+.ra-list-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 0 4px 18px; }
+.ra-list-title > span { color: var(--ra-cyan); font-size: 9px; font-weight: 800; letter-spacing: .19em; }
+.ra-list-title h2 { margin: 7px 0 3px; color: #f5f8fd; font-size: 19px; font-weight: 720; letter-spacing: -.02em; }
+.ra-list-title small { color: #596981; font-size: 10px; }
+.ra-refresh {
+  width: 34px; height: 34px; padding: 0;
+  border: 1px solid rgba(148, 163, 184, .14); border-radius: 10px;
+  background: rgba(255, 255, 255, .025); color: #8fa0b9;
+  font-size: 17px; cursor: pointer; transition: .18s ease;
+}
+.ra-refresh:hover { border-color: rgba(103, 232, 249, .38); color: var(--ra-cyan); background: rgba(103, 232, 249, .06); transform: rotate(20deg); }
+.ra-run-card {
+  position: relative;
+  border: 1px solid rgba(148, 163, 184, .10); border-radius: 14px;
+  padding: 13px 14px 13px 16px; margin-bottom: 9px;
+  background: rgba(13, 18, 28, .56); cursor: pointer;
+  transition: border-color .18s, background .18s, transform .18s;
+}
+.ra-run-card::before { content: ''; position: absolute; left: -1px; top: 14px; bottom: 14px; width: 2px; border-radius: 2px; background: transparent; }
+.ra-run-card:hover { border-color: rgba(103, 232, 249, .22); background: rgba(18, 26, 39, .74); transform: translateX(2px); }
+.ra-run-card.active { border-color: rgba(103, 232, 249, .36); background: linear-gradient(110deg, rgba(25, 105, 125, .18), rgba(12, 20, 31, .76)); box-shadow: 0 12px 30px rgba(0, 0, 0, .18); }
+.ra-run-card.active::before { background: var(--ra-cyan); box-shadow: 0 0 12px rgba(103, 232, 249, .65); }
+.ra-run-top { display: flex; align-items: center; gap: 10px; }
+.ra-run-top b { flex: 1; min-width: 0; overflow: hidden; color: #dfe8f5; font-size: 12px; font-weight: 680; text-overflow: ellipsis; white-space: nowrap; }
+.ra-badge { padding: 3px 7px; border-radius: 999px; background: rgba(148, 163, 184, .10); color: #78869c; font-size: 9px; font-style: normal; font-weight: 750; }
+.ra-badge.done { background: rgba(94, 234, 212, .10); color: #7ce8d7; }
+.ra-run-time { margin: 7px 0 0; color: #64738a; font-size: 10px; font-variant-numeric: tabular-nums; }
+.ra-run-winner { display: flex; align-items: center; gap: 6px; margin: 7px 0 0; color: #dbc084; font-size: 10.5px; }
+.ra-run-winner span { padding: 1px 5px; border: 1px solid rgba(247, 201, 107, .22); border-radius: 4px; color: var(--ra-gold); font-size: 8px; letter-spacing: .08em; }
+.ra-run-models { display: -webkit-box; overflow: hidden; margin-top: 6px; color: #526078; font-size: 9.5px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+
+/* 主内容 */
+.ra-main { flex: 1; min-width: 0; overflow-y: auto; padding: 30px 34px 52px; scrollbar-width: thin; scrollbar-color: rgba(103, 232, 249, .16) transparent; }
+.ra-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+.ra-kicker { color: var(--ra-cyan); font-size: 9px; font-weight: 800; letter-spacing: .2em; }
+.ra-head h2 { margin: 8px 0 10px; color: #f3f6fb; font-size: clamp(22px, 2vw, 30px); font-weight: 720; letter-spacing: -.035em; }
+.ra-head-meta { display: flex; flex-wrap: wrap; gap: 7px; }
+.ra-head-meta span { padding: 4px 8px; border: 1px solid rgba(148, 163, 184, .10); border-radius: 6px; background: rgba(255, 255, 255, .025); color: #718198; font-size: 10px; }
+.ra-winner-pill { display: flex; min-width: 124px; flex-direction: column; flex-shrink: 0; gap: 3px; padding: 11px 16px; border: 1px solid rgba(247, 201, 107, .32); border-radius: 12px; background: linear-gradient(145deg, rgba(247, 201, 107, .16), rgba(247, 201, 107, .06)); color: var(--ra-gold); box-shadow: 0 10px 30px rgba(0, 0, 0, .16); }
+.ra-winner-pill small { color: #8f7951; font-size: 8px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.ra-winner-pill strong { font-size: 13px; font-weight: 760; }
+.ra-winner-pill.muted { border-color: rgba(148, 163, 184, .13); background: rgba(255, 255, 255, .03); color: #8290a5; }
+
+/* 评测结论 */
+.ra-final { margin-bottom: 18px; padding: 18px; border: 1px solid rgba(247, 201, 107, .18); border-radius: 16px; background: linear-gradient(145deg, rgba(247, 201, 107, .045), rgba(9, 13, 21, .72)); }
+.ra-final-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; }
+.ra-vr-card { position: relative; min-height: 124px; padding: 15px 16px; border: 1px solid rgba(148, 163, 184, .10); border-radius: 12px; background: rgba(13, 18, 28, .78); }
+.ra-vr-card.champ { border-color: rgba(247, 201, 107, .28); background: linear-gradient(135deg, rgba(247, 201, 107, .09), rgba(13, 18, 28, .82)); }
+.ra-rank { position: absolute; top: 13px; right: 14px; color: #6c7c93; font-size: 8px; font-weight: 850; letter-spacing: .14em; }
+.ra-vr-card.champ .ra-rank { color: var(--ra-gold); }
+.ra-vr-card strong { display: block; max-width: calc(100% - 58px); margin-bottom: 9px; color: #e5ebf5; font-size: 12px; line-height: 1.55; }
+.ra-vr-card p { margin: 3px 0; font-size: 10.5px; line-height: 1.6; }
+.vr-plus { color: #77d8b5; }
+.vr-weak { color: #d7b26d; }
+.vr-fatal { color: #ef7f78; font-weight: 700; }
+.ra-vr-card small { display: block; margin-top: 9px; color: #536278; font-size: 9px; }
+
+/* 周期导航 */
+.ra-nav { position: sticky; top: -18px; z-index: 4; display: grid; grid-template-columns: auto auto; align-items: end; gap: 10px 20px; margin-bottom: 18px; padding: 14px 16px; border: 1px solid rgba(148, 163, 184, .10); border-radius: 14px; background: rgba(8, 12, 19, .92); box-shadow: 0 14px 30px rgba(0, 0, 0, .18); backdrop-filter: blur(14px); }
+.ra-nav-info span { display: block; margin-bottom: 3px; color: var(--ra-cyan); font-size: 8px; font-weight: 800; letter-spacing: .15em; }
+.ra-nav-info strong { color: #dce6f4; font-size: 12px; }
+.ra-nav-btns { display: inline-flex; justify-self: end; gap: 7px; }
+.ra-nav-btns button { padding: 6px 12px; border: 1px solid rgba(148, 163, 184, .14); border-radius: 8px; background: rgba(255, 255, 255, .025); color: #9cabc0; font-size: 10px; cursor: pointer; }
+.ra-nav-btns button:disabled { opacity: .28; cursor: default; }
+.ra-nav-btns button:not(:disabled):hover { border-color: rgba(103, 232, 249, .36); color: var(--ra-cyan); }
+.ra-chip-row { grid-column: 1 / -1; display: flex; gap: 5px; overflow-x: auto; padding: 2px 0 3px; scrollbar-width: none; }
+.ra-chip { min-width: 34px; padding: 5px 9px; border: 1px solid rgba(148, 163, 184, .09); border-radius: 7px; background: transparent; color: #617087; font-size: 9px; cursor: pointer; font-variant-numeric: tabular-nums; }
+.ra-chip:hover { border-color: rgba(103, 232, 249, .22); color: #9eb2ca; }
+.ra-chip.active { border-color: rgba(103, 232, 249, .42); background: rgba(103, 232, 249, .09); color: var(--ra-cyan); box-shadow: inset 0 -1px 0 rgba(103, 232, 249, .25); }
+
+/* 可追溯证据链 */
+.ra-trace { margin: 18px 0; padding: 18px; border: 1px solid rgba(103, 232, 249, .12); border-radius: 16px; background: rgba(8, 13, 21, .58); }
+.trace-flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.trace-node { position: relative; min-width: 0; overflow: hidden; border: 1px solid rgba(148, 163, 184, .11); border-radius: 11px; background: rgba(16, 22, 33, .72); transition: border-color .18s, transform .18s; }
+.trace-node:hover { border-color: rgba(103, 232, 249, .24); transform: translateY(-1px); }
+.trace-node summary { position: relative; min-height: 72px; padding: 12px 34px 12px 13px; cursor: pointer; list-style: none; }
+.trace-node summary::-webkit-details-marker { display: none; }
+.trace-node summary::after { content: '+'; position: absolute; top: 12px; right: 13px; color: #53647c; font-size: 15px; font-weight: 300; }
+.trace-node[open] summary::after { content: '−'; color: var(--ra-cyan); }
+.trace-node summary span { display: block; color: #5fc8dd; font-size: 8px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+.trace-node summary b { display: -webkit-box; overflow: hidden; margin-top: 7px; color: #dce5f2; font-size: 11px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.trace-node summary p { margin: 5px 0 0; overflow: hidden; color: #66768e; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.trace-node pre { max-height: 260px; overflow: auto; margin: 0; padding: 13px; border-top: 1px solid rgba(148, 163, 184, .08); background: #090e16; color: #9fb0c6; font-size: 9px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+.trace-observation { border-top-color: rgba(94, 234, 212, .34); }
+.trace-settlement { border-top-color: rgba(247, 201, 107, .38); }
+.trace-director { border-top-color: rgba(192, 132, 252, .34); }
+.trace-edge { display: none; }
+
+/* 决策全过程 */
+.ra-process { display: flex; flex-direction: column; gap: 12px; padding: 18px; border: 1px solid rgba(148, 163, 184, .09); border-radius: 16px; background: rgba(8, 13, 21, .42); }
+.process-card { padding: 0; overflow: hidden; border: 1px solid rgba(148, 163, 184, .10); border-radius: 12px; background: rgba(14, 20, 31, .76); }
+.pc-head { display: grid; grid-template-columns: auto minmax(120px, 1fr) auto auto; align-items: center; gap: 9px; margin: 0; padding: 12px 14px; border-left: 3px solid var(--pc-color, var(--ra-cyan)); border-bottom: 1px solid rgba(148, 163, 184, .08); background: rgba(255, 255, 255, .018); }
+.pc-name { color: var(--pc-color, #fff); font-size: 12px; }
+.pc-action { min-width: 0; overflow: hidden; color: #dce5f2; font-size: 11px; font-weight: 680; text-overflow: ellipsis; white-space: nowrap; }
+.pc-action i { color: #c9ad70; font-style: normal; }
+.pc-outcome { max-width: 260px; overflow: hidden; padding: 3px 8px; border-radius: 999px; background: rgba(148, 163, 184, .08); color: #8f9db1; font-size: 9px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.pc-outcome.good { background: rgba(94, 234, 212, .10); color: #72d7c5; }
+.pc-outcome.bad { background: rgba(239, 127, 120, .10); color: #ef8b84; }
+.pc-meta { color: #596980; font-size: 9px; text-align: right; }
+.pc-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; margin: 0; padding: 4px 14px 10px; list-style: none; }
+.pc-steps > li { --step-color: #67e8f9; position: relative; display: grid; grid-template-columns: 52px 1fr; gap: 9px; min-width: 0; padding: 11px 12px 11px 18px; border-bottom: 1px solid rgba(148, 163, 184, .065); }
+.pc-steps > li:nth-child(odd) { border-right: 1px solid rgba(148, 163, 184, .065); }
+.pc-steps > li::before { content: ''; position: absolute; left: 5px; top: 0; bottom: 0; width: 1px; background: rgba(148, 163, 184, .10); }
+.pc-steps > li::after { content: ''; position: absolute; left: 2px; top: 16px; width: 7px; height: 7px; border-radius: 50%; background: var(--step-color); box-shadow: 0 0 7px color-mix(in srgb, var(--step-color) 55%, transparent); }
+.pc-steps li.step-see { --step-color: #67e8f9; }
+.pc-steps li.step-loop { --step-color: #5eead4; }
+.pc-steps li.step-think, .pc-steps li.step-say { --step-color: #c084fc; }
+.pc-steps li.step-parse { --step-color: #f7c96b; }
+.pc-steps li.step-judge { --step-color: #79ddb9; }
+.pc-steps li.step-metric { --step-color: #f28ab2; }
+.pc-steps label { padding-top: 2px; color: var(--step-color); font-size: 9px; font-weight: 800; letter-spacing: .08em; }
 .pc-steps li > div { min-width: 0; }
-.pc-steps p { margin: 2px 0; font-size: 12px; line-height: 1.7; color: #c3cbe0; word-break: break-word; }
-.pc-warn { color: #ffd66b !important; font-size: 11px !important; }
-.pc-muted { color: #6b7690 !important; }
-.pc-steps details { margin-top: 4px; }
-.pc-steps summary { font-size: 10.5px; color: #5b8bff; cursor: pointer; user-select: none; }
-.pc-steps details pre { margin: 6px 0 0; max-height: 300px; overflow: auto; padding: 10px; border-radius: 8px; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.06); font-size: 10.5px; line-height: 1.6; color: #9fb0d0; white-space: pre-wrap; word-break: break-all; }
-.ra-metric-pills { display: flex; flex-wrap: wrap; gap: 6px; }
-.ra-metric-pills span { font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: rgba(139,226,139,.12); color: #8be28b; }
-.ra-metric-pills span.neg { background: rgba(255,95,82,.12); color: #ff5f52; }
+.pc-steps p { margin: 1px 0; color: #aebbd0; font-size: 10.5px; line-height: 1.65; word-break: break-word; }
+.think-summary { color: #d2b9ee !important; white-space: pre-line; }
+.pc-warn { color: #d9b86f !important; }
+.pc-muted { color: #5f6e84 !important; }
+.pc-steps details { margin-top: 5px; }
+.pc-steps summary { color: #689cc2; font-size: 9.5px; cursor: pointer; user-select: none; }
+.pc-steps details pre { max-height: 300px; overflow: auto; margin: 7px 0 0; padding: 11px; border: 1px solid rgba(148, 163, 184, .08); border-radius: 8px; background: #090e16; color: #91a2bb; font-size: 9px; line-height: 1.55; white-space: pre-wrap; word-break: break-all; }
+.loop-steps { display: flex; flex-direction: column; gap: 6px; margin: 7px 0 0; padding: 0; list-style: none; }
+.loop-steps li { margin: 0; padding: 7px 9px; border: 0; border-left: 2px solid rgba(94, 234, 212, .34); border-radius: 0 6px 6px 0; background: rgba(94, 234, 212, .045); }
+.loop-steps li::before, .loop-steps li::after { display: none !important; }
+.loop-steps b { margin-right: 6px; color: #86d9cb; font-size: 10px; }
+.loop-steps em { margin-right: 6px; color: #76879e; font-size: 9px; font-style: normal; }
+.loop-steps span { color: #64748b; font-size: 9px; }
+.loop-steps p { margin: 4px 0 0 !important; color: #9eacc0 !important; font-size: 10px !important; }
+.loop-st.failed, .loop-st.blocked { color: #ef8b84; }
+.loop-st.succeeded { color: #72d7c5; }
+.ra-metric-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+.ra-metric-pills span { padding: 3px 7px; border-radius: 6px; background: rgba(94, 234, 212, .08); color: #74ccb9; font-size: 9px; font-weight: 700; }
+.ra-metric-pills span.neg { background: rgba(239, 127, 120, .08); color: #e58b86; }
+
+@media (max-width: 1280px) {
+  .ra-list { width: 276px; }
+  .ra-main { padding: 24px; }
+  .trace-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pc-steps { grid-template-columns: 1fr; }
+  .pc-steps > li:nth-child(odd) { border-right: 0; }
+}
+@media (max-width: 900px) {
+  .ra-root { flex-direction: column; overflow-y: auto; }
+  .ra-list { width: auto; max-height: 260px; flex-shrink: 0; border-right: 0; border-bottom: 1px solid rgba(148, 163, 184, .10); }
+  .ra-main { overflow: visible; padding: 20px 16px 42px; }
+  .ra-head { flex-direction: column; }
+  .ra-winner-pill { align-self: stretch; }
+  .trace-flow { grid-template-columns: 1fr; }
+  .pc-head { grid-template-columns: auto 1fr; }
+  .pc-outcome, .pc-meta { grid-column: 2; max-width: none; text-align: left; }
+}
 </style>

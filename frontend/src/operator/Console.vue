@@ -3,19 +3,19 @@
     <header class="console-header">
       <div class="brand">
         <span class="brand-kicker">AI WORLD OS · OPERATOR</span>
-        <h1>{{ operatorSchema.scenario?.name || 'AI World 运营台' }}</h1>
+        <h1>{{ operatorSchema.scenario?.name || tr('AI World 运营台', 'AI World Operations') }}</h1>
       </div>
       <div class="live-strip" :class="{ offline: connectionState === 'offline' }">
         <span class="live-dot" :class="{ on: worldState.is_running }"></span>
         <b>{{ liveStatusLabel }}</b>
         <span>Tick {{ worldState.tick || 0 }}</span>
-        <span>存活 {{ aliveCount }}</span>
+        <span>{{ tr('存活', 'Active') }} {{ aliveCount }}</span>
       </div>
       <div class="header-controls">
-        <button class="primary" @click="ws.commands.play()">运行</button>
-        <button :disabled="!hasStarted" @click="ws.commands.pause()">暂停</button>
-        <button @click="ws.commands.step()">单步</button>
-        <button @click="ws.commands.reset()">重置</button>
+        <button class="primary" @click="ws.commands.play()">{{ tr('运行', 'Run') }}</button>
+        <button :disabled="!hasStarted" @click="ws.commands.pause()">{{ tr('暂停', 'Pause') }}</button>
+        <button @click="ws.commands.step()">{{ tr('单步', 'Step') }}</button>
+        <button @click="ws.commands.reset()">{{ tr('重置', 'Reset') }}</button>
       </div>
     </header>
 
@@ -25,13 +25,13 @@
           <div class="panel-head">
             <div>
               <span>MODEL ARENA</span>
-              <h2>谁更接近胜利</h2>
+              <h2>{{ tr('谁更接近胜利', 'Who is leading') }}</h2>
             </div>
-            <em>{{ hasStarted ? '实时解释' : '待开局' }}</em>
+            <em>{{ hasStarted ? tr('实时解释', 'Live attribution') : tr('待开局', 'Not started') }}</em>
           </div>
 
           <div v-if="!standings.length" class="empty-state">
-            {{ connectionState === 'offline' ? '后台服务未连接。请先启动后端，或刷新后重试。' : '启动世界后，这里会显示所有 Agent 的实时结果。' }}
+            {{ connectionState === 'offline' ? tr('后台服务未连接。请先启动后端，或刷新后重试。', 'Backend disconnected. Start the service or refresh to retry.') : tr('启动世界后，这里会显示所有 Agent 的实时结果。', 'Start the world to see live results for every agent.') }}
           </div>
 
           <article
@@ -65,13 +65,13 @@
         </div>
 
         <div v-if="worldState.is_game_over && worldState.victory_attribution?.length" class="panel victory-recap-panel">
-          <span>🏆 终局裁定 · 胜负溯源</span>
+          <span>🏆 {{ tr('终局裁定 · 胜负溯源', 'Final decision · outcome attribution') }}</span>
           <div v-for="item in worldState.victory_attribution" :key="item.agent_id" class="vr-card">
             <strong>{{ item.headline }}</strong>
             <p class="vr-plus" v-for="s in item.strengths" :key="'s'+s">＋ {{ s }}</p>
             <p class="vr-weak" v-for="w in item.weaknesses" :key="'w'+w">－ {{ w }}</p>
             <p class="vr-fatal" v-if="item.fatal">✖ {{ item.fatal }}</p>
-            <small>结算来源：{{ sourceMixText(item.source_mix) }}</small>
+            <small>{{ tr('结算来源：', 'Settlement sources: ') }}{{ sourceMixText(item.source_mix) }}</small>
           </div>
         </div>
 
@@ -79,7 +79,7 @@
           <div class="panel-head compact">
             <div>
               <span>AGENTS</span>
-              <h2>场上模型</h2>
+              <h2>{{ tr('场上模型', 'Models in evaluation') }}</h2>
             </div>
           </div>
           <article
@@ -92,7 +92,7 @@
             <div class="agent-card-main">
               <div class="agent-dot" :style="{ background: agent.color || colorFor(agent.agent_id) }"></div>
               <div>
-                <strong>{{ agent.name || agent.agent_id }}</strong>
+                <strong>{{ agentLabel(agent.agent_id) }}</strong>
                 <p>{{ agentStatusText(agent) }}</p>
               </div>
               <span>{{ locationText(agent) }}</span>
@@ -115,21 +115,21 @@
               <p>{{ currentTurnSummary }}</p>
             </div>
             <div class="turn-metrics">
-              <div><label>模型回复</label><b>{{ modelReplyCount }}</b></div>
-              <div><label>世界事件</label><b>{{ publicEventCount }}</b></div>
-              <div><label>结算记录</label><b>{{ currentSettlementCount }}</b></div>
+              <div><label>{{ tr('模型回复', 'Model replies') }}</label><b>{{ modelReplyCount }}</b></div>
+              <div><label>{{ tr('世界事件', 'World events') }}</label><b>{{ publicEventCount }}</b></div>
+              <div><label>{{ tr('结算记录', 'Settlements') }}</label><b>{{ currentSettlementCount }}</b></div>
             </div>
           </div>
 
           <div class="turn-review">
             <div>
-              <span>回合回放</span>
+              <span>{{ tr('回合回放', 'CYCLE REVIEW') }}</span>
               <strong>{{ activeTurnLabel }}</strong>
             </div>
             <div class="turn-review-actions">
-              <button :disabled="!canStepTurnBackward" @click="stepTurn(-1)">上一回合</button>
-              <button :disabled="!canStepTurnForward" @click="stepTurn(1)">下一回合</button>
-              <button class="soft" :disabled="isFollowingLatest" @click="jumpToLatestTurn">回到最新</button>
+              <button :disabled="!canStepTurnBackward" @click="stepTurn(-1)">{{ tr('上一回合', 'Previous') }}</button>
+              <button :disabled="!canStepTurnForward" @click="stepTurn(1)">{{ tr('下一回合', 'Next') }}</button>
+              <button class="soft" :disabled="isFollowingLatest" @click="jumpToLatestTurn">{{ tr('回到最新', 'Latest') }}</button>
             </div>
             <div class="turn-chip-row">
               <button
@@ -147,7 +147,7 @@
           <section class="process-shell">
             <div class="process-shell-head">
               <div>
-                <span>执行链 · {{ processChainProfile.label }}</span>
+                <span>{{ tr('执行链', 'EXECUTION CHAIN') }} · {{ processChainProfile.label }}</span>
                 <h2>{{ processTitle }}</h2>
               </div>
               <em>{{ processStatus }}</em>
@@ -186,36 +186,36 @@
                       <ul v-if="p.injectLines?.length" class="inject-lines">
                         <li v-for="line in p.injectLines" :key="line">{{ line }}</li>
                       </ul>
-                      <details v-if="p.perceptionRaw"><summary>完整注入 JSON</summary><pre>{{ p.perceptionRaw }}</pre></details>
+                      <details v-if="p.perceptionRaw"><summary>{{ tr('完整注入 JSON', 'Full input JSON') }}</summary><pre>{{ p.perceptionRaw }}</pre></details>
                     </template>
 
                     <template v-else-if="step.id === 'think'">
                       <p v-if="p.think.summary" class="think-summary">{{ p.think.summary }}</p>
-                      <p v-if="p.noteToSelf" class="think-note"><b>给自己的备忘</b>{{ p.noteToSelf }}</p>
-                      <details v-if="p.think.chain"><summary>展开完整思维链</summary><pre>{{ p.think.chain }}</pre></details>
-                      <p v-if="!p.think.summary && !p.think.chain" class="pc-muted">该模型此步未暴露可展示的思考过程。</p>
+                      <p v-if="p.noteToSelf" class="think-note"><b>{{ tr('给自己的备忘', 'Note to self') }}</b>{{ p.noteToSelf }}</p>
+                      <details v-if="p.think.chain"><summary>{{ tr('展开完整思维链', 'Show full reasoning trace') }}</summary><pre>{{ p.think.chain }}</pre></details>
+                      <p v-if="!p.think.summary && !p.think.chain" class="pc-muted">{{ tr('该模型此步未暴露可展示的思考过程。', 'No displayable reasoning trace was exposed.') }}</p>
                     </template>
                     <template v-else-if="step.id === 'said'">
-                      <p v-if="p.monologue" class="said-mono"><b>独白</b>{{ p.monologue }}</p>
+                      <p v-if="p.monologue" class="said-mono"><b>{{ tr('独白', 'Monologue') }}</b>{{ p.monologue }}</p>
                       <p>{{ p.said || (p.monologue ? '' : '（没有可展示的输出文本）') }}</p>
-                      <details v-if="p.raw"><summary>模型原始输出</summary><pre>{{ p.raw }}</pre></details>
+                      <details v-if="p.raw"><summary>{{ tr('模型原始输出', 'Raw model output') }}</summary><pre>{{ p.raw }}</pre></details>
                     </template>
                     <template v-else-if="step.id === 'parsed'">
                       <p>{{ p.parsed }}</p>
                       <p v-if="p.orderParams" class="think-summary">{{ p.orderParams }}</p>
-                      <p v-if="p.parseErrors" class="pc-warn">解析修复：{{ p.parseErrors }}</p>
-                      <details v-if="p.actionRaw"><summary>结构化动作</summary><pre>{{ p.actionRaw }}</pre></details>
+                      <p v-if="p.parseErrors" class="pc-warn">{{ tr('解析修复：', 'Parse repairs: ') }}{{ p.parseErrors }}</p>
+                      <details v-if="p.actionRaw"><summary>{{ tr('结构化动作', 'Structured action') }}</summary><pre>{{ p.actionRaw }}</pre></details>
                     </template>
                     <template v-else-if="step.id === 'settle'">
                       <p v-for="line in p.judgeLines" :key="line">{{ line }}</p>
-                      <p v-if="!p.judgeLines?.length" class="pc-muted">等待世界事件 / 结算说明。</p>
+                      <p v-if="!p.judgeLines?.length" class="pc-muted">{{ tr('等待世界事件 / 结算说明。', 'Awaiting world event or settlement explanation.') }}</p>
                     </template>
                     <template v-else-if="step.id === 'metrics'">
                       <div v-if="p.metrics.length" class="metric-pills">
                         <span v-for="m in p.metrics" :key="m" :class="{ positive: !m.includes('-'), negative: m.includes('-') }">{{ m }}</span>
                       </div>
                       <p v-else class="pc-muted">{{ p.noEffectHint || '本步还没有形成场景结算数值。' }}</p>
-                      <p v-if="p.degraded" class="pc-muted">（本回合为超时兜底动作，非主动选择）</p>
+                      <p v-if="p.degraded" class="pc-muted">{{ tr('（本回合为超时兜底动作，非主动选择）', '(Timeout fallback; not an intentional choice)') }}</p>
                     </template>
                   </div>
                 </li>
@@ -231,7 +231,7 @@
           <div class="eval-orb-wrap" :class="{ hot: worldState.is_running }">
             <canvas ref="aiCanvas" class="ai-canvas" aria-hidden="true"></canvas>
             <div class="eval-blob-caption">
-              <strong>AI 结算核</strong>
+              <strong>{{ tr('AI 结算核', 'AI Settlement Core') }}</strong>
               <span>{{ settlementExplainProfile.label }}</span>
               <i>T{{ activeTurn || 0 }} · {{ selectedAgentName }}</i>
             </div>
@@ -251,8 +251,8 @@
           </div>
           <div v-if="!settlementExplain.blocks.length" class="empty-state">
             {{ hasStarted
-              ? '这一回合还没有形成结算说明。'
-              : (settlementExplainProfile.empty_hint || operatorTraceConfig.empty_hint || '开局后将按场景结算类型生成可解释说明。') }}
+              ? tr('这一回合还没有形成结算说明。', 'No settlement explanation for this cycle yet.')
+              : (settlementExplainProfile.empty_hint || operatorTraceConfig.empty_hint || tr('开局后将按场景结算类型生成可解释说明。', 'Explanations will follow the scenario settlement type.')) }}
           </div>
           <div v-else class="settle-explain">
             <article
@@ -270,7 +270,7 @@
               <div v-if="block.pills?.length" class="metric-pills">
                 <span v-for="pill in block.pills" :key="pill">{{ pill }}</span>
               </div>
-              <details v-if="block.raw"><summary>原始记录</summary><pre>{{ formatJson(block.raw) }}</pre></details>
+              <details v-if="block.raw"><summary>{{ tr('原始记录', 'Raw record') }}</summary><pre>{{ formatJson(block.raw) }}</pre></details>
             </article>
           </div>
         </div>
@@ -280,7 +280,7 @@
           <div class="panel-head compact">
             <div>
               <span>ORACLE</span>
-              <h2>神谕注入</h2>
+              <h2>{{ tr('神谕注入', 'Intervention') }}</h2>
             </div>
           </div>
           <div v-if="worldVariables.length" class="oracle-presets">
@@ -290,13 +290,13 @@
           </div>
           <div class="oracle-form">
             <select v-model="oracleTarget">
-              <option value="all">全体角色</option>
+              <option value="all">{{ tr('全体角色', 'All agents') }}</option>
               <option v-for="a in worldState.agents" :key="a.agent_id" :value="a.agent_id">
-                {{ a.name || a.agent_id }}
+                {{ agentLabel(a.agent_id) }}
               </option>
             </select>
-            <input v-model="oracleText" placeholder="自定义一条突发变故..." @keydown.enter="sendOracle" />
-            <button @click="sendOracle">注入</button>
+            <input v-model="oracleText" :placeholder="tr('自定义一条突发变故...', 'Describe a market event…')" @keydown.enter="sendOracle" />
+            <button @click="sendOracle">{{ tr('注入', 'Inject') }}</button>
           </div>
         </div>
       </section>
@@ -309,6 +309,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { createWSClient } from '@/core/wsClient'
 import { apiGet } from './api.js'
+import { tr } from '@/core/i18n.js'
 import {
   processChainTypeFromSchema,
   resolveProcessChainProfile,
@@ -684,12 +685,12 @@ function processStepVisible(card, stepId) {
 }
 const processTitle = computed(() => (
   turnProcess.value.length
-    ? `第 ${activeTurn.value} 回合 · ${turnProcess.value.length} 个模型 · ${processChainProfile.value.label}`
-    : '决策流水'
+    ? tr(`第 ${activeTurn.value} 回合 · ${turnProcess.value.length} 个模型 · ${processChainProfile.value.label}`, `Cycle ${activeTurn.value} · ${turnProcess.value.length} models · ${processChainProfile.value.label}`)
+    : tr('决策流水', 'Decision flow')
 ))
 const processStatus = computed(() => {
-  if (!hasStarted.value) return '待开局'
-  return isFollowingLatest.value ? '实时跟随' : '回放中'
+  if (!hasStarted.value) return tr('待开局', 'Not started')
+  return isFollowingLatest.value ? tr('实时跟随', 'Following live') : tr('回放中', 'Reviewing')
 })
 function perceiveSummary(entry) {
   const lines = injectLinesOf(entry)
@@ -792,7 +793,7 @@ const standings = computed(() => {
     const valueRows = Object.entries(settlement?.values || {})
     return {
       agentId: aid,
-      name: agent.name || aid,
+      name: agentLabel(aid),
       color: agent.color || colorFor(aid),
       isAlive: agent.is_alive,
       eliminated: isEliminated,
@@ -800,7 +801,7 @@ const standings = computed(() => {
       score: round(score),
       scoreLabel: hasStarted.value && hasVictoryValue ? fmt(score) : '—',
       hasVictoryValue,
-      statusText: hasStarted.value ? (hasVictoryValue ? '' : '等待胜负结算') : '待开局',
+      statusText: hasStarted.value ? (hasVictoryValue ? '' : tr('等待胜负结算', 'Awaiting settlement')) : tr('待开局', 'Not started'),
       order,
       danger: 0,
       metricHighlights: valueRows
@@ -827,8 +828,8 @@ const standings = computed(() => {
     gap: round(Math.max(0, ascending ? item.score - leader : leader - item.score)),
     gapLabel: fmt(Math.max(0, ascending ? item.score - leader : leader - item.score)),
     statusText: item.eliminated
-      ? '已出局'
-      : (item.statusText || (index === 0 ? '领先' : `差 ${fmt(Math.max(0, ascending ? item.score - leader : leader - item.score))}`)),
+      ? tr('已出局', 'Stopped')
+      : (item.statusText || (index === 0 ? tr('领先', 'Leading') : `${tr('差', 'Behind')} ${fmt(Math.max(0, ascending ? item.score - leader : leader - item.score))}`)),
   }))
 })
 const battleReadout = computed(() => {
@@ -857,14 +858,13 @@ const battleReadout = computed(() => {
   }
 })
 const currentTurnTitle = computed(() => {
-  if (!hasStarted.value) return '准备开始'
-  if (!activeTurn.value) return '准备开始'
-  if (visibleTurnLogs.value.length) return `第 ${activeTurn.value} 回合 · ${visibleTurnLogs.value.length} 个模型完成决策`
-  if (isFollowingLatest.value && snapshotEntries.value.length) return `第 ${activeTurn.value} 回合 · 角色内心已更新`
-  return `第 ${activeTurn.value} 回合 · 暂无模型回放记录`
+  if (!hasStarted.value || !activeTurn.value) return tr('准备开始', 'Ready to begin')
+  if (visibleTurnLogs.value.length) return tr(`第 ${activeTurn.value} 回合 · ${visibleTurnLogs.value.length} 个模型完成决策`, `Cycle ${activeTurn.value} · ${visibleTurnLogs.value.length} model decisions`)
+  if (isFollowingLatest.value && snapshotEntries.value.length) return tr(`第 ${activeTurn.value} 回合 · 角色内心已更新`, `Cycle ${activeTurn.value} · agent state updated`)
+  return tr(`第 ${activeTurn.value} 回合 · 暂无模型回放记录`, `Cycle ${activeTurn.value} · no model record`)
 })
 const currentTurnSummary = computed(() => {
-  if (!hasStarted.value) return '点击运行后，这里会展示模型收到什么、做了什么，以及场景如何得出结果。'
+  if (!hasStarted.value) return tr('点击运行后，这里会展示模型收到什么、做了什么，以及场景如何得出结果。', 'Run the evaluation to inspect model inputs, decisions, actions, and settlement results.')
   if (visibleTurnLogs.value.length) {
     return visibleTurnLogs.value.map(log => `${agentLabel(log.agent_id)}：${actionLabel(log.action_pack?.action_id)}`).join('；')
   }
@@ -876,10 +876,10 @@ const currentTurnSummary = computed(() => {
     : '这个回合当前没有保存在前端缓存中的模型记录。'
 })
 const activeTurnLabel = computed(() => (
-  !hasStarted.value ? '等待回合数据' :
+  !hasStarted.value ? tr('等待回合数据', 'Waiting for cycle data') :
   activeTurn.value
-    ? (isFollowingLatest.value ? `当前看到最新的 T${activeTurn.value}` : `当前正在回看 T${activeTurn.value}`)
-    : '等待回合数据'
+    ? (isFollowingLatest.value ? tr(`当前看到最新的 T${activeTurn.value}`, `Latest: T${activeTurn.value}`) : tr(`当前正在回看 T${activeTurn.value}`, `Reviewing T${activeTurn.value}`))
+    : tr('等待回合数据', 'Waiting for cycle data')
 ))
 const activeTurnIndex = computed(() => turnOptions.value.indexOf(activeTurn.value))
 const canStepTurnBackward = computed(() => {
@@ -888,11 +888,11 @@ const canStepTurnBackward = computed(() => {
 })
 const canStepTurnForward = computed(() => activeTurnIndex.value > 0)
 const liveStatusLabel = computed(() => {
-  if (connectionState.value === 'offline') return '未连接'
-  if (connectionState.value === 'loading') return '连接中'
-  if (worldState.value.is_game_over) return '已结束'
-  if (!hasStarted.value) return '待开局'
-  return worldState.value.is_running ? '运行中' : '暂停中'
+  if (connectionState.value === 'offline') return tr('未连接', 'Offline')
+  if (connectionState.value === 'loading') return tr('连接中', 'Connecting')
+  if (worldState.value.is_game_over) return tr('已结束', 'Complete')
+  if (!hasStarted.value) return tr('待开局', 'Not started')
+  return worldState.value.is_running ? tr('运行中', 'Running') : tr('暂停中', 'Paused')
 })
 const modelReplyCount = computed(() => hasStarted.value ? currentTickLogs.value.length : 0)
 const publicEventCount = computed(() => hasStarted.value
@@ -922,16 +922,18 @@ function colorFor(agentId) {
   return GENERIC_AGENT_COLORS[hash % GENERIC_AGENT_COLORS.length]
 }
 function agentLabel(agentId) {
-  if (!agentId) return '未选择'
-  return worldState.value.agents?.find(a => a.agent_id === agentId)?.name
+  if (!agentId) return tr('未选择', 'Not selected')
+  return (operatorSchema.value.agents || []).find(a => a.id === agentId)?.label
+    || worldState.value.agents?.find(a => a.agent_id === agentId)?.name
     || agentId
 }
 function actionLabel(actionId) {
   return (operatorSchema.value.actions || []).find(item => item.id === actionId)?.label
-    || actionId || '尚未选择动作'
+    || actionId || tr('尚未选择动作', 'No action selected')
 }
 function actionCategoryLabel(actionId) {
-  return (operatorSchema.value.actions || []).find(item => item.id === actionId)?.category_label || '场景动作'
+  return (operatorSchema.value.actions || []).find(item => item.id === actionId)?.category_label
+    || tr('场景动作', 'Scenario action')
 }
 function agentResourceItems(agent) {
   const attrs = agent?.public_attrs || {}
@@ -1069,15 +1071,15 @@ function eventLabel(type) {
   }[type] || type || '事件'
 }
 function locationText(agent) {
-  return agent.location_name || agent.location || agent.self_location || '场内'
+  return agent.location_name || agent.location || agent.self_location || tr('场内', 'In world')
 }
 function isEliminated(agentId) {
   return (worldState.value.eliminated || []).some(e => e && e.agent_id === agentId)
 }
 function agentStatusText(agent) {
-  if (!hasStarted.value) return '待命中'
-  if (isEliminated(agent.agent_id)) return '已退出当前世界'
-  return agent.is_alive ? '在线参与决策' : '已淘汰'
+  if (!hasStarted.value) return tr('待命中', 'Ready')
+  if (isEliminated(agent.agent_id)) return tr('已退出当前世界', 'Stopped')
+  return agent.is_alive ? tr('在线参与决策', 'Active') : tr('已淘汰', 'Eliminated')
 }
 function logKey(log) {
   return `${log.tick}-${log.agent_id}`

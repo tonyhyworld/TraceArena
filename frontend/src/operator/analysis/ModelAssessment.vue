@@ -2,79 +2,79 @@
   <div class="analysis-root">
     <header class="analysis-hero">
       <div>
-        <span class="kicker">跨局模型表现</span>
-        <h1>模型分析</h1>
-        <p>把多局对战整理成普通人能看懂的结论：模型强在哪里、喜欢怎么行动、风险偏高还是偏稳。</p>
+        <span class="kicker">{{ tr('跨局模型表现', 'CROSS-RUN MODEL PERFORMANCE') }}</span>
+        <h1>{{ tr('模型分析', 'Model analysis') }}</h1>
+        <p>{{ tr('把多局对战整理成普通人能看懂的结论：模型强在哪里、喜欢怎么行动、风险偏高还是偏稳。', 'Turn multiple evaluations into clear findings about capability, behavior, and risk posture.') }}</p>
       </div>
       <div class="hero-actions">
         <select v-model="selectedModelKey">
           <option v-for="m in models" :key="m.model_key" :value="m.model_key">{{ m.model_key }}</option>
         </select>
-        <button @click="loadAnalysis">刷新</button>
+        <button @click="loadAnalysis">{{ tr('刷新', 'Refresh') }}</button>
       </div>
     </header>
 
-    <div v-if="loading" class="state">正在聚合历史对局...</div>
-    <div v-else-if="error" class="state err">加载失败：{{ error }}</div>
-    <div v-else-if="!models.length" class="state">暂无可分析模型。跑完至少一局后这里会出现模型画像。</div>
+    <div v-if="loading" class="state">{{ tr('正在聚合历史对局...', 'Aggregating historical runs…') }}</div>
+    <div v-else-if="error" class="state err">{{ tr('加载失败：', 'Load failed: ') }}{{ error }}</div>
+    <div v-else-if="!models.length" class="state">{{ tr('暂无可分析模型。跑完至少一局后这里会出现模型画像。', 'No model data yet. Complete at least one evaluation.') }}</div>
 
     <template v-else>
       <section class="summary-grid">
         <article class="summary-card main">
-          <label>当前模型</label>
+          <label>{{ tr('当前模型', 'Current model') }}</label>
           <h2>{{ selectedModel.model_key }}</h2>
-          <p>参与 {{ selectedModel.run_count }} 局 · 扮演过 {{ selectedModel.agent_samples }} 次角色</p>
+          <p>{{ tr('参与', 'Runs') }} {{ selectedModel.run_count }} · {{ tr('角色样本', 'role samples') }} {{ selectedModel.agent_samples }}</p>
         </article>
         <article class="summary-card">
-          <label>胜率</label>
+          <label>{{ tr('胜率', 'Win rate') }}</label>
           <strong>{{ pct(selectedModel.win_rate) }}</strong>
-          <p>{{ selectedModel.win_count }} 次胜出</p>
+          <p>{{ selectedModel.win_count }} {{ tr('次胜出', 'wins') }}</p>
         </article>
         <article class="summary-card">
-          <label>平均名次</label>
+          <label>{{ tr('平均名次', 'Average rank') }}</label>
           <strong>{{ selectedModel.avg_victory_rank == null ? '-' : fmt(selectedModel.avg_victory_rank) }}</strong>
-          <p>按各场景自己的胜负口径统计</p>
+          <p>{{ tr('按各场景自己的胜负口径统计', 'Calculated using each scenario’s outcome rules') }}</p>
         </article>
         <article class="summary-card">
-          <label>行为样本</label>
+          <label>{{ tr('行为样本', 'Behavior samples') }}</label>
           <strong>{{ selectedModel.turns }}</strong>
-          <p>做过的选择</p>
+          <p>{{ tr('做过的选择', 'Recorded decisions') }}</p>
         </article>
       </section>
 
       <section class="plain-insights">
         <article>
           <div class="insight-icon brain"></div>
-          <label>一句话能力结论</label>
+          <label>{{ tr('一句话能力结论', 'Capability summary') }}</label>
           <h3>{{ plainStrength }}</h3>
-          <p>根据跨场景能力旁路和世界结算样本归纳。</p>
+          <p>{{ tr('根据跨场景能力旁路和世界结算样本归纳。', 'Derived from capability probes and settlement samples.') }}</p>
         </article>
         <article>
           <div class="insight-icon style"></div>
-          <label>常见打法</label>
+          <label>{{ tr('常见打法', 'Typical behavior') }}</label>
           <h3>{{ playStyle }}</h3>
-          <p>来自它在对局中最常选择的动作。</p>
+          <p>{{ tr('来自它在对局中最常选择的动作。', 'Based on the model’s most frequent actions.') }}</p>
         </article>
         <article>
           <div class="insight-icon risk"></div>
-          <label>风险气质</label>
+          <label>{{ tr('风险气质', 'Risk posture') }}</label>
           <h3>{{ riskTone }}</h3>
-          <p>根据高风险动作和等待频率判断。</p>
+          <p>{{ tr('根据高风险动作和等待频率判断。', 'Estimated from risky actions and waiting frequency.') }}</p>
         </article>
       </section>
 
       <section class="reading-guide">
         <article>
           <span class="guide-dot brain"></span>
-          <div><strong>先看能力</strong><p>分越高，说明这个模型在对应任务上越稳定。</p></div>
+          <div><strong>{{ tr('先看能力', 'Start with capability') }}</strong><p>{{ tr('分越高，说明这个模型在对应任务上越稳定。', 'Higher scores indicate more stable task performance.') }}</p></div>
         </article>
         <article>
           <span class="guide-dot style"></span>
-          <div><strong>再看打法</strong><p>动作分布能看出它偏调查、表态、合作还是冒险。</p></div>
+          <div><strong>{{ tr('再看打法', 'Then inspect behavior') }}</strong><p>{{ tr('动作分布能看出它偏调查、表态、合作还是冒险。', 'Action distribution reveals investigation, cooperation, or risk preferences.') }}</p></div>
         </article>
         <article>
           <span class="guide-dot proof"></span>
-          <div><strong>最后看证据</strong><p>每个分数都能点到原始题目和模型输出。</p></div>
+          <div><strong>{{ tr('最后看证据', 'Finally inspect evidence') }}</strong><p>{{ tr('每个分数都能点到原始题目和模型输出。', 'Every score links back to the task and raw model output.') }}</p></div>
         </article>
       </section>
 
@@ -82,10 +82,10 @@
         <article class="panel capability-panel">
           <div class="panel-head">
             <div>
-              <span class="kicker">它擅长什么</span>
-              <h2>能力画像</h2>
+              <span class="kicker">{{ tr('它擅长什么', 'STRENGTHS') }}</span>
+              <h2>{{ tr('能力画像', 'Capability profile') }}</h2>
             </div>
-            <em>{{ selectedModel.capabilities.length }} 项能力</em>
+            <em>{{ selectedModel.capabilities.length }} {{ tr('项能力', 'capabilities') }}</em>
           </div>
           <div class="radar-wrap">
             <svg viewBox="-140 -140 280 280" class="radar">
@@ -102,7 +102,7 @@
                 @click="selectedCapability = cap.capability"
               >
                 <span>{{ cap.label }}</span>
-                <em>{{ capabilityCaseCounts[cap.capability] || 0 }} 例</em>
+                <em>{{ capabilityCaseCounts[cap.capability] || 0 }} {{ tr('例', 'cases') }}</em>
                 <b>{{ fmt(cap.score, 0) }}</b>
                 <i :style="{ width: `${Math.max(3, cap.score)}%` }"></i>
               </button>
@@ -113,20 +113,20 @@
         <article class="panel behavior-panel">
           <div class="panel-head">
             <div>
-              <span class="kicker">它怎么行动</span>
-              <h2>跨场景行为画像</h2>
+              <span class="kicker">{{ tr('它怎么行动', 'BEHAVIOR') }}</span>
+              <h2>{{ tr('跨场景行为画像', 'Cross-scenario behavior') }}</h2>
             </div>
           </div>
           <div class="behavior-stats">
-            <div><label>覆盖场景</label><strong>{{ selectedModel.scenarios?.length || 0 }}</strong></div>
-            <div><label>可验证外部事实</label><strong>{{ selectedModel.verified_observations || 0 }}</strong></div>
-            <div><label>结算权限类型</label><strong>{{ authorityCount }}</strong></div>
+            <div><label>{{ tr('覆盖场景', 'Scenarios') }}</label><strong>{{ selectedModel.scenarios?.length || 0 }}</strong></div>
+            <div><label>{{ tr('可验证外部事实', 'Verified facts') }}</label><strong>{{ selectedModel.verified_observations || 0 }}</strong></div>
+            <div><label>{{ tr('结算权限类型', 'Authority types') }}</label><strong>{{ authorityCount }}</strong></div>
           </div>
           <div class="action-list">
             <article v-for="action in selectedModel.actions.slice(0, 10)" :key="action.action_id">
               <div>
                 <strong>{{ action.label }}</strong>
-                <span>{{ action.count }} 次 · {{ pct(action.ratio) }}</span>
+                <span>{{ action.count }} {{ tr('次', 'times') }} · {{ pct(action.ratio) }}</span>
               </div>
               <i :style="{ width: `${Math.max(3, action.ratio * 100)}%` }"></i>
             </article>
@@ -135,29 +135,24 @@
       </section>
 
       <section class="panel authority-panel">
-        <div class="panel-head"><div><span class="kicker">结果怎么得出</span><h2>场景与结算覆盖</h2></div></div>
+        <div class="panel-head"><div><span class="kicker">{{ tr('结果怎么得出', 'ATTRIBUTION') }}</span><h2>{{ tr('场景与结算覆盖', 'Scenario and settlement coverage') }}</h2></div></div>
         <div class="coverage-grid">
-          <article><label>参与过的场景</label><p v-for="item in selectedModel.scenarios || []" :key="item.name"><b>{{ item.name }}</b><span>{{ item.samples }} 个角色样本</span></p></article>
-          <article><label>结算权限</label><p v-for="(count, mode) in selectedModel.settlement_authorities || {}" :key="mode"><b>{{ authorityLabel(mode) }}</b><span>{{ count }} 条结算</span></p><p v-if="!authorityCount">暂无 OS 2.0 结算样本</p></article>
+          <article><label>{{ tr('参与过的场景', 'Scenarios evaluated') }}</label><p v-for="item in selectedModel.scenarios || []" :key="item.name"><b>{{ item.name }}</b><span>{{ item.samples }} {{ tr('个角色样本', 'role samples') }}</span></p></article>
+          <article><label>{{ tr('结算权限', 'Settlement authority') }}</label><p v-for="(count, mode) in selectedModel.settlement_authorities || {}" :key="mode"><b>{{ authorityLabel(mode) }}</b><span>{{ count }} {{ tr('条结算', 'settlements') }}</span></p><p v-if="!authorityCount">{{ tr('暂无 OS 2.0 结算样本', 'No OS 2.0 settlement samples') }}</p></article>
         </div>
       </section>
 
       <section class="panel compare-panel">
         <div class="panel-head">
           <div>
-            <span class="kicker">模型对比</span>
-            <h2>不同模型谁更强</h2>
+            <span class="kicker">{{ tr('模型对比', 'MODEL COMPARISON') }}</span>
+            <h2>{{ tr('不同模型谁更强', 'Compare model performance') }}</h2>
           </div>
-          <em>{{ aggregate.total_runs }} 局历史样本</em>
+          <em>{{ aggregate.total_runs }} {{ tr('局历史样本', 'historical runs') }}</em>
         </div>
         <div class="compare-table">
           <div class="compare-row head">
-            <span>模型</span>
-            <span>参与局数</span>
-            <span>胜率</span>
-            <span>平均名次</span>
-            <span>最强项</span>
-            <span>最常做</span>
+            <span>{{ tr('模型', 'Model') }}</span><span>{{ tr('参与局数', 'Runs') }}</span><span>{{ tr('胜率', 'Win rate') }}</span><span>{{ tr('平均名次', 'Avg rank') }}</span><span>{{ tr('最强项', 'Top strength') }}</span><span>{{ tr('最常做', 'Top action') }}</span>
           </div>
           <button
             v-for="m in models"
@@ -179,10 +174,10 @@
       <section class="panel cases-panel">
         <div class="panel-head">
           <div>
-            <span class="kicker">原始证据</span>
-            <h2>{{ selectedCapabilityLabel }} · 验证任务与模型输出</h2>
+            <span class="kicker">{{ tr('原始证据', 'RAW EVIDENCE') }}</span>
+            <h2>{{ selectedCapabilityLabel }} · {{ tr('验证任务与模型输出', 'tasks and model outputs') }}</h2>
           </div>
-          <em>{{ filteredCases.length }} 条</em>
+          <em>{{ filteredCases.length }} {{ tr('条', 'cases') }}</em>
         </div>
         <div class="case-list">
           <details v-for="item in filteredCases.slice(0, 12)" :key="`${item.run_id}-${item.case_id}`" class="case-item">
@@ -192,12 +187,12 @@
               <em>{{ item.status }}</em>
             </summary>
             <div class="case-body">
-              <div><label>题目</label><p>{{ item.instruction || '-' }}</p></div>
-              <div><label>判定依据</label><p>{{ item.rationale || '-' }}</p></div>
-              <div><label>模型原始输出</label><pre>{{ item.raw_output || '-' }}</pre></div>
+              <div><label>{{ tr('题目', 'Task') }}</label><p>{{ item.instruction || '-' }}</p></div>
+              <div><label>{{ tr('判定依据', 'Rationale') }}</label><p>{{ item.rationale || '-' }}</p></div>
+              <div><label>{{ tr('模型原始输出', 'Raw model output') }}</label><pre>{{ item.raw_output || '-' }}</pre></div>
             </div>
           </details>
-          <div v-if="!filteredCases.length" class="state small">这个维度暂无可下钻案例。</div>
+          <div v-if="!filteredCases.length" class="state small">{{ tr('这个维度暂无可下钻案例。', 'No drill-down cases for this capability.') }}</div>
         </div>
       </section>
     </template>
@@ -207,6 +202,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { apiGet } from '../api.js'
+import { tr } from '../../core/i18n.js'
 
 const aggregate = ref({ models: [], total_runs: 0 })
 const loading = ref(false)
@@ -223,7 +219,7 @@ const topCapabilities = computed(() => (selectedModel.value.capabilities || []).
 const selectedCapabilityLabel = computed(() => (
   topCapabilities.value.find(c => c.capability === selectedCapability.value)?.label
   || selectedCapability.value
-  || '能力'
+  || tr('能力', 'Capability')
 ))
 const filteredCases = computed(() => (
   (selectedModel.value.cases || []).filter(item => !selectedCapability.value || item.capability === selectedCapability.value)
@@ -239,26 +235,26 @@ const capabilityCaseCounts = computed(() => {
 const plainStrength = computed(() => {
   const top = selectedModel.value.capabilities?.[0]
   const weak = [...(selectedModel.value.capabilities || [])].reverse().find(item => Number.isFinite(Number(item.score)))
-  if (!top) return '样本还不够，暂时无法判断。'
+  if (!top) return tr('样本还不够，暂时无法判断。', 'Not enough samples yet.')
   if (weak && Number(top.score) - Number(weak.score) >= 35) {
-    return `最强项是「${top.label}」，短板可能在「${weak.label}」。`
+    return tr(`最强项是「${top.label}」，短板可能在「${weak.label}」。`, `Strongest in ${top.label}; ${weak.label} may be a weakness.`)
   }
-  return `整体表现比较均衡，当前最突出的是「${top.label}」。`
+  return tr(`整体表现比较均衡，当前最突出的是「${top.label}」。`, `Performance is balanced; ${top.label} currently stands out.`)
 })
 const playStyle = computed(() => {
   const top = selectedModel.value.actions?.[0]
-  if (!top) return '还没有足够行动记录。'
-  return `在已参与场景中，最常选择「${top.label}」，占 ${pct(top.ratio)}。`
+  if (!top) return tr('还没有足够行动记录。', 'Not enough action records yet.')
+  return tr(`在已参与场景中，最常选择「${top.label}」，占 ${pct(top.ratio)}。`, `Most frequent action: ${top.label} (${pct(top.ratio)}).`)
 })
 const riskTone = computed(() => {
   const risk = Number(selectedModel.value.risk_action_ratio || 0)
   const wait = Number(selectedModel.value.wait_ratio || 0)
-  if (risk >= 0.18) return '偏激进，愿意使用有风险的动作。'
-  if (wait >= 0.18) return '偏保守，观望和等待较多。'
-  return '风险控制相对稳定，进攻和保守较均衡。'
+  if (risk >= 0.18) return tr('偏激进，愿意使用有风险的动作。', 'Aggressive; willing to take higher-risk actions.')
+  if (wait >= 0.18) return tr('偏保守，观望和等待较多。', 'Conservative; waits and observes frequently.')
+  return tr('风险控制相对稳定，进攻和保守较均衡。', 'Balanced risk posture.')
 })
 function authorityLabel(mode) {
-  return { simulation: '模拟世界规则', external_reality: '外部真实数据', deterministic_verifier: '确定性验证器', hybrid: '真实数据 + 确定性规则' }[mode] || mode
+  return { simulation: tr('模拟世界规则', 'Simulation rules'), external_reality: tr('外部真实数据', 'External data'), deterministic_verifier: tr('确定性验证器', 'Deterministic verifier'), hybrid: tr('真实数据 + 确定性规则', 'External data + deterministic rules') }[mode] || mode
 }
 const radarItems = computed(() => topCapabilities.value.slice(0, 6))
 const radarPoints = computed(() => radarDots.value.map(pt => `${pt.x},${pt.y}`).join(' '))

@@ -6,7 +6,7 @@ import asyncio
 import uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from app.auth.dependencies import get_current_user, require_permission
@@ -71,6 +71,29 @@ class AnnouncementTTSRequest(BaseModel):
     text: str = Field(min_length=1, max_length=6000)
 
 
+class LocaleRequest(BaseModel):
+    locale: str
+
+
+@router.post("/control/locale")
+async def switch_locale(req: LocaleRequest, user: User = Depends(get_current_user)) -> Dict[str, Any]:
+    """Change presentation immediately and defer agent-language changes to reset."""
+    if req.locale not in {"zh-CN", "en-US"}:
+        raise HTTPException(400, "Unsupported locale")
+    from app.main import engine_manager
+    if engine_manager is None:
+        raise HTTPException(503, "Engine manager unavailable")
+    engine_manager.set_preferred_locale(user.user_id, req.locale)
+    current = engine_manager.get_existing(user.user_id)
+    runtime_locale = current.cfg.scenario_locale if current is not None else req.locale
+    return {
+        "status": "saved",
+        "locale": req.locale,
+        "runtime_locale": runtime_locale,
+        "applies_to_current_run": runtime_locale == req.locale,
+    }
+
+
 @router.post("/control/play")
 async def play(user: User = Depends(require_permission(Permission.CONTROL_GAME))) -> Dict[str, str]:
     ctx = await _get_ctx(user)
@@ -94,8 +117,8 @@ async def step(user: User = Depends(require_permission(Permission.CONTROL_GAME))
 
 @router.post("/control/reset")
 async def reset(user: User = Depends(require_permission(Permission.CONTROL_GAME))) -> Dict[str, str]:
-    ctx = await _get_ctx(user)
-    await ctx.engine.reset()
+    from app.main import engine_manager
+    await engine_manager.reset_for_new_run(user.user_id)
     return {"status": "reset"}
 
 
@@ -133,7 +156,10 @@ async def recent_logs(user: User = Depends(require_permission(Permission.ACCESS_
 
 
 @router.get("/operator/live-overview")
-async def operator_live_overview(user: User = Depends(require_permission(Permission.ACCESS_OPERATOR))) -> Dict[str, Any]:
+async def operator_live_overview(
+    locale: Optional[str] = None,
+    user: User = Depends(require_permission(Permission.ACCESS_OPERATOR)),
+) -> Dict[str, Any]:
     """运营后台首屏快照。
 
     WebSocket 适合增量推送，但后台刷新后不能依赖“下一条推送”才有内容。
@@ -165,7 +191,7 @@ async def operator_live_overview(user: User = Depends(require_permission(Permiss
             "cases": assessment.get("cases", []),
             "events": assessment.get("events", []),
         },
-        "operator_schema": engine.get_operator_schema(),
+        "operator_schema": engine.get_operator_schema(locale),
         "os2": {
             "world_actions": list(
                 internal.get("os2_world_actions", []) or []
@@ -336,14 +362,19 @@ async def get_current_assessment(user: User = Depends(require_permission(Permiss
 
 
 @router.get("/scenario")
-async def get_scenario(user: User = Depends(get_current_user)) -> Dict[str, Any]:
+async def get_scenario(
+    locale: Optional[str] = None,
+    accept_language: Optional[str] = Header(default=None),
+    user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
     """返回当前场景包的完整信息（前端渲染用）。
 
     前端据此动态渲染，不再写死任何场景内容。
     """
     ctx = await _get_ctx(user)
+    requested_locale = locale or str(accept_language or "").split(",", 1)[0].strip()
     engine = ctx.engine
-    sc = engine.scenario_definition
+    sc = engine.localized_scenario(requested_locale)
     character_map = {
         item.get("id"): item
         for item in sc.characters_cfg
@@ -360,6 +391,7 @@ async def get_scenario(user: User = Depends(get_current_user)) -> Dict[str, Any]
 
     return {
         "name": sc.manifest.name,
+        "locale": sc.locale,
         "dir_name": sc.scenario_dir.name,
         "presentation": sc.presentation.model_dump(),
         "world_variables": [v.model_dump() for v in sc.world_variables],
@@ -474,7 +506,9 @@ async def load_scenario_api(req: LoadScenarioRequest, user: User = Depends(requi
     """运行时切换场景包（不重启进程，只影响当前用户自己的引擎实例）"""
     from app.main import engine_manager
     try:
-        await engine_manager.rebuild_engine(user.user_id, req.scenario_name)
+        current = engine_manager.get_existing(user.user_id)
+        current_locale = current.cfg.scenario_locale if current is not None else None
+        await engine_manager.rebuild_engine(user.user_id, req.scenario_name, locale=current_locale)
     except Exception as e:
         raise HTTPException(500, f"场景切换失败: {e}")
     return {"status": "loaded", "scenario": req.scenario_name}

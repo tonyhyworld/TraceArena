@@ -2,10 +2,10 @@
   <div class="um-page">
     <header class="um-page-head">
       <div>
-        <h1>用户管理</h1>
-        <p>管理系统账号与功能权限。数据权限固定为「仅查看本人对局」，不在此配置。</p>
+        <h1>{{ tr('用户管理', 'User management') }}</h1>
+        <p>{{ tr('管理系统账号与功能权限。数据权限固定为「仅查看本人对局」，不在此配置。', 'Manage accounts and feature permissions. Each user can only access their own run data.') }}</p>
       </div>
-      <button class="um-btn um-btn-primary" @click="openCreate">+ 新增用户</button>
+      <button class="um-btn um-btn-primary" @click="openCreate">+ {{ tr('新增用户', 'Add user') }}</button>
     </header>
 
     <section class="um-toolbar">
@@ -14,29 +14,29 @@
           <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
           <path d="M13 13l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
-        <input v-model="keyword" type="search" placeholder="搜索用户名或显示名…" />
+        <input v-model="keyword" type="search" :placeholder="tr('搜索用户名或显示名…', 'Search username or display name…')" />
       </div>
-      <span class="um-count">共 {{ filteredUsers.length }} 人</span>
+      <span class="um-count">{{ filteredUsers.length }} {{ tr('人', 'users') }}</span>
     </section>
 
     <section class="um-table-wrap">
       <table class="um-table">
         <thead>
           <tr>
-            <th>用户名</th>
-            <th>显示名</th>
-            <th>角色</th>
-            <th>功能权限</th>
-            <th>创建时间</th>
-            <th class="col-actions">操作</th>
+            <th>{{ tr('用户名', 'Username') }}</th>
+            <th>{{ tr('显示名', 'Display name') }}</th>
+            <th>{{ tr('角色', 'Role') }}</th>
+            <th>{{ tr('功能权限', 'Permissions') }}</th>
+            <th>{{ tr('创建时间', 'Created') }}</th>
+            <th class="col-actions">{{ tr('操作', 'Actions') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="6" class="um-empty-cell">加载中…</td>
+            <td colspan="6" class="um-empty-cell">{{ tr('加载中…', 'Loading…') }}</td>
           </tr>
           <tr v-else-if="!filteredUsers.length">
-            <td colspan="6" class="um-empty-cell">暂无匹配用户</td>
+            <td colspan="6" class="um-empty-cell">{{ tr('暂无匹配用户', 'No matching users') }}</td>
           </tr>
           <tr v-for="u in filteredUsers" :key="u.user_id">
             <td>
@@ -44,11 +44,11 @@
             </td>
             <td>{{ u.display_name || '—' }}</td>
             <td>
-              <span v-if="u.is_admin" class="um-tag um-tag-admin">超级管理员</span>
-              <span v-else class="um-tag">普通用户</span>
+              <span v-if="u.is_admin" class="um-tag um-tag-admin">{{ tr('超级管理员', 'Administrator') }}</span>
+              <span v-else class="um-tag">{{ tr('普通用户', 'User') }}</span>
             </td>
             <td>
-              <span v-if="u.is_admin" class="um-perm-hint">全部权限</span>
+              <span v-if="u.is_admin" class="um-perm-hint">{{ tr('全部权限', 'All permissions') }}</span>
               <div v-else class="um-perm-tags">
                 <span
                   v-for="label in permLabels(u.permissions).slice(0, 3)"
@@ -59,7 +59,7 @@
                   v-if="(u.permissions || []).length > 3"
                   class="um-tag um-tag-more"
                 >+{{ u.permissions.length - 3 }}</span>
-                <span v-if="!(u.permissions || []).length" class="um-perm-hint">未授权</span>
+                <span v-if="!(u.permissions || []).length" class="um-perm-hint">{{ tr('未授权', 'None') }}</span>
               </div>
             </td>
             <td class="um-muted">{{ formatDate(u.created_at) }}</td>
@@ -68,16 +68,16 @@
                 <button
                   class="um-link"
                   :disabled="u.is_admin"
-                  :title="u.is_admin ? '超级管理员不可编辑' : '编辑'"
+                  :title="u.is_admin ? tr('超级管理员不可编辑', 'Administrators cannot be edited') : tr('编辑', 'Edit')"
                   @click="openEdit(u)"
-                >编辑</button>
-                <button class="um-link" @click="openResetPassword(u)">重置密码</button>
+                >{{ tr('编辑', 'Edit') }}</button>
+                <button class="um-link" @click="openResetPassword(u)">{{ tr('重置密码', 'Reset password') }}</button>
                 <button
                   class="um-link um-link-danger"
                   :disabled="u.is_admin || u.user_id === currentUserId"
                   :title="deleteHint(u)"
                   @click="openDelete(u)"
-                >删除</button>
+                >{{ tr('删除', 'Delete') }}</button>
               </div>
             </td>
           </tr>
@@ -89,31 +89,31 @@
     <div v-if="modal === 'create'" class="um-overlay" @click.self="closeModal">
       <div class="um-dialog um-dialog-lg">
         <header class="um-dialog-head">
-          <h3>新增用户</h3>
-          <button class="um-icon-btn" @click="closeModal" aria-label="关闭">×</button>
+          <h3>{{ tr('新增用户', 'Add user') }}</h3>
+          <button class="um-icon-btn" @click="closeModal" :aria-label="tr('关闭', 'Close')">×</button>
         </header>
         <div class="um-dialog-body">
           <div class="um-form-grid">
             <label class="um-field">
-              <span>用户名 <em>*</em></span>
-              <input v-model="form.username" placeholder="字母/数字/下划线/横杠，3-32 位" />
+              <span>{{ tr('用户名', 'Username') }} <em>*</em></span>
+              <input v-model="form.username" :placeholder="tr('字母/数字/下划线/横杠，3-32 位', 'Letters, numbers, underscore or dash; 3–32 characters')" />
             </label>
             <label class="um-field">
-              <span>显示名</span>
-              <input v-model="form.display_name" placeholder="可选，默认同用户名" />
+              <span>{{ tr('显示名', 'Display name') }}</span>
+              <input v-model="form.display_name" :placeholder="tr('可选，默认同用户名', 'Optional; defaults to username')" />
             </label>
             <label class="um-field um-field-full">
-              <span>初始密码 <em>*</em></span>
-              <input v-model="form.password" type="password" placeholder="至少 6 位" />
+              <span>{{ tr('初始密码', 'Initial password') }} <em>*</em></span>
+              <input v-model="form.password" type="password" :placeholder="tr('至少 6 位', 'At least 6 characters')" />
             </label>
           </div>
           <PermissionPicker v-model="form.permissions" :groups="groupedCatalog" />
         </div>
         <p v-if="formMsg" class="um-form-msg" :class="{ err: formErr }">{{ formMsg }}</p>
         <footer class="um-dialog-foot">
-          <button class="um-btn" @click="closeModal">取消</button>
+          <button class="um-btn" @click="closeModal">{{ tr('取消', 'Cancel') }}</button>
           <button class="um-btn um-btn-primary" :disabled="submitting" @click="submitCreate">
-            {{ submitting ? '创建中…' : '创建' }}
+            {{ submitting ? tr('创建中…', 'Creating…') : tr('创建', 'Create') }}
           </button>
         </footer>
       </div>
@@ -123,27 +123,27 @@
     <div v-if="modal === 'edit' && editTarget" class="um-overlay" @click.self="closeModal">
       <div class="um-dialog um-dialog-lg">
         <header class="um-dialog-head">
-          <h3>编辑用户 · {{ editTarget.username }}</h3>
-          <button class="um-icon-btn" @click="closeModal" aria-label="关闭">×</button>
+          <h3>{{ tr('编辑用户', 'Edit user') }} · {{ editTarget.username }}</h3>
+          <button class="um-icon-btn" @click="closeModal" :aria-label="tr('关闭', 'Close')">×</button>
         </header>
         <div class="um-dialog-body">
           <div class="um-form-grid">
             <label class="um-field">
-              <span>用户名</span>
+              <span>{{ tr('用户名', 'Username') }}</span>
               <input :value="editTarget.username" disabled />
             </label>
             <label class="um-field">
-              <span>显示名</span>
-              <input v-model="form.display_name" placeholder="显示名称" />
+              <span>{{ tr('显示名', 'Display name') }}</span>
+              <input v-model="form.display_name" :placeholder="tr('显示名称', 'Display name')" />
             </label>
           </div>
           <PermissionPicker v-model="form.permissions" :groups="groupedCatalog" />
         </div>
         <p v-if="formMsg" class="um-form-msg" :class="{ err: formErr }">{{ formMsg }}</p>
         <footer class="um-dialog-foot">
-          <button class="um-btn" @click="closeModal">取消</button>
+          <button class="um-btn" @click="closeModal">{{ tr('取消', 'Cancel') }}</button>
           <button class="um-btn um-btn-primary" :disabled="submitting" @click="submitEdit">
-            {{ submitting ? '保存中…' : '保存' }}
+            {{ submitting ? tr('保存中…', 'Saving…') : tr('保存', 'Save') }}
           </button>
         </footer>
       </div>
@@ -153,20 +153,20 @@
     <div v-if="modal === 'delete' && deleteTarget" class="um-overlay" @click.self="closeModal">
       <div class="um-dialog um-dialog-sm">
         <header class="um-dialog-head">
-          <h3>删除用户</h3>
-          <button class="um-icon-btn" @click="closeModal" aria-label="关闭">×</button>
+          <h3>{{ tr('删除用户', 'Delete user') }}</h3>
+          <button class="um-icon-btn" @click="closeModal" :aria-label="tr('关闭', 'Close')">×</button>
         </header>
         <div class="um-dialog-body">
           <p class="um-confirm-text">
-            确定删除用户 <strong>{{ deleteTarget.username }}</strong>？
-            该操作不可恢复，其对局数据目录仍保留在服务器上。
+            {{ tr('确定删除用户', 'Delete user') }} <strong>{{ deleteTarget.username }}</strong>?
+            {{ tr('该操作不可恢复，其对局数据目录仍保留在服务器上。', 'This cannot be undone. Run data remains on the server.') }}
           </p>
         </div>
         <p v-if="formMsg" class="um-form-msg" :class="{ err: formErr }">{{ formMsg }}</p>
         <footer class="um-dialog-foot">
-          <button class="um-btn" @click="closeModal">取消</button>
+          <button class="um-btn" @click="closeModal">{{ tr('取消', 'Cancel') }}</button>
           <button class="um-btn um-btn-danger" :disabled="submitting" @click="submitDelete">
-            {{ submitting ? '删除中…' : '确认删除' }}
+            {{ submitting ? tr('删除中…', 'Deleting…') : tr('确认删除', 'Confirm delete') }}
           </button>
         </footer>
       </div>
@@ -176,20 +176,20 @@
     <div v-if="modal === 'reset' && resetTarget" class="um-overlay" @click.self="closeModal">
       <div class="um-dialog um-dialog-sm">
         <header class="um-dialog-head">
-          <h3>重置密码 · {{ resetTarget.username }}</h3>
-          <button class="um-icon-btn" @click="closeModal" aria-label="关闭">×</button>
+          <h3>{{ tr('重置密码', 'Reset password') }} · {{ resetTarget.username }}</h3>
+          <button class="um-icon-btn" @click="closeModal" :aria-label="tr('关闭', 'Close')">×</button>
         </header>
         <div class="um-dialog-body">
           <label class="um-field um-field-full">
-            <span>新密码 <em>*</em></span>
-            <input v-model="resetPassword" type="password" placeholder="至少 6 位" />
+            <span>{{ tr('新密码', 'New password') }} <em>*</em></span>
+            <input v-model="resetPassword" type="password" :placeholder="tr('至少 6 位', 'At least 6 characters')" />
           </label>
         </div>
         <p v-if="formMsg" class="um-form-msg" :class="{ err: formErr }">{{ formMsg }}</p>
         <footer class="um-dialog-foot">
-          <button class="um-btn" @click="closeModal">取消</button>
+          <button class="um-btn" @click="closeModal">{{ tr('取消', 'Cancel') }}</button>
           <button class="um-btn um-btn-primary" :disabled="submitting" @click="submitResetPassword">
-            {{ submitting ? '提交中…' : '确认重置' }}
+            {{ submitting ? tr('提交中…', 'Submitting…') : tr('确认重置', 'Confirm reset') }}
           </button>
         </footer>
       </div>
@@ -201,6 +201,7 @@
 import { ref, reactive, computed, onMounted, defineComponent, h } from 'vue'
 import { API_BASE } from './api.js'
 import { authedFetch, getCurrentUser } from '../core/authStore.js'
+import { locale, tr } from '../core/i18n.js'
 
 const PermissionPicker = defineComponent({
   name: 'PermissionPicker',
@@ -217,7 +218,7 @@ const PermissionPicker = defineComponent({
       emit('update:modelValue', [...set])
     }
     return () => h('div', { class: 'um-perm-picker' }, [
-      h('div', { class: 'um-perm-picker-title' }, '功能权限'),
+      h('div', { class: 'um-perm-picker-title' }, tr('功能权限', 'Permissions')),
       ...props.groups.map(group => h('div', { class: 'um-perm-group', key: group.name }, [
         h('div', { class: 'um-perm-group-label' }, group.name),
         ...group.items.map(item => h('label', { class: 'um-check', key: item.key }, [
@@ -258,7 +259,7 @@ const currentUserId = computed(() => getCurrentUser()?.user_id || '')
 
 const permLabelMap = computed(() => {
   const map = {}
-  for (const item of catalog.value) map[item.key] = item.label
+    for (const item of catalog.value) map[item.key] = permissionLabel(item)
   return map
 })
 
@@ -268,7 +269,7 @@ const groupedCatalog = computed(() => {
     if (!groups[item.group]) groups[item.group] = []
     groups[item.group].push(item)
   }
-  return Object.entries(groups).map(([name, items]) => ({ name, items }))
+  return Object.entries(groups).map(([name, items]) => ({ name: permissionGroup(name), items: items.map(item => ({ ...item, label: permissionLabel(item) })) }))
 })
 
 const filteredUsers = computed(() => {
@@ -292,13 +293,22 @@ function formatDate(ts) {
   if (!ts) return '—'
   const d = new Date(ts * 1000)
   if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  return d.toLocaleDateString(locale.value, { year: 'numeric', month: '2-digit', day: '2-digit' })
+}
+
+function permissionGroup(name) {
+  const map = { '视图访问': 'View access', '对局控制': 'Run control', '配置管理': 'Configuration', '数据管理': 'Data' }
+  return locale.value === 'en-US' ? (map[name] || name) : name
+}
+function permissionLabel(item) {
+  if (locale.value !== 'en-US') return item.label
+  return ({ access_viewer: 'Access viewer', access_operator: 'Access operations', control_game: 'Control evaluations', inject_oracle: 'Inject interventions', edit_model_config: 'Edit model settings', manage_scenario: 'Manage scenarios', export_data: 'Export data' })[item.key] || item.label
 }
 
 function deleteHint(u) {
-  if (u.is_admin) return '不能删除超级管理员'
-  if (u.user_id === currentUserId.value) return '不能删除当前登录账号'
-  return '删除'
+  if (u.is_admin) return tr('不能删除超级管理员', 'Administrators cannot be deleted')
+  if (u.user_id === currentUserId.value) return tr('不能删除当前登录账号', 'You cannot delete the signed-in account')
+  return tr('删除', 'Delete')
 }
 
 function resetForm() {
@@ -365,7 +375,7 @@ async function submitCreate() {
   formMsg.value = ''
   formErr.value = false
   if (!form.username.trim() || !form.password) {
-    formMsg.value = '用户名和密码不能为空'
+    formMsg.value = tr('用户名和密码不能为空', 'Username and password are required')
     formErr.value = true
     return
   }
@@ -445,7 +455,7 @@ async function submitResetPassword() {
   formMsg.value = ''
   formErr.value = false
   if (resetPassword.value.length < 6) {
-    formMsg.value = '密码至少 6 位'
+    formMsg.value = tr('密码至少 6 位', 'Password must be at least 6 characters')
     formErr.value = true
     return
   }
