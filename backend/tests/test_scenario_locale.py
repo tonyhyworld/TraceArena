@@ -15,6 +15,11 @@ def test_capital_market_english_locale_overlays_presentation_text_only():
     assert scenario.presentation.ui_text["notice_label"] == "Market brief"
     assert next(item for item in scenario.actions_cfg if item["id"] == "buy_asset")["name"] == "Buy / open position"
     assert next(item for item in scenario.metrics_cfg["metrics"] if item["id"] == "metric_portfolio_value")["name"] == "Total portfolio value"
+    assert scenario.resources_cfg[0]["name"] == "Cash"
+    assert scenario.settlement_cfg["display_values"]["cash"] == "Available cash"
+    assert scenario.settlement_cfg["operator_trace"]["nodes"][0]["label"] == "Data sources"
+    assert scenario.prompt_contract["audience_language"] == "en-US"
+    assert scenario.presentation.render.ui.status_labels["active"] == "Active"
     # Semantic identifiers and settlement configuration remain canonical.
     assert scenario.actions_cfg[0]["id"] == "buy_asset"
     assert "portfolio_order_validator" in {

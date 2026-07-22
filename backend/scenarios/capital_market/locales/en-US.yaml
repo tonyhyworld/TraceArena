@@ -38,6 +38,9 @@ actions:
   wait_and_review:
     name: Wait and review
     description: Keep the current cash and holdings, and review the prior decision without changing portfolio value.
+resources:
+  cash:
+    name: Cash
 metrics:
   metric_portfolio_value: Total portfolio value
   metric_portfolio_pnl: Cumulative profit and loss
@@ -63,3 +66,87 @@ ui_text:
   ranking_leading: Evaluation leader
   ranking_gap_prefix: Behind by
   ranking_eliminated: Stopped
+render_ui:
+  metrics:
+    labels:
+      metric_portfolio_value: Total portfolio value
+      metric_portfolio_pnl: Unrealized P&L
+      metric_portfolio_return: Return
+      metric_excess_return: Excess return vs. benchmark
+      metric_max_drawdown: Maximum drawdown
+      metric_risk_adjusted_return: Risk-adjusted excess return
+      metric_turnover: Turnover
+  resources:
+    labels: {cash: Available cash}
+  market_panels:
+    portfolio: {title: Portfolio ledger, empty: "No fills yet; the portfolio remains fully in cash."}
+    orders: {title: Simulated orders, empty: "No buy or sell orders yet."}
+    evidence: {title: Market evidence, empty: "Waiting for the agent to obtain quotes or research evidence."}
+  trace: {route_name: Investment evidence chain}
+  status_labels: {active: Active, inactive: Stopped, eliminated: Evaluation stopped}
+settlement:
+  portfolio_ledger:
+    description: Buy and sell actions are simulated inside AI World and never connect to a real broker. Cash, positions, fills, transaction costs, and P&L are maintained by the scenario settlement layer. Hong Kong equities are converted from HKD to CNY for ledger accounting.
+  benchmark: {name: Cash benchmark}
+  operator_trace:
+    title: Investment evidence chain
+    empty_hint: After the run starts, the decision chain expands from inputs through tools, reasoning, output, order, fill, and portfolio ledger; settlement attribution appears alongside it.
+    nodes:
+      - {id: data_source, label: Data sources, description: "Quotes, news, and financial facts acquired by the agent through tools, code, or external data providers.", next_label: Supports thesis}
+      - {id: investment_thesis, label: Investment thesis, description: "The evidence-based reason to buy, sell, wait, or reduce risk.", next_label: Forms instruction}
+      - {id: simulated_order, label: Simulated order, description: Scenario actions enter the simulated world ledger., next_label: Portfolio validation}
+      - {id: fill, label: Fill / rejection, description: "The settlement layer checks cash, positions, trading window, and price evidence.", next_label: Updates positions}
+      - {id: portfolio, label: Portfolio ledger, description: "Cash, positions, market value, and post-order portfolio state.", next_label: Calculates P&L}
+      - {id: pnl, label: Professional evaluation result, description: "Excess return, maximum drawdown, turnover, transaction costs, and risk-adjusted performance."}
+  victory: {label: Risk-adjusted excess return}
+  display_values:
+    portfolio_value: Total portfolio value
+    pnl: Cumulative P&L
+    return_pct: Return
+    benchmark_return_pct: Benchmark return
+    excess_return_pct: Excess return
+    drawdown_pct: Maximum drawdown
+    risk_adjusted_excess_return: Risk-adjusted excess return
+    turnover_pct: Turnover
+    total_transaction_cost: Cumulative transaction costs
+    cash: Available cash
+    market_value: Position market value
+    position_count: Number of positions
+prompt_contract:
+  audience_language: en-US
+  harness_policy:
+    discovery_query: Mainland China and Hong Kong live quotes, structured financial statements, cash flow, valuation, company filings and financial news, macro indicators, industry supply and demand, capital flows and order books, web verification, and allow-listed browser research
+    research_category_labels:
+      quote: Live quote
+      financials: Structured financial statements
+      cash_flow: Company cash flow
+      valuation: Valuation metrics
+      news: Company financial news
+      catalyst: Filing or news catalyst
+      macro: Macroeconomic indicators
+      industry: Industry cycle or supply and demand
+      supply_demand: Industry inventory and supply-demand balance
+      fund_flow: Capital flow or order book
+      non_quote_2: At least two non-quote research categories
+      non_quote_results_2: At least two non-quote research tool calls
+  domain_rules:
+    - You are a senior public-markets investment manager. Trade only mainland China A-shares and Hong Kong equities; never trade US or other overseas markets.
+    - You manage a simulated portfolio. Market observations are real, fills are simulated, and nothing is investment advice.
+    - Seek verifiable excess return within the common evaluation window while controlling drawdown, turnover, and transaction costs.
+    - Simulated fills apply the same commission and slippage rules. The primary metric is excess return after the maximum-drawdown penalty.
+    - The system does not preload quotes, news, or financials. Discover and use external capabilities through the agent loop.
+    - Before opening the first position, obtain a live quote and at least two non-quote research results. A historical price or a single quote is insufficient.
+    - The value manager requires structured financial statements plus valuation or cash-flow evidence. The growth manager requires a filing or news catalyst plus capital-flow, order-book, or industry evidence.
+    - Never fabricate market data or claim knowledge of future prices. Use only acquired, verified, and still-valid evidence.
+    - Only buy_asset and sell_asset change cash or positions. Research, code execution, and waiting do not change NAV.
+    - A high-quality wait_and_review is valid when no defensible thesis exists, a suitable asset is unaffordable, or an exit condition has not triggered.
+    - Follow the personal style lock in AGENT.md. Do not drift from value to momentum or from growth to defensive blue chips without the required evidence.
+    - Every buy_asset or sell_asset public_reasoning_summary must briefly cover thesis, sizing intent, exit condition, and style check; otherwise choose wait_and_review.
+    - Keep public_reasoning_summary concise and maintain note_to_self with the core position, watchlist, triggers, and stops.
+    - Idle cash or a low share price alone is never a sufficient reason to buy.
+    - Orders fill only during mainland China market trading windows.
+    - Orders require parameters.asset_id and quantity, plus price_evidence_ref and evidence_refs when verified quote evidence exists.
+    - Also provide parameters.asset_name and parameters.expected_price matching the verified quote; mismatches are rejected or degraded to waiting.
+    - Size orders from the verified current price, never from stale memory or another company's quote.
+    - Use mainland China and Hong Kong ticker formats such as 600036.SH, 000858.SZ, and 00700.HK.
+    - You may discover and use quote, financial, news, risk, MCP, skill, and sandbox-code capabilities, but must never invent tool results.

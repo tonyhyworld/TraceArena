@@ -211,6 +211,8 @@ class RenderUIConfig(BaseModel):
     metrics: Dict[str, Any] = Field(default_factory=dict)
     resources: Dict[str, Any] = Field(default_factory=dict)
     panels: Dict[str, Any] = Field(default_factory=dict)
+    market_panels: Dict[str, Any] = Field(default_factory=dict)
+    trace: Dict[str, Any] = Field(default_factory=dict)
     status_labels: Dict[str, str] = Field(default_factory=dict)
     milestone_banner: Dict[str, str] = Field(default_factory=dict)
     thought_display_policy: Dict[str, Any] = Field(default_factory=dict)
@@ -905,6 +907,25 @@ class ScenarioBootKernel:
         if not isinstance(raw, dict):
             raise ScenarioLoadError(f"场景语言包必须是对象: {path}")
 
+        def _merge_text(target: Any, overlay: Any) -> None:
+            """Recursively replace text while preserving executable contracts."""
+            if not isinstance(target, dict) or not isinstance(overlay, dict):
+                return
+            for key, value in overlay.items():
+                current = target.get(key)
+                if isinstance(value, str) and (current is None or isinstance(current, str)):
+                    target[key] = value
+                elif isinstance(value, dict) and isinstance(current, dict):
+                    _merge_text(current, value)
+                elif isinstance(value, list) and isinstance(current, list) and all(isinstance(item, str) for item in value) and all(isinstance(item, str) for item in current):
+                    target[key] = list(value)
+                elif isinstance(value, list) and isinstance(current, list) and all(isinstance(item, dict) for item in value) and all(isinstance(item, dict) for item in current):
+                    by_id = {str(item.get("id") or ""): item for item in current}
+                    for item_overlay in value:
+                        item_id = str(item_overlay.get("id") or "")
+                        if item_id and item_id in by_id:
+                            _merge_text(by_id[item_id], item_overlay)
+
         manifest = raw.get("manifest") or {}
         if isinstance(manifest, dict):
             for field in ("name", "description"):
@@ -923,7 +944,12 @@ class ScenarioBootKernel:
                         if isinstance(values.get(field), str):
                             setattr(role, field, values[field])
 
-        for items, key in ((scenario.actions_cfg, "actions"),):
+        for items, key in (
+            (scenario.actions_cfg, "actions"),
+            (scenario.resources_cfg, "resources"),
+            (scenario.objects_cfg, "objects"),
+            (scenario.tools_cfg, "tools"),
+        ):
             labels = raw.get(key) or {}
             if isinstance(labels, dict):
                 for item in items:
@@ -944,6 +970,20 @@ class ScenarioBootKernel:
             scenario.presentation.ui_text.update({
                 key: value for key, value in ui_text.items() if isinstance(value, str)
             })
+        render_ui = raw.get("render_ui") or {}
+        if isinstance(render_ui, dict):
+            ui_payload = scenario.presentation.render.ui.model_dump()
+            _merge_text(ui_payload, render_ui)
+            scenario.presentation.render.ui = RenderUIConfig(**ui_payload)
+        for attr, key in (
+            ("settlement_cfg", "settlement"),
+            ("audit_cfg", "audit"),
+            ("prompt_contract", "prompt_contract"),
+        ):
+            overlay = raw.get(key) or {}
+            target = getattr(scenario, attr)
+            if isinstance(target, dict) and isinstance(overlay, dict):
+                _merge_text(target, overlay)
         logger.info("[L0] applied scenario locale %s from %s", locale, path)
 
     # 通用 Agent 能力维度，仅用于校验场景声明。
