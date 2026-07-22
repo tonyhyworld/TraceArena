@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Raised the minimum supported versions of cryptography, MCP, Pydantic, PyJWT,
+  pytest, python-dotenv and python-multipart to releases containing published
+  security fixes; the lockfile already resolves to versions at or above these
+  floors.
 - Centralized validation for user, scenario, agent, run and dataset path components.
 - Replaced bulk ZIP extraction with bounded, traversal-safe extraction that rejects
   symlinks, special files and oversized expanded archives.
