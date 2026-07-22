@@ -49,6 +49,8 @@ TraceArena 首先回答一个具体问题：**当两个投资 Agent 获得相同
 
 **新增：**可以复现[投资智能体基准 v1 协议基线](docs/benchmarks/investment-agent-v1.zh-CN.md)，并查看[仓库内结果](benchmarks/investment-agent-v1/LEADERBOARD.md)。当前参赛者均明确标记为脚本控制组，不会冒充真实模型排行榜。
 
+[![在 Colab 打开投资基准 v1](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/tonyhyworld/TraceArena/blob/main/examples/investment_benchmark/TraceArena_Investment_Benchmark_v1.ipynb)
+
 资本市场是 TraceArena 的旗舰验证场景，而不是平台边界。同一套 OS 仍可通过场景包装载城市治理、医药研发、物流、运营或其他专业决策世界。
 
 ## 一条命令安装
@@ -135,6 +137,7 @@ TraceArena 不是数据仓库，也不承诺所有问题都有通用最优答案
 | 不安装任何东西先看一次运行 | [打开在线 Demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html) |
 | 本地运行确定性 Replay | [五分钟上手](docs/quickstart.zh-CN.md) |
 | 查看投资评测契约 | [打开投资智能体基准 v1](docs/benchmarks/investment-agent-v1.zh-CN.md) |
+| 无需本地配置直接复现 | [打开固定版本的 Colab Notebook](https://colab.research.google.com/github/tonyhyworld/TraceArena/blob/main/examples/investment_benchmark/TraceArena_Investment_Benchmark_v1.ipynb) |
 | 构建新的 Agent 世界 | [提出场景包](https://github.com/tonyhyworld/TraceArena/issues/2) |
 | 为团队加载一个私有 AI 世界 | [启动 AI World 试点](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml) |
 
