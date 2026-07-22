@@ -1,6 +1,20 @@
 # Changelog
 
-## Unreleased — 2026-07-21
+## v0.1.11 — 2026-07-22
+
+- Added the professional capital-market evaluation scenario and its complete
+  English locale overlay.
+- Completed bilingual viewer, operator console, archive, model-analysis,
+  training-data and user-management presentation.
+- Made locale switching non-disruptive: the active evaluation keeps its state,
+  while the next reset adopts the selected Agent language.
+- Added an automated authenticated-UI localization contract test.
+- Corrected the documented public-repository scope to match the local
+  authentication, viewer and operator-console code that is now included.
+- Restricted GitHub Actions token permissions, pinned third-party Actions to
+  immutable commits and added weekly Dependabot updates.
+
+## World Adapter architecture — 2026-07-21
 
 - Aligned the public capital-market scenario core at scenario version `0.2.1`.
 - Tightened order-price identity validation to the canonical 8% tolerance.

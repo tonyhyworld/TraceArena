@@ -8,6 +8,9 @@ on:
   pull_request:
     branches: ["**"]
 
+permissions:
+  contents: read
+
 jobs:
   backend:
     name: Public runtime smoke test
@@ -17,10 +20,10 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: 安装 Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
           cache: pip
@@ -43,6 +46,7 @@ jobs:
             backend/tests/test_market_replay_cli.py \
             backend/tests/test_market_replay_pipeline.py \
             backend/tests/test_public_asset_provenance.py \
+            backend/tests/test_frontend_i18n_contract.py \
             backend/tests/test_scenario_locale.py
 
       - name: Validate static public Viewer
@@ -65,10 +69,10 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
           cache: npm

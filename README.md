@@ -96,7 +96,7 @@ perception → planning → evidence → tools/code → action
 
 - declarative world contracts for resources, goals, rules, roles, actions, tools, visibility and settlement;
 - a multi-agent tick pipeline with observations, actions, events and authoritative outcomes;
-- game-style comparison of alternative paths under the same world constraints;
+- structured comparison of alternative paths under the same world constraints;
 - deterministic replay and evidence-linked traces;
 - validation and purity tools for keeping domain rules out of the generic runtime;
 - a no-key synthetic Market Replay example for local evaluation.
@@ -231,7 +231,7 @@ used by the no-key replay.
 
 ## Repository scope
 
-This public runtime candidate intentionally excludes private authentication and operator control planes, the commercial viewer, external-agent gateway routes, and the private 三子夺嫡 scenario and all of its assets. The synthetic Market Replay uses the separately reviewed public capital-market example package.
+The public repository includes local authentication, the viewer, and the operator evaluation console. It intentionally excludes credentials, customer data, private run archives, enterprise-only integrations, and private scenarios such as 三子夺嫡. The synthetic Market Replay and the `capital_market` Public Edition are separately reviewed, safe-by-default examples; users supply and govern any optional model or data-provider credentials locally.
 
 ## Status
 
@@ -256,10 +256,9 @@ this repository** action.
 - Tell us how the first run went through the [first-run feedback form](https://github.com/tonyhyworld/TraceArena/issues/new?template=first-run-feedback.yml).
 - To load a bounded private AI World with your team, use the [AI World Pilot request form](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml).
 - For implementation, integration, or evaluation support, see the [commercial support path](docs/commercial-support.md).
-- For a concrete 10-day pilot scope, deliverables, acceptance criteria, and starting price, see the [pilot one-pager](docs/agent-evaluation-pilot.md).
+- For a concrete 10-day pilot scope, deliverables, acceptance criteria, and starting price, see the [pilot one-pager](docs/open_source_release/PILOT_ONE_PAGER.md).
 - For public benchmark and open-source sustainability paths, see the [funding research note](docs/open_source_release/FUNDING_PATHS.md).
 - For a speaker, research, or media introduction, see the [founder profile](docs/FOUNDER_PROFILE.md).
-- For a one-page pilot scope, deliverables, acceptance criteria, and starting price, see the [pilot one-pager](docs/open_source_release/PILOT_ONE_PAGER.md).
 - To discuss a design-partner pilot publicly, see the [design-partner call](https://github.com/tonyhyworld/TraceArena/issues/7).
 - Maintainers can use the [adoption log template](docs/open_source_release/ADOPTION_LOG_TEMPLATE.md) to report aggregate, auditable adoption signals without collecting unnecessary personal data.
 
