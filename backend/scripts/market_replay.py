@@ -45,17 +45,44 @@ _VOLATILE_REPLAY_FIELDS = frozenset({
     "created_at",
 })
 
+# Agents run concurrently, so records produced within the same tick can arrive
+# in either order.  These ledgers are sets keyed by their contract identifiers;
+# list position is not part of replay semantics.  Action scripts nested inside
+# a record remain order-sensitive.
+_ORDER_INDEPENDENT_REPLAY_LISTS = frozenset({
+    "world_actions",
+    "external_observations",
+    "world_events",
+    "settlements",
+    "tool_runs",
+    "evidence_refs",
+    "observation_refs",
+    "source_activity_refs",
+    "source_event_refs",
+    "source_settlement_refs",
+    "subject_ids",
+    "target_ids",
+})
 
-def _semantic_replay_value(value: Any) -> Any:
+
+def _semantic_replay_value(value: Any, *, field_name: str = "") -> Any:
     """Return replay content with per-execution identity/timing removed."""
     if isinstance(value, dict):
         return {
-            key: _semantic_replay_value(item)
+            key: _semantic_replay_value(item, field_name=key)
             for key, item in value.items()
             if key not in _VOLATILE_REPLAY_FIELDS
         }
     if isinstance(value, list):
-        return [_semantic_replay_value(item) for item in value]
+        normalized = [_semantic_replay_value(item) for item in value]
+        if field_name in _ORDER_INDEPENDENT_REPLAY_LISTS:
+            return sorted(
+                normalized,
+                key=lambda item: json.dumps(
+                    item, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+                ),
+            )
+        return normalized
     return value
 
 

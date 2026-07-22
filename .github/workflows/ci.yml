@@ -49,6 +49,7 @@ jobs:
             backend/tests/test_replay_provider.py \
             backend/tests/test_market_replay_cli.py \
             backend/tests/test_market_replay_pipeline.py \
+            backend/tests/test_investment_benchmark_cli.py \
             backend/tests/test_public_asset_provenance.py \
             backend/tests/test_frontend_i18n_contract.py \
             backend/tests/test_security_boundaries.py \
@@ -66,6 +67,15 @@ jobs:
           elapsed=$(( $(date +%s) - REPLAY_START_EPOCH ))
           echo "Dependency install through replay: ${elapsed}s"
           test "$elapsed" -le 300
+
+      - name: Reproduce Investment Agent Benchmark v1
+        run: |
+          PYTHONPATH=backend uv run python backend/scripts/investment_benchmark.py \
+            --output /tmp/tracearena-investment-benchmark-v1
+          diff -u benchmarks/investment-agent-v1/benchmark_report.json \
+            /tmp/tracearena-investment-benchmark-v1/benchmark_report.json
+          diff -u benchmarks/investment-agent-v1/LEADERBOARD.md \
+            /tmp/tracearena-investment-benchmark-v1/LEADERBOARD.md
 
   frontend:
     name: Frontend production build
