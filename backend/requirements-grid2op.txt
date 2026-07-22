@@ -1,4 +1,4 @@
 # Optional dependency set for the builtin:Grid2Op world adapter.
 # Install after the base backend requirements:
 #   pip install -r requirements-grid2op.txt
-grid2op>=1.10,<2
+grid2op>=1.12.5,<2
