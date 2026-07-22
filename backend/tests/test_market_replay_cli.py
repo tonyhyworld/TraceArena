@@ -10,6 +10,13 @@ SCRIPT = ROOT / "backend/scripts/market_replay.py"
 FIXTURE = ROOT / "examples/market_replay/fixture.json"
 
 
+def _digest_module():
+    sys.path.insert(0, str(ROOT / "backend/scripts"))
+    import market_replay
+
+    return market_replay
+
+
 def test_market_replay_cli_is_no_key_and_exports_authoritative_replay(tmp_path):
     output = tmp_path / "replay"
     env = dict(os.environ)
@@ -128,3 +135,40 @@ def test_market_replay_semantic_digest_is_stable_across_runs(tmp_path):
     assert digests[0] == digests[1]
     # The full-file digest retains per-run identity and is not the comparison key.
     assert integrity_digests[0] != integrity_digests[1]
+
+
+def test_market_replay_semantic_digest_ignores_concurrent_ledger_order():
+    market_replay = _digest_module()
+    replay = {
+        "run_id": "run_a",
+        "ticks": [{
+            "tick": 1,
+            "world_actions": [
+                {
+                    "action_id": "action:b",
+                    "steps": ["research", "act"],
+                    "evidence_refs": ["obs:b", "obs:a"],
+                },
+                {"action_id": "action:a", "steps": ["research", "wait"]},
+            ],
+            "external_observations": [
+                {"observation_id": "obs:b"}, {"observation_id": "obs:a"},
+            ],
+        }],
+    }
+    reordered = json.loads(json.dumps(replay))
+    reordered["run_id"] = "run_b"
+    reordered["ticks"][0]["world_actions"].reverse()
+    next(
+        item for item in reordered["ticks"][0]["world_actions"]
+        if item["action_id"] == "action:b"
+    )["evidence_refs"].reverse()
+    reordered["ticks"][0]["external_observations"].reverse()
+    assert market_replay._replay_digests(replay)[1] == (
+        market_replay._replay_digests(reordered)[1]
+    )
+
+    reordered["ticks"][0]["world_actions"][0]["steps"].reverse()
+    assert market_replay._replay_digests(replay)[1] != (
+        market_replay._replay_digests(reordered)[1]
+    )

@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0",
+  "benchmark_id": "tracearena.investment_agent.v1",
+  "benchmark_status": "contract_baseline",
+  "official_model_leaderboard": false,
+  "claim_scope": "Deterministic protocol proof only; these entries are scripted controls, not model-comparison results.",
+  "scenario_id": "capital_market_dual_agent_v0",
+  "scenario_version": "0.3.0",
+  "fixture_id": "value_catalyst_synthetic_v1",
+  "fixture_sha256": "cdfa13be2d1c1595d89d7e0c5514ba919fadb84496ca6fd6eab4114d7e66c4fd",
+  "fixture_provenance_status": "internal_synthetic_pending_approval",
+  "fixture_license": "CC0-1.0 (pending maintainer confirmation)",
+  "deterministic_replay_sha256": "e26fbc165d0e2f17264242df598ed9aa19428a9e092f07c19ca34d1019dbd865",
+  "execution_boundary": {
+    "network": "disabled",
+    "brokerage": "disabled",
+    "financial_advice": false
+  },
+  "ranking": {
+    "primary_metric": "risk_adjusted_excess_return",
+    "order": "descending",
+    "tie_breaker": "total_transaction_cost ascending",
+    "formula": "excess_return_pct - 0.5 * max_drawdown_pct"
+  },
+  "entries": [
+    {
+      "entrant_id": "investor_b",
+      "label": "cash-control scripted baseline",
+      "entrant_type": "deterministic_script",
+      "model_claim": false,
+      "provider": "replay",
+      "model": "replay-v1",
+      "metrics": {
+        "portfolio_value": 1000.0,
+        "return_pct": 0.0,
+        "excess_return_pct": 0.0,
+        "drawdown_pct": 0.0,
+        "risk_adjusted_excess_return": 0.0,
+        "turnover_pct": 0.0,
+        "total_transaction_cost": 0.0
+      },
+      "accepted_order_count": 0,
+      "authority": {
+        "mode": "hybrid",
+        "verifier_id": "portfolio_ledger",
+        "rule_version": "capital_market.portfolio_mark_to_market.v2"
+      },
+      "rank": 1
+    },
+    {
+      "entrant_id": "investor_a",
+      "label": "evidence-first scripted baseline",
+      "entrant_type": "deterministic_script",
+      "model_claim": false,
+      "provider": "replay",
+      "model": "replay-v1",
+      "metrics": {
+        "portfolio_value": 999.83997,
+        "return_pct": -0.016003,
+        "excess_return_pct": -0.016003,
+        "drawdown_pct": 0.016003,
+        "risk_adjusted_excess_return": -0.024005,
+        "turnover_pct": 20.01,
+        "total_transaction_cost": 0.16003
+      },
+      "accepted_order_count": 1,
+      "authority": {
+        "mode": "hybrid",
+        "verifier_id": "portfolio_ledger",
+        "rule_version": "capital_market.portfolio_mark_to_market.v2"
+      },
+      "rank": 2
+    }
+  ],
+  "report_sha256": "65cd80e8c9fd33df23ee80eacfb97102d28166ad0c87a1e39f19fa381cf549e1"
+}

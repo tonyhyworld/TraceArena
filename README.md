@@ -34,6 +34,8 @@ The [`capital_market` Public Edition](backend/scenarios/capital_market/) is a pr
 
 Start without an API key using the deterministic synthetic replay, or bring your own model and authorized read-only research tools for a controlled comparison. The scenario never connects to a brokerage and does not provide investment advice.
 
+**New:** reproduce the [Investment Agent Benchmark v1 contract baseline](docs/benchmarks/investment-agent-v1.md) and inspect its [checked-in result](benchmarks/investment-agent-v1/LEADERBOARD.md). The current entries are clearly labelled scripted controls—not model leaderboard claims.
+
 The capital-market world is the flagship proof of a broader reusable framework: define the **goal, resources, constraints, tools, success criteria and how the world responds**, then let multiple Agents compete inside that world. City governance, drug discovery, logistics, operations or a problem only you understand can become scenario packs instead of one-off demos. The system runs the process, compares paths and makes every decision visible from evidence to action to outcome.
 
 The feedback mechanism does not have to be a complete physical twin. A scenario can use **expert rules, deterministic algorithms, a trained World Agent, a professional simulator, a real system, or a traceable hybrid**. TraceArena connects all six through one World Adapter contract and records their provenance, assumptions, confidence, validation evidence and limits. Teams can start with a useful bounded model and increase fidelity over time.
@@ -85,6 +87,7 @@ See the [World Model / Adapter SDK](docs/WORLD_ADAPTER_SDK.md) and the [authorit
 | --- | --- |
 | See a world run without installing anything | [Open the live Demo](https://tonyworld888-tracearena-demo.static.hf.space/index.html) |
 | Run a deterministic replay locally | [Follow the five-minute Quickstart](docs/quickstart.md) |
+| Inspect the investment evaluation contract | [Open Investment Agent Benchmark v1](docs/benchmarks/investment-agent-v1.md) |
 | Build a new agent world | [Propose a scenario pack](https://github.com/tonyhyworld/TraceArena/issues/2) |
 | Load a private AI World with your team | [Start an AI World Pilot](.github/ISSUE_TEMPLATE/agent-evaluation-pilot.yml) |
 
