@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.auth.dependencies import get_current_user
 from app.auth.models import User
-from app.core.path_safety import path_beneath
+from app.core.path_safety import path_beneath, safe_path_component
 
 router = APIRouter(prefix="/operator")
 
@@ -163,9 +163,13 @@ def _agent_map(run_dir: Path) -> Dict[str, Dict[str, Any]]:
     }
 
 
-def _assert_agent_id(agent_id: str) -> None:
+def _validated_agent_id(agent_id: str) -> str:
     if not _AGENT_ID_RE.match(agent_id):
         raise HTTPException(400, "非法 agent_id")
+    try:
+        return safe_path_component(agent_id, label="agent_id")
+    except ValueError as exc:
+        raise HTTPException(400, "非法 agent_id") from exc
 
 
 def _model_key(agent: Dict[str, Any]) -> str:
@@ -961,7 +965,8 @@ async def get_metrics_timeline(run_id: str, user: User = Depends(get_current_use
 
 
 def _cot_ticks_from_files(run_dir: Path, agent_id: str) -> List[Dict[str, Any]]:
-    cot_dir = run_dir / "agents" / agent_id / "cot"
+    safe_agent_id = _validated_agent_id(agent_id)
+    cot_dir = path_beneath(run_dir, "agents", safe_agent_id, "cot")
     if not cot_dir.is_dir():
         return []
     ticks: Dict[int, Dict[str, Any]] = {}
@@ -1008,7 +1013,7 @@ def _cot_ticks_from_diagnostics(run_dir: Path, agent_id: str) -> List[Dict[str, 
 @router.get("/runs/{run_id}/agent/{agent_id}/cot")
 async def list_agent_cot(run_id: str, agent_id: str, user: User = Depends(get_current_user)) -> Dict[str, Any]:
     """列出某 Agent 可追溯的决策 Tick。"""
-    _assert_agent_id(agent_id)
+    agent_id = _validated_agent_id(agent_id)
     run_dir = _safe_run_dir(run_id, user.user_id)
     agents = _agent_map(run_dir)
     ticks = _cot_ticks_from_files(run_dir, agent_id)
@@ -1016,7 +1021,7 @@ async def list_agent_cot(run_id: str, agent_id: str, user: User = Depends(get_cu
     if not ticks:
         ticks = _cot_ticks_from_diagnostics(run_dir, agent_id)
         source = "diagnostics"
-    charter_path = run_dir / "agents" / agent_id / "charter.md"
+    charter_path = path_beneath(run_dir, "agents", agent_id, "charter.md")
     return {
         "run_id": run_id,
         "agent_id": agent_id,
@@ -1030,16 +1035,16 @@ async def list_agent_cot(run_id: str, agent_id: str, user: User = Depends(get_cu
 @router.get("/runs/{run_id}/agent/{agent_id}/cot/{tick}")
 async def get_agent_cot_tick(run_id: str, agent_id: str, tick: int, user: User = Depends(get_current_user)) -> Dict[str, Any]:
     """读取某 Agent 某 Tick 的 prompt / response / decision；缺文件时从 diagnostics 尽量还原。"""
-    _assert_agent_id(agent_id)
+    agent_id = _validated_agent_id(agent_id)
     if tick < 0:
         raise HTTPException(400, "非法 tick")
     run_dir = _safe_run_dir(run_id, user.user_id)
-    cot_dir = run_dir / "agents" / agent_id / "cot"
+    cot_dir = path_beneath(run_dir, "agents", agent_id, "cot")
     stem = f"tick_{tick:03d}"
-    prompt_path = cot_dir / f"{stem}_prompt.md"
-    response_path = cot_dir / f"{stem}_response.txt"
-    decision_path = cot_dir / f"{stem}_decision.json"
-    charter_path = run_dir / "agents" / agent_id / "charter.md"
+    prompt_path = path_beneath(cot_dir, f"{stem}_prompt.md")
+    response_path = path_beneath(cot_dir, f"{stem}_response.txt")
+    decision_path = path_beneath(cot_dir, f"{stem}_decision.json")
+    charter_path = path_beneath(run_dir, "agents", agent_id, "charter.md")
 
     result: Dict[str, Any] = {
         "run_id": run_id,

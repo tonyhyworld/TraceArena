@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from app.api.operator_runs import _scenario_label_maps
+from app.api.operator_runs import _cot_ticks_from_files
 from app.api.scenario_upload import _safe_extract
 from app.auth import crypto
 from app.auth.jwt_utils import create_token, decode_token
@@ -92,6 +93,11 @@ def test_archive_labels_do_not_follow_manifest_paths(tmp_path: Path) -> None:
     action_labels, *_ = _scenario_label_maps(run_dir)
     assert action_labels == {"frozen": "Frozen"}
     assert "injected" not in action_labels
+
+
+def test_agent_cot_paths_reject_traversal(tmp_path: Path) -> None:
+    with pytest.raises(HTTPException):
+        _cot_ticks_from_files(tmp_path, "../outside")
 
 
 def test_auth_secrets_are_required_and_never_written(monkeypatch: pytest.MonkeyPatch) -> None:
