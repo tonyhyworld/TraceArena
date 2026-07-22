@@ -40,7 +40,8 @@ def test_market_replay_cli_is_no_key_and_exports_authoritative_replay(tmp_path):
     terminal = replay["ticks"][-1]["settlements"]
     investor_a = next(item for item in terminal if "investor_a" in item["subject_ids"])
     assert investor_a["outcome"] == "portfolio_marked_to_market"
-    assert investor_a["values"]["cash"] == 800.0
+    assert investor_a["values"]["cash"] == 799.83997
+    assert investor_a["values"]["total_transaction_cost"] == 0.16003
 
 
 def test_market_replay_cli_completes_when_socket_connections_are_blocked(tmp_path):

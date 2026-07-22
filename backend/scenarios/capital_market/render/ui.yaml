@@ -1,13 +1,21 @@
 metrics:
-  primary: metric_portfolio_value
+  primary: metric_risk_adjusted_return
   visible:
     - metric_portfolio_value
     - metric_portfolio_pnl
     - metric_portfolio_return
+    - metric_excess_return
+    - metric_max_drawdown
+    - metric_risk_adjusted_return
+    - metric_turnover
   labels:
     metric_portfolio_value: 组合总资产
     metric_portfolio_pnl: 浮动盈亏
     metric_portfolio_return: 收益率
+    metric_excess_return: 基准超额收益率
+    metric_max_drawdown: 最大回撤
+    metric_risk_adjusted_return: 风险调整后超额收益
+    metric_turnover: 换手率
 resources:
   primary: cash
   labels:
@@ -19,7 +27,7 @@ panels:
 market_panels:
   portfolio:
     title: 组合账本
-    fields: [cash, positions, market_value, pnl, return_pct]
+    fields: [cash, positions, market_value, pnl, return_pct, excess_return_pct, drawdown_pct, risk_adjusted_excess_return, turnover_pct, total_transaction_cost]
     empty: 尚未成交，组合仍全部为现金。
   orders:
     title: 模拟订单
@@ -49,8 +57,8 @@ trace:
       helper: 现金、股票数量和持仓市值如何变化。
     - id: pnl
       label: 盈亏结果
-      helper: 终局按组合总资产、收益率和回撤比较胜负。
+      helper: 评测报告统一展示超额收益、最大回撤、换手率和交易成本。
 status_labels:
   active: 运行中
   inactive: 已停止
-  eliminated: 已退出市场
+  eliminated: 已停止评测

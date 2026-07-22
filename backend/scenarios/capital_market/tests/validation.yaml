@@ -15,9 +15,9 @@ validation:
     locations: []
     actions: [buy_asset, sell_asset, wait_and_review]
     tools: []
-    metrics: [metric_portfolio_value, metric_portfolio_pnl, metric_portfolio_return]
+    metrics: [metric_portfolio_value, metric_portfolio_pnl, metric_portfolio_return, metric_excess_return, metric_max_drawdown, metric_risk_adjusted_return, metric_turnover]
     objects: [portfolio_book, risk_dashboard]
   minimum_counts:
     actions: 3
     objects: 2
-    metrics: 3
+    metrics: 7

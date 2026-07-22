@@ -25,6 +25,10 @@ bindings:
     metric_portfolio_value: metric_portfolio_value_render
     metric_portfolio_pnl: metric_portfolio_pnl_render
     metric_portfolio_return: metric_portfolio_return_render
+    metric_excess_return: metric_excess_return_render
+    metric_max_drawdown: metric_max_drawdown_render
+    metric_risk_adjusted_return: metric_risk_adjusted_return_render
+    metric_turnover: metric_turnover_render
   outcomes:
     portfolio_marked_to_market: outcome_portfolio_marked_render
     order_rejected: outcome_order_rejected_render

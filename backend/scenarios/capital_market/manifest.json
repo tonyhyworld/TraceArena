@@ -1,8 +1,8 @@
 {
   "scenario_id": "capital_market_dual_agent_v0",
-  "name": "资本市场投资模拟 v0",
-  "version": "0.2.0",
-  "description": "Public Edition：两个投资 Agent 在相同初始资金与工具权限下研究并交易；可使用无 Key 回放，也可由用户自带模型和只读市场工具，始终在模拟账本中结算。",
+  "name": "资本市场专业评测",
+  "version": "0.3.0",
+  "description": "Public Edition：两个投资 Agent 在统一资金、数据与工具约束下接受专业评测；支持无 Key 回放或用户自带模型与只读市场工具，模拟账本统一计入交易成本并输出风险调整超额收益。",
   "os_version": ">=1.0.0",
   "scenario_api_version": "1.0",
   "required_os_capabilities": [

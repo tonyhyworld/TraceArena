@@ -1,6 +1,8 @@
 actions:
-  action_buy_asset_render: {animation: talk, camera: actor_closeup, effect: order_flash, sound: order_filled, ui_panel: trade_ticket, duration_ms: 2400, fallback: {missing_animation: idle, ui_text: "提交买入订单。"}}
-  action_sell_asset_render: {animation: talk, camera: actor_closeup, effect: order_flash, sound: order_filled, ui_panel: trade_ticket, duration_ms: 2200, fallback: {missing_animation: idle, ui_text: "提交卖出订单。"}}
+  # Action renders mean "submitted", never "filled".  The authoritative
+  # settlement outcome below is the only place that may show an order fill.
+  action_buy_asset_render: {animation: talk, camera: actor_closeup, effect: neutral_pulse, ui_panel: trade_ticket, duration_ms: 2400, fallback: {missing_animation: idle, ui_text: "已提交买入订单，等待世界结算。"}}
+  action_sell_asset_render: {animation: talk, camera: actor_closeup, effect: neutral_pulse, ui_panel: trade_ticket, duration_ms: 2200, fallback: {missing_animation: idle, ui_text: "已提交卖出订单，等待世界结算。"}}
   action_wait_and_review_render: {animation: think, camera: camera_close, effect: neutral_pulse, ui_panel: review_card, duration_ms: 2000, fallback: {missing_animation: idle, ui_text: "等待并复盘。"}}
   outcome_portfolio_marked_render: {animation: success, camera: object_focus, effect: glow, sound: portfolio_settled, ui_panel: portfolio_card, duration_ms: 2200, fallback: {missing_animation: idle, ui_text: "组合完成本回合结算。"}}
   outcome_order_rejected_render: {animation: think, camera: actor_closeup, effect: backlash_hit, ui_panel: trade_ticket, duration_ms: 2400, fallback: {missing_animation: idle, ui_text: "订单未成交。"}}

@@ -9,7 +9,7 @@ stage:
   depth: 18
 ui_text:
   title: AI 资本市场 · A股 / 港股
-  subtitle: 两位资深投资经理的实盘对决
+  subtitle: 两位资深投资经理的统一专业评测
   notice_label: 市场说明
   notice_tooltip: 查看市场规则与考核目标
   narrative_title: 盘面演绎
@@ -20,10 +20,10 @@ ui_text:
   intervention_label: 市场事件
   intervention_placeholder: 注入一条市场突发事件，回车发送…
   variables_label: 市场变量
-  ranking_score_label: 组合总资产
-  ranking_leading: 资产领先
+  ranking_score_label: 风险调整超额
+  ranking_leading: 评测领先
   ranking_gap_prefix: 少
-  ranking_eliminated: 已退出
+  ranking_eliminated: 已停止
 ui_theme:
   accent_primary: '#4cc9f0'
   accent_secondary: '#68f7a5'

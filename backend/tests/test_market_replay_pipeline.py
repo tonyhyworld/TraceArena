@@ -129,7 +129,8 @@ async def test_market_replay_uses_engine_action_event_settlement_ledger_chain(tm
     filled = [item for item in settlements if item.outcome == "portfolio_marked_to_market"]
     assert filled
     a_record = next(item for item in filled if "investor_a" in item.subject_ids)
-    assert a_record.values["cash"] == 800.0
-    assert a_record.values["portfolio_value"] == 1000.0
+    assert a_record.values["cash"] == 799.83997
+    assert a_record.values["portfolio_value"] == 999.83997
+    assert a_record.values["total_transaction_cost"] == 0.16003
     assert any(item.source_event_refs for item in settlements)
     assert engine._trace.run_id

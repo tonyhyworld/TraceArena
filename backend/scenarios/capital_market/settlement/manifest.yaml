@@ -42,7 +42,17 @@ portfolio_ledger:
   initial_cash: 1000
   order_model: simulated_fill
   fill_price_source: latest_verified_quote
-  description: 买入/卖出是 AI World 内部模拟成交，不会连接真实券商；现金、持仓、成交和盈亏全部由场景结算层维护。港股按 HKD→CNY 折算后记账。
+  description: 买入/卖出是 AI World 内部模拟成交，不会连接真实券商；现金、持仓、成交、交易成本和盈亏全部由场景结算层维护。港股按 HKD→CNY 折算后记账。
+transaction_costs:
+  commission_bps: 3.0
+  slippage_bps: 5.0
+  minimum_commission: 0.0
+benchmark:
+  id: cash
+  name: 现金基准
+  return_pct: 0.0
+risk_adjustment:
+  drawdown_penalty: 0.5
 operator_trace:
   title: 投资解释链
   # OS 运营台左侧「本回合全过程」按此类型 ID 套用 hybrid 链路模型。
@@ -76,9 +86,9 @@ operator_trace:
       description: 展示现金、持仓、市值和订单后的组合状态。
       next_label: 计算盈亏
     - id: pnl
-      label: 盈亏结果
+      label: 专业评测结果
       kind: pnl
-      description: 根据成交价、当前估值价格和持仓数量计算收益率、回撤和终局排名。
+      description: 根据成交价、交易成本、当前估值和基准收益计算超额收益、最大回撤、换手率及风险调整结果。
 
 execution:
   default:
@@ -100,32 +110,40 @@ providers:
     handles: [action_resolved]
   - id: portfolio_mark_to_market
     authority: hybrid
-    rule_version: capital_market.portfolio_mark_to_market.v1
+    rule_version: capital_market.portfolio_mark_to_market.v2
     component_modes: [external_reality, deterministic_verifier]
     handles: [trade_executed, market_price_closed, action_resolved, finalize]
   - id: portfolio_cash_ledger
     authority: deterministic_verifier
     verifier_id: portfolio_ledger
-    rule_version: capital_market.portfolio_mark_to_market.v1
+    rule_version: capital_market.portfolio_mark_to_market.v2
     handles: [finalize]
 victory:
   provider_id: portfolio_mark_to_market
-  value: portfolio_value
+  value: risk_adjusted_excess_return
   order: descending
-  label: 终局组合总资产
+  label: 风险调整后超额收益
 display_values:
   portfolio_value: 组合总资产
   pnl: 累计盈亏
   return_pct: 收益率
+  benchmark_return_pct: 基准收益率
+  excess_return_pct: 超额收益率
+  drawdown_pct: 最大回撤
+  risk_adjusted_excess_return: 风险调整后超额收益
+  turnover_pct: 换手率
+  total_transaction_cost: 累计交易成本
   cash: 可用现金
   market_value: 持仓市值
   position_count: 持仓数量
-  reward_total: 累计现金奖励
-  redeemed_total: 累计被赎回
 metric_bindings:
   metric_portfolio_value: {value: portfolio_value, transform: identity}
   metric_portfolio_pnl: {value: pnl, transform: identity}
   metric_portfolio_return: {value: return_pct, transform: identity}
+  metric_excess_return: {value: excess_return_pct, transform: identity}
+  metric_max_drawdown: {value: drawdown_pct, transform: identity}
+  metric_risk_adjusted_return: {value: risk_adjusted_excess_return, transform: identity}
+  metric_turnover: {value: turnover_pct, transform: identity}
 resource_bindings:
   cash: {value: cash}
 observations:

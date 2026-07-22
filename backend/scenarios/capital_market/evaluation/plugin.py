@@ -13,34 +13,13 @@ class PortfolioAccount:
     cash: float
     initial_value: float
     peak_value: float
+    max_drawdown_pct: float = 0.0
     positions: Dict[str, float] = field(default_factory=dict)
     orders: List[Dict[str, object]] = field(default_factory=list)
-    redeemed: float = 0.0          # 累计被赎回抽走的资金
-    redeemed_at_tick: int = -1     # 本 tick 是否已结算赎回（避免重复扣）
-    rewarded: float = 0.0          # 累计获得的阶梯现金奖励
-    rewarded_tier: int = 0         # 已发放到第几档奖励（每档只发一次）
 
 
 class CapitalMarketSettlementPlugin:
-    plugin_id = "capital_market.portfolio.v1"
-
-    # ── 赎回压力（场景自有：回撤过大 → 持有人赎回抽资 → 净值/排名承压）──
-    # 这是"压力逼涌现"的机制:一旦从净值高点回撤超过阈值,投资者按比例赎回现金,
-    # 逼 Agent 真正控制回撤、不敢无脑重仓豪赌。参数确定、可复现。
-    _REDEMPTION_DRAWDOWN_PCT = 12.0   # 从峰值回撤超过此百分比触发赎回
-    _REDEMPTION_RATE = 0.15           # 每次赎回抽走当前现金的比例
-    _MAX_REDEEMED_RATIO = 0.6         # 累计赎回上限（占初始资金）
-
-    # ── 阶梯现金奖励（压力模型的"奖励侧"，与赎回惩罚对称）──
-    # 收益率每上一个台阶，持有人追加一次性现金奖励（每档只发一次），
-    # 让"好策略跑出的好收益"得到正反馈并放大领先。1 小时短交易，收益率
-    # 台阶按日内量级设定；奖励金额随本金（1000 元）等比设定。
-    # 参数确定、可复现。(收益率阈值%, 奖励现金元)
-    _REWARD_TIERS = [
-        (2.0, 10.0),
-        (4.0, 25.0),
-        (6.0, 50.0),
-    ]
+    plugin_id = "capital_market.portfolio.v2"
 
     def __init__(self) -> None:
         self._accounts: Dict[str, PortfolioAccount] = {}
@@ -233,16 +212,28 @@ class CapitalMarketSettlementPlugin:
                         event.observation_refs = linked
                     except Exception:
                         pass
-        price_value = float(price)
+        reference_price = float(price)
         fx = self._fx_multiplier(asset_id, context)
-        notional = signed_quantity * price_value * fx
-        if action_type == "buy_asset" and notional > account.cash:
+        costs = dict(context.world_state.get("transaction_costs") or {})
+        commission_bps = float(costs.get("commission_bps", 0.0) or 0.0)
+        slippage_bps = float(costs.get("slippage_bps", 0.0) or 0.0)
+        minimum_commission = float(costs.get("minimum_commission", 0.0) or 0.0)
+        slippage_rate = slippage_bps / 10000.0
+        fill_price = reference_price * (
+            1.0 + slippage_rate if action_type == "buy_asset"
+            else 1.0 - slippage_rate
+        )
+        gross_notional = signed_quantity * fill_price * fx
+        commission = max(
+            minimum_commission,
+            gross_notional * commission_bps / 10000.0,
+        )
+        if action_type == "buy_asset" and gross_notional + commission > account.cash:
             return False, "insufficient_cash"
         if action_type == "sell_asset":
             if signed_quantity > account.positions.get(asset_id, 0.0):
                 return False, "insufficient_position"
             signed_quantity = -signed_quantity
-            notional = signed_quantity * price_value * fx
         if selected_ref:
             refs = self._event_observations.setdefault(event.event_id, [])
             if selected_ref not in refs:
@@ -255,7 +246,11 @@ class CapitalMarketSettlementPlugin:
                     event.observation_refs = linked
                 except Exception:
                     pass
-        cash_change = -notional
+        cash_change = (
+            -(gross_notional + commission)
+            if action_type == "buy_asset"
+            else gross_notional - commission
+        )
         synthetic = event.model_copy(update={
             "event_type": "trade_executed",
             "target_ids": [asset_id],
@@ -269,9 +264,16 @@ class CapitalMarketSettlementPlugin:
                 "asset_id": asset_id,
                 "action_type": action_type,
                 "quantity_change": signed_quantity,
-                "price": price_value,
+                "price": fill_price,
+                "reference_price": reference_price,
+                "mark_price": reference_price,
                 "cash_change": cash_change,
                 "fx_multiplier": fx,
+                "gross_notional": gross_notional,
+                "commission": commission,
+                "slippage_cost": abs(fill_price - reference_price)
+                * abs(signed_quantity) * fx,
+                "slippage_bps": slippage_bps,
                 "price_evidence_ref": selected_ref,
                 "market_phase": clock_phase,
             },
@@ -757,7 +759,10 @@ class CapitalMarketSettlementPlugin:
                 verified = float(quote_price)
             except (TypeError, ValueError):
                 verified = 0.0
-            if verified > 0 and abs(expected_price - verified) / verified > 0.35:
+            # Keep settlement aligned with the Agent Loop preflight: a
+            # same-tick quote anchors the claimed order price, with only a
+            # modest rounding/slippage tolerance.
+            if verified > 0 and abs(expected_price - verified) / verified > 0.08:
                 return "asset_price_identity_mismatch"
         return ""
 
@@ -951,6 +956,7 @@ class CapitalMarketSettlementPlugin:
             return
         quantity_change = float(event.deltas.get("quantity_change", 0.0))
         price = float(event.deltas.get("price", self._prices.get(asset_id, 0.0)))
+        mark_price = float(event.deltas.get("mark_price", price))
         cash_change = event.deltas.get("cash_change")
         if cash_change is None:
             cash_change = -(quantity_change * price)
@@ -958,14 +964,26 @@ class CapitalMarketSettlementPlugin:
         account.positions[asset_id] = (
             account.positions.get(asset_id, 0.0) + quantity_change
         )
-        self._prices[asset_id] = price
+        self._prices[asset_id] = mark_price
         account.orders.append({
             "tick": event.world_tick,
             "asset_id": asset_id,
             "side": "buy" if quantity_change > 0 else "sell",
             "quantity": abs(quantity_change),
             "price": price,
+            "fill_price": price,
+            "reference_price": float(event.deltas.get("reference_price", price)),
+            "mark_price": mark_price,
             "cash_change": float(cash_change),
+            "gross_notional": float(event.deltas.get(
+                "gross_notional", abs(quantity_change * price)
+            )),
+            "notional": float(event.deltas.get(
+                "gross_notional", abs(quantity_change * price)
+            )),
+            "commission": float(event.deltas.get("commission", 0.0)),
+            "slippage_cost": float(event.deltas.get("slippage_cost", 0.0)),
+            "slippage_bps": float(event.deltas.get("slippage_bps", 0.0)),
             "price_evidence_ref": event.deltas.get("price_evidence_ref"),
             "market_phase": event.deltas.get("market_phase"),
         })
@@ -997,28 +1015,45 @@ class CapitalMarketSettlementPlugin:
         )
         portfolio_value = account.cash + market_value
         account.peak_value = max(account.peak_value, portfolio_value)
-        drawdown_pct = (
+        current_drawdown_pct = (
             (account.peak_value - portfolio_value) / account.peak_value * 100.0
             if account.peak_value else 0.0
         )
-        # ── 赎回压力：回撤超阈值 → 投资者按比例抽走现金（每 tick 至多一次）──
-        redeemed_now = self._apply_redemption_pressure(
-            account, drawdown_pct, int(context.world_tick or 0), final=final
+        account.max_drawdown_pct = max(
+            account.max_drawdown_pct, current_drawdown_pct
         )
-        # 赎回后重算净值口径
-        portfolio_value = account.cash + market_value
+        drawdown_pct = account.max_drawdown_pct
         pnl = portfolio_value - account.initial_value
         return_pct = (
             pnl / account.initial_value * 100.0 if account.initial_value else 0.0
         )
-        # ── 奖励压力：收益率上台阶 → 追加一次性现金奖励（每档一次）──
-        reward_now = self._apply_return_reward(account, return_pct, final=final)
-        if reward_now:
-            portfolio_value = account.cash + market_value
-            pnl = portfolio_value - account.initial_value
-            return_pct = (
-                pnl / account.initial_value * 100.0 if account.initial_value else 0.0
-            )
+        benchmark = dict(context.world_state.get("benchmark") or {})
+        benchmark_return_pct = float(benchmark.get("return_pct", 0.0) or 0.0)
+        excess_return_pct = return_pct - benchmark_return_pct
+        risk_adjustment = dict(context.world_state.get("risk_adjustment") or {})
+        drawdown_penalty = float(
+            risk_adjustment.get("drawdown_penalty", 0.5) or 0.0
+        )
+        risk_adjusted_excess_return = (
+            excess_return_pct - drawdown_penalty * drawdown_pct
+        )
+        gross_turnover = sum(
+            abs(float(order.get("gross_notional", 0.0) or 0.0))
+            for order in account.orders
+        )
+        turnover_pct = (
+            gross_turnover / account.initial_value * 100.0
+            if account.initial_value else 0.0
+        )
+        total_commission = sum(
+            float(order.get("commission", 0.0) or 0.0)
+            for order in account.orders
+        )
+        total_slippage_cost = sum(
+            float(order.get("slippage_cost", 0.0) or 0.0)
+            for order in account.orders
+        )
+        total_transaction_cost = total_commission + total_slippage_cost
         cash_ratio_pct = (
             account.cash / portfolio_value * 100.0 if portfolio_value else 0.0
         )
@@ -1059,8 +1094,6 @@ class CapitalMarketSettlementPlugin:
         material = bool(
             final
             or had_fill
-            or redeemed_now
-            or reward_now
             or (ledger_changed and (has_positions or abs(pnl) > 1e-9
                                     or abs(account.cash - account.initial_value) > 1e-9))
         )
@@ -1074,6 +1107,8 @@ class CapitalMarketSettlementPlugin:
                 f"{display_name}终局结算："
                 f"当前资产 {portfolio_value:.2f} 元，"
                 f"累计盈亏 {pnl:+.2f} 元，收益率 {return_pct:+.2f}%，"
+                f"基准超额 {excess_return_pct:+.2f}%，最大回撤 {drawdown_pct:.2f}%，"
+                f"风险调整超额 {risk_adjusted_excess_return:+.2f}，"
                 f"现金 {account.cash:.2f} 元，持仓市值 {market_value:.2f} 元。"
             )
         elif had_fill:
@@ -1082,17 +1117,6 @@ class CapitalMarketSettlementPlugin:
                 f"当前资产 {portfolio_value:.2f} 元，"
                 f"累计盈亏 {pnl:+.2f} 元，收益率 {return_pct:+.2f}%，"
                 f"现金 {account.cash:.2f} 元，持仓市值 {market_value:.2f} 元。"
-            )
-        elif redeemed_now or reward_now:
-            bits = []
-            if redeemed_now:
-                bits.append(f"赎回 {redeemed_now:.2f} 元")
-            if reward_now:
-                bits.append(f"追加奖励 {reward_now:.2f} 元")
-            explanation = (
-                f"{display_name}账本因{'、'.join(bits)}发生变化："
-                f"当前资产 {portfolio_value:.2f} 元，"
-                f"累计盈亏 {pnl:+.2f} 元，现金 {account.cash:.2f} 元。"
             )
         elif has_positions:
             explanation = (
@@ -1120,7 +1144,7 @@ class CapitalMarketSettlementPlugin:
                     if has_external_price else "portfolio_cash_ledger"
                 ),
                 verifier_id="portfolio_ledger",
-                rule_version="capital_market.portfolio_mark_to_market.v1",
+                rule_version="capital_market.portfolio_mark_to_market.v2",
                 observation_refs=observation_refs,
                 component_modes=(
                     ["external_reality", "deterministic_verifier"]
@@ -1132,7 +1156,7 @@ class CapitalMarketSettlementPlugin:
             kind="scenario_outcome",
             subject_ids=[agent_id],
             source_event_refs=list(refs),
-            rule_refs=["capital_market.portfolio_mark_to_market.v1"],
+            rule_refs=["capital_market.portfolio_mark_to_market.v2"],
             outcome="portfolio_marked_to_market",
             values={
                 "cash": round(account.cash, 6),
@@ -1142,16 +1166,18 @@ class CapitalMarketSettlementPlugin:
                 "return_pct": round(return_pct, 6),
                 "drawdown_pct": round(drawdown_pct, 6),
                 "cash_ratio_pct": round(cash_ratio_pct, 6),
+                "benchmark_return_pct": round(benchmark_return_pct, 6),
+                "excess_return_pct": round(excess_return_pct, 6),
+                "risk_adjusted_excess_return": round(
+                    risk_adjusted_excess_return, 6
+                ),
+                "turnover_pct": round(turnover_pct, 6),
+                "total_commission": round(total_commission, 6),
+                "total_slippage_cost": round(total_slippage_cost, 6),
+                "total_transaction_cost": round(total_transaction_cost, 6),
                 "position_count": float(sum(
                     1 for quantity in account.positions.values() if quantity > 0
                 )),
-                "redeemed_total": round(account.redeemed, 2),
-                "redeemed_now": round(redeemed_now, 2),
-                "reward_total": round(account.rewarded, 2),
-                "reward_now": round(reward_now, 2),
-                # 风险调整后收益（收益率扣回撤惩罚）：奖励"控住回撤的好策略"
-                # 而非"高波动博出来的好运气"，供数据工厂筛高质量样本。
-                "risk_adjusted_score": round(return_pct - 0.5 * drawdown_pct, 4),
             },
             details={
                 "positions": {
@@ -1173,6 +1199,15 @@ class CapitalMarketSettlementPlugin:
                 },
                 "orders": list(account.orders[-10:]),
                 "market_phase": self._market_phase(context),
+                "evaluation": {
+                    "benchmark_id": str(benchmark.get("id") or "cash"),
+                    "benchmark_name": str(benchmark.get("name") or "现金基准"),
+                    "benchmark_return_pct": round(benchmark_return_pct, 6),
+                    "drawdown_penalty": round(drawdown_penalty, 6),
+                    "primary_metric_formula": (
+                        "excess_return_pct - drawdown_penalty * max_drawdown_pct"
+                    ),
+                },
                 # 给 Agent 看的可读状态文案（场景自己表达业务含义，OS 只透传）
                 "display_text": self._holdings_display_text(account, market_value, pnl),
                 "silent": silent,
@@ -1199,46 +1234,9 @@ class CapitalMarketSettlementPlugin:
             round(float(account.cash), 6),
             round(float(market_value), 6),
             round(float(pnl), 6),
-            round(float(account.redeemed), 2),
-            round(float(account.rewarded), 2),
+            round(float(account.max_drawdown_pct), 6),
             positions,
         )
-
-    def _apply_redemption_pressure(
-        self, account: "PortfolioAccount", drawdown_pct: float, tick: int, *, final: bool
-    ) -> float:
-        """回撤超阈值 → 投资者按比例赎回现金；返回本次赎回额（每 tick 至多一次）。"""
-        if final or account.redeemed_at_tick == tick:
-            return 0.0
-        if drawdown_pct <= self._REDEMPTION_DRAWDOWN_PCT:
-            return 0.0
-        cap = self._MAX_REDEEMED_RATIO * account.initial_value
-        if account.redeemed >= cap:
-            return 0.0
-        redeem = round(max(0.0, min(account.cash * self._REDEMPTION_RATE, cap - account.redeemed)), 2)
-        if redeem <= 0:
-            return 0.0
-        account.cash = round(account.cash - redeem, 2)
-        account.redeemed = round(account.redeemed + redeem, 2)
-        account.redeemed_at_tick = tick
-        return redeem
-
-    def _apply_return_reward(
-        self, account: "PortfolioAccount", return_pct: float, *, final: bool
-    ) -> float:
-        """收益率上台阶 → 追加一次性现金奖励；返回本次发放额（每档只发一次）。"""
-        if final:
-            return 0.0
-        granted = 0.0
-        while account.rewarded_tier < len(self._REWARD_TIERS):
-            threshold, bonus = self._REWARD_TIERS[account.rewarded_tier]
-            if return_pct < threshold:
-                break
-            account.cash = round(account.cash + bonus, 2)
-            account.rewarded = round(account.rewarded + bonus, 2)
-            account.rewarded_tier += 1
-            granted += bonus
-        return granted
 
     @staticmethod
     def _position_avg_costs(account: "PortfolioAccount") -> Dict[str, float]:
@@ -1314,16 +1312,12 @@ class CapitalMarketSettlementPlugin:
             f"- 现金 {account.cash:.0f}，持仓市值 {market_value:.0f}，"
             f"累计盈亏 {pnl:+.0f}，当前回撤 {dd:.1f}%"
         ]
-        if account.redeemed > 0:
-            lines.append(
-                f"- ⚠ 因回撤过大，持有人已累计赎回 {account.redeemed:.0f} 元——"
-                "继续深度回撤会被抽走更多资金，务必控住回撤"
-            )
-        if account.rewarded > 0:
-            lines.append(
-                f"- ★ 收益达标，持有人已累计追加现金奖励 {account.rewarded:.0f} 元——"
-                "收益率再上台阶还有奖励，好收益会被放大"
-            )
+        transaction_cost = sum(
+            float(order.get("commission", 0.0) or 0.0)
+            + float(order.get("slippage_cost", 0.0) or 0.0)
+            for order in account.orders
+        )
+        lines.append(f"- 累计交易成本 {transaction_cost:.2f} 元")
         holds = [(a, q) for a, q in account.positions.items() if abs(q) > 1e-9]
         if holds:
             bits = []

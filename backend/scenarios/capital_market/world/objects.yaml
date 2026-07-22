@@ -2,17 +2,17 @@ objects:
   - id: portfolio_book
     name: 组合账本
     type: portfolio
-    description: 记录现金、仓位、买卖理由和风险控制计划。终局总资产由此账本与真实行情市值汇总得出。
+    description: 记录现金、仓位、买卖理由、交易成本和风险控制计划，为专业评测报告提供可审计账本。
     owner: agent
     visibility: {default: visible, requires_discovery: false}
     permissions_required: [trading_access]
-    metric_links: [metric_portfolio_value, metric_portfolio_pnl, metric_portfolio_return]
+    metric_links: [metric_portfolio_value, metric_portfolio_pnl, metric_portfolio_return, metric_excess_return, metric_risk_adjusted_return, metric_turnover]
 
   - id: risk_dashboard
     name: 风险仪表盘
     type: risk
-    description: 组合回撤、集中度与赎回压力的可见锚点；不直接给出行情答案。
+    description: 组合最大回撤、集中度、换手率与交易成本的可见锚点；不直接给出行情答案。
     owner: global
     visibility: {default: visible, requires_discovery: false}
     permissions_required: [research_access]
-    metric_links: []
+    metric_links: [metric_max_drawdown, metric_turnover]

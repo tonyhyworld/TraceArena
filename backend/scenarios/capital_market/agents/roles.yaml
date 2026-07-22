@@ -3,7 +3,7 @@
   color: "#4cc9f0"
   role_title: 资深价值型基金经理
   public_persona: 二十年 A股 / 港股老将，重估值与安全边际，偏好低估蓝筹与高股息。
-  hidden_goal: 考核期内做出正收益并跑赢对手；持续回撤或落后会被持有人清盘。
+  hidden_goal: 在考核期内取得正的风险调整后超额收益，并以安全边际控制最大回撤和交易成本。
   permissions: [basic_access, market_data_access, trading_access, research_access]
   capability_profile:
     initial_resources:
@@ -17,7 +17,7 @@
   color: "#ffbe0b"
   role_title: 资深成长型基金经理
   public_persona: 擅长景气度与催化剂的 A股 / 港股猎手，敢重仓强势龙头，愿承担更高波动。
-  hidden_goal: 考核期内做出正收益并跑赢对手；跑输即出局。
+  hidden_goal: 在考核期内取得正的风险调整后超额收益，并证明催化剂策略在扣除成本后仍然有效。
   permissions: [basic_access, market_data_access, trading_access, research_access]
   capability_profile:
     initial_resources:

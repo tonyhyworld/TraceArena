@@ -851,10 +851,7 @@ class EngineOS:
         settlements: List[Any],
     ) -> None:
         pending_root = state.internal.setdefault("pending_action_intents", {})
-        # Agent turns are collected concurrently. Preserve a stable per-tick
-        # commit order so facts and replay do not depend on coroutine timing.
-        for agent_id in sorted((actions or {}), key=str):
-            action = (actions or {}).get(agent_id)
+        for agent_id, action in (actions or {}).items():
             if action is None:
                 continue
             actual_id = str(getattr(action, "action_id", "") or "")
@@ -955,13 +952,6 @@ class EngineOS:
             if not is_open:
                 base["tradable"] = False
                 base["live_window_closed_reason"] = closed_reason
-                # Do not expose a generic continuous-trading label while the
-                # scenario's authoritative live window is closed.
-                base["name"] = "研究与观望"
-                base["description"] = (
-                    f"当前不可交易：{closed_reason}。可继续研究、核验数据和制定计划；"
-                    "仅在交易窗口开放后才可提交可成交订单。"
-                )
                 # Do not leave the scenario's generic "continuous trading"
                 # label visible when its authoritative live window is closed.
                 # It made agents (and viewers) believe an order could fill.
@@ -1897,8 +1887,7 @@ class EngineOS:
 
         max_bytes = int(getattr(self._cfg.sandbox, "code_workspace_max_bytes", 65536))
         max_files = int(getattr(self._cfg.sandbox, "code_workspace_max_files", 32))
-        for agent_id in sorted(valid_actions, key=str):
-            action = valid_actions[agent_id]
+        for agent_id, action in valid_actions.items():
             if not agent_id:
                 continue
             ws = self._agent_workspaces.get(agent_id)
@@ -3745,9 +3734,7 @@ class EngineOS:
         valid_actions: Dict[str, Any] = {}  # 通过校验的 action（供 Trace 用）
         planned_transitions: List[Any] = []
 
-        # Preserve deterministic transaction order across concurrent turns.
-        for agent_id in sorted((actions or {}), key=str):
-            action = (actions or {}).get(agent_id)
+        for agent_id, action in (actions or {}).items():
             if action is None:
                 continue
 
@@ -3864,8 +3851,7 @@ class EngineOS:
         self._apply_workspace_code_writes(valid_actions, tick)
 
         # 平台事务提交成功后再执行工具，避免工具观察到半提交状态。
-        for agent_id in sorted(valid_actions, key=str):
-            action = valid_actions[agent_id]
+        for agent_id, action in valid_actions.items():
             try:
                 from app.mcp.tool_executor import resolve_tool_id
 
@@ -3963,8 +3949,7 @@ class EngineOS:
         # same independent settlement layer; they do not grant scoring authority.
         pipeline_results: List[CausalPipelineResult] = []
         world_execution_actions: List[ActionPack] = []
-        for agent_id in sorted(valid_actions, key=str):
-            action = valid_actions[agent_id]
+        for action in valid_actions.values():
             # challenge 类动作已在 _route_submit_challenge_response_actions 中处理完毕
             if self._is_challenge_action(action.action_id):
                 continue
@@ -5297,8 +5282,7 @@ class EngineOS:
             ))
         self._pending_os2_system_events = []
 
-        for agent_id in sorted(valid_actions, key=str):
-            action = valid_actions[agent_id]
+        for agent_id, action in valid_actions.items():
             if action is None:
                 continue
             result = results.get(str(agent_id))
@@ -5723,6 +5707,13 @@ class EngineOS:
                 "fx_rates": dict(settlement_cfg.get("fx_rates") or {}),
                 "trading_universe": dict(
                     settlement_cfg.get("trading_universe") or {}
+                ),
+                "transaction_costs": dict(
+                    settlement_cfg.get("transaction_costs") or {}
+                ),
+                "benchmark": dict(settlement_cfg.get("benchmark") or {}),
+                "risk_adjustment": dict(
+                    settlement_cfg.get("risk_adjustment") or {}
                 ),
                 "external_observations": [
                     item.model_dump(mode="json")
@@ -6619,6 +6610,17 @@ class EngineOS:
             state.internal.setdefault("os2_settlements", []).extend(
                 item.model_dump(mode="json") for item in final_settlements
             )
+            # Terminal settlement is produced after the ordinary tick trace
+            # was recorded.  Append it explicitly so reports, ledgers and the
+            # deterministic replay all retain the same final authority fact.
+            self._trace.append_terminal_settlements(
+                int(getattr(state, "tick", 0) or 0), final_settlements
+            )
+            if self._replay_recorder is not None:
+                self._replay_recorder.append_terminal_settlements(
+                    int(getattr(state, "tick", 0) or 0),
+                    [item.model_dump(mode="json") for item in final_settlements],
+                )
             state.internal["victory_standings"] = [
                 item.model_dump(mode="json") for item in standings
             ]

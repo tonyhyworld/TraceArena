@@ -23,14 +23,46 @@ metrics:
     max: 200
     visible_to_owner: true
     visible_to_others: true
+  - id: metric_excess_return
+    name: 基准超额收益率
+    owner_type: agent
+    initial: 0
+    min: -100
+    max: 200
+    visible_to_owner: true
+    visible_to_others: true
+  - id: metric_max_drawdown
+    name: 最大回撤
+    owner_type: agent
+    initial: 0
+    min: 0
+    max: 100
+    visible_to_owner: true
+    visible_to_others: true
+  - id: metric_risk_adjusted_return
+    name: 风险调整后超额收益
+    owner_type: agent
+    initial: 0
+    min: -150
+    max: 200
+    visible_to_owner: true
+    visible_to_others: true
+  - id: metric_turnover
+    name: 换手率
+    owner_type: agent
+    initial: 0
+    min: 0
+    max: 1000
+    visible_to_owner: true
+    visible_to_others: true
 
 # 本场景不根据“动作质量”推导投资得分。
-# 三项指标只由 settlement/manifest.yaml 对可信组合账本进行回写。
+# 全部指标只由 settlement/manifest.yaml 对可信组合账本进行回写。
 metric_derivations: []
 
 # 排名公式（供 OS 通用排名读取，取代"正向指标求和"的默认假设）。
-# 本场景按组合总资产单一指标排名，分高者靠前——不把盈亏、收益率重复相加。
+# 专业评测按风险调整后超额收益排名，避免只奖励高波动收益。
 ranking:
   mode: single_metric
-  by: metric_portfolio_value
+  by: metric_risk_adjusted_return
   order: descending

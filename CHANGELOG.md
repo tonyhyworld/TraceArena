@@ -2,6 +2,9 @@
 
 ## Unreleased — 2026-07-21
 
+- Aligned the public capital-market scenario core at scenario version `0.2.1`.
+- Tightened order-price identity validation to the canonical 8% tolerance.
+- Corrected rendering so submitted orders are not presented as filled before settlement.
 - Added a unified World Adapter contract for rule-based, algorithmic, learned,
   simulator, reality-connected and hybrid world models.
 - Separated world execution from the four settlement-authority modes so any

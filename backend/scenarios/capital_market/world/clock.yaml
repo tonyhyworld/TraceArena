@@ -1,6 +1,6 @@
 # 回合 / 时钟模型（RoundModel 契约，见 backend/app/contracts/round_model.py）
 #
-# 资本市场：短交易实时局。一局 ≈ A股连续交易时段内的 1 小时真实时间。
+# 资本市场：专业评测窗口 ≈ A股连续交易时段内的 1 小时真实时间。
 # 关键点由 OS 通用执行、场景只声明：
 #   1) pacing.wall_clock —— 相邻 tick 的起点至少间隔 tick_seconds 真实秒，
 #      让实时行情在 tick 之间真正发生变化（这是"实时数据驱动策略"的物理前提）。

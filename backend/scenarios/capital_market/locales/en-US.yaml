@@ -1,18 +1,18 @@
 # Presentation-only overlay. Do not duplicate IDs, settlement rules, or values here.
 manifest:
-  name: Capital Market Investment Simulation v0
-  description: Two investment agents research and trade with equal starting capital and tool access. Real market data is observed, while fills and the portfolio ledger are simulated over a one-hour contest.
+  name: Capital Market Professional Evaluation
+  description: Two investment agents are evaluated under equal capital, data, and tool constraints. Real market data is observed, while fills, transaction costs, and the portfolio ledger are simulated.
 intro: >-
   The opening bell rings. Two experienced investment managers enter with equal
   capital and the same tool access across mainland China and Hong Kong markets.
-  There is no preloaded answer: the winner obtains verifiable evidence, forms a
-  defensible thesis, enters during a valid window, and controls drawdown.
+  There is no preloaded answer: each evaluated strategy must obtain verifiable
+  evidence, form a defensible thesis, enter during a valid window, and control risk.
 goal_text: >-
-  You are an experienced secondary-market investment manager under performance
-  and redemption pressure. This one-hour simulation uses live market research
+  You are an experienced secondary-market investment manager in a professional
+  evaluation. This one-hour simulation uses live market research
   inputs and a simulated portfolio ledger. Trade only mainland China and Hong
-  Kong equities. The higher terminal portfolio value wins; value below 700 is
-  liquidated. Research alone does not change performance: only settlement does.
+  Kong equities. Commission and slippage are applied consistently, and the main
+  result is risk-adjusted excess return. Research alone does not change performance.
 background_text: >-
   A timed capital-market simulation with real research tools, a simulated
   ledger, and evidence-linked settlement. It is for evaluation only and is not
@@ -22,12 +22,12 @@ roles:
     display_name: Chen Wen
     role_title: Senior Value Fund Manager
     public_persona: A long-time mainland China and Hong Kong investor focused on valuation, margin of safety, blue chips, and dividends.
-    hidden_goal: Deliver a positive return and beat the opponent; persistent drawdown or underperformance triggers liquidation.
+    hidden_goal: Deliver positive risk-adjusted excess return while controlling drawdown and transaction costs.
   investor_b:
     display_name: Lin Feng
     role_title: Senior Growth Fund Manager
     public_persona: A mainland China and Hong Kong growth investor who follows industry momentum and catalysts and accepts higher volatility.
-    hidden_goal: Deliver a positive return and beat the opponent; underperformance ends the mandate.
+    hidden_goal: Deliver positive risk-adjusted excess return and show that catalyst-driven returns survive transaction costs.
 actions:
   buy_asset:
     name: Buy / open position
@@ -42,6 +42,10 @@ metrics:
   metric_portfolio_value: Total portfolio value
   metric_portfolio_pnl: Cumulative profit and loss
   metric_portfolio_return: Return
+  metric_excess_return: Excess return
+  metric_max_drawdown: Maximum drawdown
+  metric_risk_adjusted_return: Risk-adjusted excess return
+  metric_turnover: Turnover
 ui_text:
   title: TraceArena Capital Market · China / Hong Kong
   subtitle: Two experienced investment managers under the same constraints
@@ -55,7 +59,7 @@ ui_text:
   intervention_label: Market event
   intervention_placeholder: Inject a market event and press Enter…
   variables_label: Market variables
-  ranking_score_label: Total portfolio value
-  ranking_leading: Portfolio leader
+  ranking_score_label: Risk-adjusted excess return
+  ranking_leading: Evaluation leader
   ranking_gap_prefix: Behind by
-  ranking_eliminated: Eliminated
+  ranking_eliminated: Stopped
