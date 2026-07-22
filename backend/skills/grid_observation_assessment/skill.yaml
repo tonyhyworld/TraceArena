@@ -1,0 +1,29 @@
+skill_id: grid_observation_assessment
+name: Grid Observation Assessment
+version: 0.1.0
+skill_type: executable_custom_skill
+description: Classify Grid2Op observations into operational risk signals and a next-action recommendation.
+input_schema:
+  required: [metrics, evidence_refs]
+  properties:
+    metrics: cumulative reward, max rho, disconnected line count and terminal state
+    evidence_refs: simulator observation or trace references accepted by the world
+output_schema:
+  required: [status, severity, risk_factors, recommended_next_action, evidence_refs]
+  status_values: [ready, needs_more_evidence]
+invocation_conditions:
+  - A Grid2Op observation or adapter metric snapshot exists.
+dependencies:
+  - world_adapter observation ledger
+failure_handling:
+  - Return needs_more_evidence when observation metrics are missing or stale.
+permissions: [observe_grid, read_trace]
+safety_boundary: Read-only; cannot change grid topology, dispatch, approval policy or simulator state.
+evaluation:
+  - Output must cite evidence_refs and use simulator metrics rather than LLM-only judgement.
+release_policy: Semantic versioning; metric semantics are pinned to the scenario version.
+instructions: |
+  Read the current Grid2Op metrics and classify immediate operational risk.
+  Recommend the smallest next action that can be evaluated by the world adapter.
+python_packages: []
+files: {}

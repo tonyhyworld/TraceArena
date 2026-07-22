@@ -1,0 +1,13 @@
+objects:
+  - object_id: grid_simulator
+    name: Grid2Op 电网物理仿真器
+    type: simulator
+    description: 负责计算潮流、线路状态、奖励和终局；不接受 Agent 的自然语言结论作为物理事实。
+  - object_id: extreme_event_front
+    name: 极端天气扰动前沿
+    type: external_event
+    description: 对三名 Agent 使用同一种子与同一外生轨迹，保证策略比较公平。
+  - object_id: dispatch_console
+    name: 应急调度台
+    type: control_surface
+    description: 仅允许提交场景声明的仿真动作，记录每次接受、拒绝和执行回执。

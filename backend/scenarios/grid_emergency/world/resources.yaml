@@ -1,0 +1,15 @@
+resources:
+  - resource_id: dispatch_budget
+    name: 调度操作预算
+    initial: 12
+    min: 0
+    max: 12
+    unit: 次
+    refresh: 0
+  - resource_id: response_window
+    name: 应急时间窗口
+    initial: 18
+    min: 0
+    max: 18
+    unit: 回合
+    refresh: 0

@@ -51,7 +51,14 @@ class WorldAdapterActionReceipt(WorldAdapterContract):
     world_tick: int = Field(ge=0)
     actor_id: str
     action_type: str
-    status: Literal["accepted", "rejected", "executed", "failed"]
+    status: Literal[
+        "accepted",
+        "needs_approval",
+        "rejected",
+        "executed",
+        "rolled_back",
+        "failed",
+    ]
     reasons: List[str] = Field(default_factory=list)
     details: Dict[str, Any] = Field(default_factory=dict)
     occurred_at: float = Field(default_factory=time.time)

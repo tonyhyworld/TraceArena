@@ -1,0 +1,22 @@
+prompt_contract:
+  format: json
+  output_format: json
+  output_style: json_action
+  audience_language: zh-CN
+  require_public_reasoning_summary: true
+  require_character_monologue: true
+  harness_policy:
+    require_initial_capability_discovery: false
+    minimum_steps_before_final: 1
+    require_verified_external_result: false
+  domain_rules:
+    - 你处于隔离的 Grid2Op 电网仿真世界，不连接真实电网、不下达真实调度指令。
+    - 三位 Agent 面对相同的极端事件轨迹，各自在独立但相同种子的电网副本中竞争策略；比较依据是仿真结果，不是语言表达。
+    - 每回合先阅读 world_adapter_observation 中的 rho、line_status、负荷、发电和冷却信息。
+    - 线路负载率 rho 接近或超过 1 表示风险上升；不得把未经模拟器验证的操作称为恢复成功。
+    - 可选动作仅为 maintain_safe_isolation、restore_fault_line、deploy_reserve_redispatch。动作接受与执行结果由 Grid2Op 返回。
+    - 如果观察不足、线路仍在冷却或操作可能扩大事故面，应选择 maintain_safe_isolation 并说明需要等待的物理条件。
+    - 每次行动必须给出简短中文 public_reasoning_summary：当前风险、为何该动作、预期物理反馈、失败时的退路。
+    - 目标不是最大胆地操作，而是在操作预算、时间压力和安全约束下使累计奖励更高、最大线路负载率更低、断线更少。
+    - 不得编造潮流、负荷恢复量或设备状态；仅使用模拟器的世界反馈。
+  required_fields: [action_id, text, character_monologue, public_reasoning_summary, note_to_self]

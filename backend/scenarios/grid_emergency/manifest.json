@@ -1,0 +1,40 @@
+{
+  "scenario_id": "grid_extreme_event_recovery_v1",
+  "name": "电网极端事件应急恢复世界",
+  "version": "1.0.0",
+  "description": "三名电网应急 Agent 在同一外生故障轨迹、相同操作预算和安全约束下，通过 Grid2Op 电网仿真器竞争恢复供电路径。",
+  "author": "TraceArena",
+  "license": "Apache-2.0",
+  "scenario_api_version": "1.0",
+  "min_agents": 3,
+  "max_agents": 3,
+  "required_os_capabilities": ["world_adapter", "trace_export", "deterministic_replay", "settlement_runtime", "render_commands", "prompt_contract"],
+  "optional_os_capabilities": ["presentation_buffer"],
+  "enabled_features": {
+    "resources": true,
+    "permissions": true,
+    "memory": true,
+    "terminal_settlement": true,
+    "replay": true,
+    "director": true,
+    "thought_display": true,
+    "presentation_buffer": true
+  },
+  "entry_files": {
+    "roles": "agents/roles.yaml",
+    "prompts": "agents/prompts.yaml",
+    "objects": "world/objects.yaml",
+    "resources": "world/resources.yaml",
+    "permissions": "world/permissions.yaml",
+    "actions": "world/actions.yaml",
+    "metrics": "world/metrics.yaml",
+    "audit": "world/audit.yaml",
+    "adapter": "world/adapter.yaml",
+    "settlement": "settlement/manifest.yaml",
+    "presentation": "presentation.yaml",
+    "playback_policy": "playback/playback_policy.yaml",
+    "validation": "tests/validation.yaml",
+    "sample_run": "tests/sample_run.yaml",
+    "replay_expectation": "tests/replay_expectation.yaml"
+  }
+}

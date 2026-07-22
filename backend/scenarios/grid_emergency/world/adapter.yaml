@@ -1,0 +1,23 @@
+adapter_id: builtin:grid2op
+model_kind: simulator
+seed: 20260722
+config:
+  environment: l2rpn_case14_sandbox
+  # 这是场景包选择的“极端事件起点”：在同一条公开 Grid2Op 时序的
+  # 第 24 个时段，0 号线路已因外生事件断开。OS 只透传 reset_options；
+  # 故障是否可恢复、潮流是否安全，完全由 Grid2Op 的物理模型裁决。
+  reset_options:
+    init ts: 24
+    init state:
+      set_line_status: [[0, -1]]
+  action_mapping:
+    maintain_safe_isolation: {}
+    restore_fault_line:
+      set_line_status: [[0, 1]]
+    deploy_reserve_redispatch:
+      redispatch: [[0, 1.0]]
+  approval_policy:
+    action_risk_levels:
+      maintain_safe_isolation: low
+      restore_fault_line: high
+      deploy_reserve_redispatch: medium

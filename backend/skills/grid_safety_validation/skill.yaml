@@ -1,0 +1,33 @@
+skill_id: grid_safety_validation
+name: Grid Safety Validation
+version: 0.1.0
+skill_type: executable_custom_skill
+description: Validate a proposed grid restoration plan against evidence, approval and rollback requirements.
+input_schema:
+  required: [plan, evidence_refs]
+  properties:
+    plan: structured restoration plan
+    approval_id: approval receipt when a high-risk action is allowed
+    metric_deltas: optional simulator metric changes
+    evidence_refs: observation and plan evidence references
+output_schema:
+  required: [status, failed_checks, metric_deltas, rollback_recommendation, evidence_refs]
+  status_values: [pass, fail, needs_approval]
+invocation_conditions:
+  - A restoration plan exists.
+dependencies:
+  - scenario risk policy
+  - approval ledger
+failure_handling:
+  - Return needs_approval for high-risk actions without approval receipt.
+  - Return fail when required evidence is missing.
+permissions: [read_trace, read_policy, request_approval]
+safety_boundary: Cannot execute dispatch actions, alter simulator results or relax approval gates.
+evaluation:
+  - High-risk action must be blocked without approval_id.
+release_policy: Semantic versioning; validation rule changes require migration notes.
+instructions: |
+  Validate evidence, approval and rollback readiness before any high-risk
+  restoration action can enter the world adapter.
+python_packages: []
+files: {}

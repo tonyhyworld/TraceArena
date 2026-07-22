@@ -1,0 +1,25 @@
+render_mode: dashboard
+ui_text:
+  title: AI 电网极端事件应急恢复世界
+  subtitle: 三条调度路径，在同一灾害轨迹与物理约束下竞争
+  notice_label: 世界规则
+  narrative_title: 电网应急演绎
+  thoughts_title: 调度推理
+  strategy_title: 路径策略
+  ranking_score_label: 累计恢复收益
+  ranking_leading: 路径领先
+  ranking_eliminated: 终局失败
+ui_theme:
+  accent_primary: '#49d7ff'
+  accent_secondary: '#6ee7b7'
+  director_color: '#fbbf24'
+  error_color: '#fb7185'
+  success_color: '#6ee7b7'
+  shell_background: 'radial-gradient(900px 520px at 38% -10%,rgba(73,215,255,.14),transparent 68%),linear-gradient(160deg,#02060f 0%,#071a2c 52%,#03111b 100%)'
+  panel_background: 'linear-gradient(180deg,rgba(4,16,31,.97),rgba(2,8,17,.99))'
+  panel_border: 'rgba(73,215,255,.18)'
+environment:
+  sky_gradient: ['#020611', '#082444', '#06445a', '#03111b']
+  fog_color: '#071a2c'
+  fog_density: 0.006
+  atmosphere: {stars: {count: 180, color: '#62e8ff', size: 1.0}}

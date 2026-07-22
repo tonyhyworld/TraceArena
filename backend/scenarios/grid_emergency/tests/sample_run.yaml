@@ -1,0 +1,13 @@
+sample_run:
+  agents:
+    - {role_id: grid_safety_dispatcher}
+    - {role_id: restoration_planner}
+    - {role_id: resilience_operator}
+  scripted_mock_paths:
+    - agent_id: grid_safety_dispatcher
+      steps:
+        - {tick: 1, action_id: maintain_safe_isolation, target_id: grid_simulator}
+        - {tick: 2, action_id: deploy_reserve_redispatch, target_id: grid_simulator}
+    - agent_id: restoration_planner
+      steps:
+        - {tick: 1, action_id: restore_fault_line, target_id: grid_simulator}

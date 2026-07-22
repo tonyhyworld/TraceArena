@@ -1,0 +1,10 @@
+director:
+  style:
+    tone: 冷静、紧迫、面向事实
+  terminology:
+    action: 调度动作
+    event: 电网物理反馈
+    settlement: 路径比较
+  truth_policy:
+    require_evidence: true
+  forbid_phrases: ["已经控制真实电网", "真实电网已恢复"]

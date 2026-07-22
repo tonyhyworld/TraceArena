@@ -1,0 +1,31 @@
+skill_id: grid_restoration_plan
+name: Grid Restoration Plan
+version: 0.1.0
+skill_type: executable_custom_skill
+description: Convert a supported grid assessment into a minimal restoration plan with risk and rollback metadata.
+input_schema:
+  required: [assessment, snapshot_ref, evidence_refs]
+  properties:
+    assessment: output from grid_observation_assessment
+    snapshot_ref: immutable observation or simulator snapshot reference
+    evidence_refs: references supporting the proposed action
+output_schema:
+  required: [status, change_steps, risk_level, rollback_ref, approval_requirement, evidence_refs]
+  status_values: [ready, needs_approval, rejected]
+invocation_conditions:
+  - A fresh observation assessment exists.
+dependencies:
+  - scenario approval policy
+  - world_adapter action mapping
+failure_handling:
+  - Return needs_approval for high-risk topology restoration.
+permissions: [read_trace, propose_grid_action, request_approval]
+safety_boundary: Produces a plan only; it cannot execute a grid action or bypass approval.
+evaluation:
+  - Plan must be minimal, reversible and linked to evidence_refs.
+release_policy: Semantic versioning; action schema changes require scenario compatibility review.
+instructions: |
+  Create one minimal candidate grid action.  Classify restore_fault_line as
+  high risk and require approval before execution.
+python_packages: []
+files: {}

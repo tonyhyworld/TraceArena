@@ -1,0 +1,5 @@
+permissions:
+  - id: observe_grid
+    name: 查看仿真电网观测
+  - id: submit_dispatch_action
+    name: 提交隔离仿真调度动作

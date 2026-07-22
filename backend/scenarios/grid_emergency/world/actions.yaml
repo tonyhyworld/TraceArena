@@ -1,0 +1,39 @@
+actions:
+  - id: maintain_safe_isolation
+    name: 保持当前拓扑并观察
+    category: grid_dispatch
+    intent: wait
+    execution_semantics: simulation
+    target_optional_for_settlement: true
+    description: 不改变当前拓扑，提交 Grid2Op do-nothing action，让电网物理状态推进一个回合。
+    risk_level: low
+    requires_target: false
+    cost: {response_window: 1}
+    cooldown: 0
+    permissions_required: [observe_grid, submit_dispatch_action]
+  - id: restore_fault_line
+    name: 尝试恢复故障线路
+    category: grid_dispatch
+    intent: improve
+    execution_semantics: simulation
+    target_optional_for_settlement: true
+    description: 对外生事件已断开的预设线路发起恢复；是否可执行及恢复后的潮流、过载和连锁后果由 Grid2Op 返回。
+    risk_level: high
+    approval_required: true
+    rollback_semantics: 未批准时不推进仿真器；批准前保留当前观测快照作为回滚引用。
+    requires_target: false
+    cost: {dispatch_budget: 1, response_window: 1}
+    cooldown: 1
+    permissions_required: [observe_grid, submit_dispatch_action]
+  - id: deploy_reserve_redispatch
+    name: 投入备用调度
+    category: grid_dispatch
+    intent: optimize
+    execution_semantics: simulation
+    target_optional_for_settlement: true
+    description: 对场景预设的可调机组投入有限备用出力；是否合规及对线路负载、潮流和风险的影响完全由 Grid2Op 判定。
+    risk_level: medium
+    requires_target: false
+    cost: {dispatch_budget: 1, response_window: 1}
+    cooldown: 1
+    permissions_required: [observe_grid, submit_dispatch_action]

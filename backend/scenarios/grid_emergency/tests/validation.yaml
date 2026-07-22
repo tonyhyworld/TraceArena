@@ -1,0 +1,19 @@
+validation:
+  required_files:
+    - manifest.json
+    - runtime/framework.yaml
+    - agents/roles.yaml
+    - agents/prompts.yaml
+    - world/actions.yaml
+    - world/metrics.yaml
+    - world/adapter.yaml
+    - settlement/manifest.yaml
+    - presentation.yaml
+  expected_ids:
+    actions: [maintain_safe_isolation, restore_fault_line, deploy_reserve_redispatch]
+    metrics: [cumulative_reward, max_rho, disconnected_lines]
+    objects: [grid_simulator, extreme_event_front, dispatch_console]
+  minimum_counts:
+    actions: 3
+    objects: 3
+    metrics: 3

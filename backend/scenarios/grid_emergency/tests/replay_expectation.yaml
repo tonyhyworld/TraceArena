@@ -1,0 +1,3 @@
+replay_expectation:
+  expected_reconstructable_artifacts: [initial_world_state, perception_packets, harness_traces, world_actions, world_events, settlements, final_settlement_records]
+  invariants: [world_event_must_reference_world_action_or_system_origin, settlement_must_reference_world_event, winner_only_from_scene_settlement]

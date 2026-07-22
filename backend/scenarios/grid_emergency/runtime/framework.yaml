@@ -1,0 +1,51 @@
+scenario_path: ./scenarios/grid_emergency
+scenario_locale: zh-CN
+runtime_mode: story
+random_seed: 20260722
+tick_interval_sec: 8.0
+agent_timeout_sec: 75.0
+provider_health_check: true
+agents:
+  - id: grid_safety_dispatcher
+    name: 安全调度官
+    provider: minimax
+    model: MiniMax-M2.7-highspeed
+    color: "#49d7ff"
+    extra: {temperature: 0.25, max_tokens: 2200}
+  - id: restoration_planner
+    name: 恢复规划师
+    provider: minimax
+    model: MiniMax-M2.7-highspeed
+    color: "#fbbf24"
+    extra: {temperature: 0.42, max_tokens: 2200}
+  - id: resilience_operator
+    name: 韧性运营官
+    provider: minimax
+    model: MiniMax-M2.7-highspeed
+    color: "#6ee7b7"
+    extra: {temperature: 0.35, max_tokens: 2200}
+director:
+  enabled: true
+  provider: minimax
+  model: MiniMax-M2.7-highspeed
+  temperature: 0.35
+  max_tokens: 900
+judge:
+  enabled: false
+sandbox:
+  enabled: true
+  allow_network: false
+  allow_package_install: false
+  timeout_sec: 8.0
+  max_code_lines: 120
+mcp:
+  enabled: false
+tts:
+  enabled: true
+  voice_id: presenter_male
+  speed: 1.0
+log_dir: ./runs
+agent_loop:
+  enabled: true
+  max_steps: 6
+  session_timeout_sec: 150

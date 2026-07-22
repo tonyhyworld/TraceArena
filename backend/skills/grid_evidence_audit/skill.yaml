@@ -1,0 +1,32 @@
+skill_id: grid_evidence_audit
+name: Grid Evidence Audit
+version: 0.1.0
+skill_type: executable_custom_skill
+description: Audit whether grid decisions are backed by simulator observations, approval history and trace references.
+input_schema:
+  required: [trace_refs, evidence_refs, approval_history]
+  properties:
+    trace_refs: Agent, Skill and world adapter execution trace ids
+    evidence_refs: simulator observations or receipts
+    approval_history: approval or rollback decisions for high-risk actions
+    high_risk: whether the audited action needs approval
+output_schema:
+  required: [status, audit_findings, missing_evidence, decision, evidence_refs]
+  status_values: [approved, rejected, needs_more_evidence, rollback]
+invocation_conditions:
+  - A high-risk decision or final result is being audited.
+dependencies:
+  - trace ledger
+  - approval ledger
+  - world_adapter receipt ledger
+failure_handling:
+  - Return needs_more_evidence when approval history is required but missing.
+permissions: [read_trace, read_policy, read_approval_history]
+safety_boundary: Cannot fabricate evidence, mutate approvals or change settlement results.
+evaluation:
+  - Audit conclusion must be reproducible from trace_refs and evidence_refs.
+release_policy: Semantic versioning; audit policy changes require scenario compatibility review.
+instructions: |
+  Audit the supplied decision chain and reject unsupported high-risk execution.
+python_packages: []
+files: {}

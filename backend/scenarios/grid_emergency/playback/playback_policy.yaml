@@ -1,0 +1,4 @@
+playback_policy:
+  mode: evidence_first
+  minimum_segment_ms: 1000
+  keep_world_snapshot: true

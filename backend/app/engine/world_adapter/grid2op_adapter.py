@@ -45,6 +45,7 @@ class Grid2OpAdapter:
         self._envs: Dict[str, Any] = {}
         self._observations: Dict[str, Any] = {}
         self._pending: Dict[str, Dict[str, Any]] = {}
+        self._pending_approvals: Dict[str, Dict[str, Any]] = {}
         self._rewards: Dict[str, float] = {}
         self._done: Dict[str, bool] = {}
         self._done_reasons: Dict[str, str] = {}
@@ -93,9 +94,40 @@ class Grid2OpAdapter:
 
     def reset(self) -> Dict[str, WorldAdapterObservation]:
         self._pending = {}
+        self._pending_approvals = {}
         self._tick = 0
+        # Grid2Op has a rich, simulator-native reset contract: a scenario can
+        # choose a chronological point, an initial simulated outage, thermal
+        # limits, etc.  Keep this as a generic adapter option rather than
+        # encoding any electricity-domain event in the OS.  The scenario pack
+        # owns the values under ``world/adapter.yaml``.
+        reset_options = self._config.get("reset_options") or {}
+        if not isinstance(reset_options, dict):
+            raise ValueError("Grid2Op adapter config.reset_options must be a mapping")
         for actor_id, env in self._envs.items():
-            self._observations[actor_id] = env.reset()
+            # Grid2Op can mutate nested input collections while building an
+            # initial action, so each competitor receives a fresh deep copy.
+            options = json.loads(json.dumps(reset_options))
+            actor_seed = None if self._seed is None else int(self._seed)
+            try:
+                self._observations[actor_id] = env.reset(
+                    seed=actor_seed,
+                    options=options or None,
+                )
+            except TypeError:
+                # Keep compatibility with older Grid2Op releases (and minimal
+                # test doubles) that predate reset(seed=..., options=...).
+                # The initial seed was already applied in initialize().
+                if options:
+                    try:
+                        self._observations[actor_id] = env.reset(options=options)
+                    except TypeError as exc:
+                        raise RuntimeError(
+                            "Grid2Op runtime does not support the scenario's "
+                            "declared reset_options"
+                        ) from exc
+                else:
+                    self._observations[actor_id] = env.reset()
             self._rewards[actor_id] = 0.0
             self._done[actor_id] = False
             self._done_reasons[actor_id] = ""
@@ -142,6 +174,31 @@ class Grid2OpAdapter:
                     command, "rejected", ["environment_already_terminal"]
                 ))
                 continue
+            action_risk = self._risk_level(command.action_type)
+            approval_decision = str(
+                command.parameters.get("approval_decision") or ""
+            ).strip().lower()
+            if action_risk in {"high", "critical"} and approval_decision != "approved":
+                approval_id = f"approval:{command.world_tick}:{command.actor_id}:{command.action_type}"
+                self._pending_approvals[approval_id] = {
+                    "command": command,
+                    "risk_level": action_risk,
+                    "rollback_ref": f"snapshot:{command.world_tick}:{command.actor_id}",
+                }
+                status = "rolled_back" if approval_decision == "rollback" else "needs_approval"
+                reasons = ["approval_required"] if status == "needs_approval" else []
+                receipts.append(self._receipt(
+                    command,
+                    status,
+                    reasons,
+                    {
+                        "approval_id": approval_id,
+                        "risk_level": action_risk,
+                        "rollback_ref": f"snapshot:{command.world_tick}:{command.actor_id}",
+                        "policy": "high_risk_world_action_requires_approval",
+                    },
+                ))
+                continue
             payload = command.parameters.get("grid2op_action")
             if payload is None:
                 payload = mappings.get(command.action_type)
@@ -168,7 +225,9 @@ class Grid2OpAdapter:
                 "payload": dict(payload),
             }
             receipts.append(self._receipt(
-                command, "accepted", details={"payload": _jsonable(payload)}
+                command,
+                "accepted",
+                details={"payload": _jsonable(payload), "risk_level": action_risk},
             ))
         return receipts
 
@@ -306,6 +365,9 @@ class Grid2OpAdapter:
                     or "l2rpn_case14_sandbox"
                 ),
                 "isolated_environment_per_actor": True,
+                "reset_options_declared": bool(
+                    self._config.get("reset_options")
+                ),
             },
         )
 
@@ -335,6 +397,16 @@ class Grid2OpAdapter:
             reasons=list(reasons or []),
             details=dict(details or {}),
         )
+
+    def _risk_level(self, action_type: str) -> str:
+        policy = self._config.get("approval_policy") or {}
+        if isinstance(policy, dict):
+            action_levels = policy.get("action_risk_levels") or {}
+            if isinstance(action_levels, dict):
+                level = str(action_levels.get(action_type) or "").strip().lower()
+                if level in {"low", "medium", "high", "critical"}:
+                    return level
+        return "low"
 
     @staticmethod
     def _observation_values(observation: Any) -> Dict[str, Any]:

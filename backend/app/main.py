@@ -28,6 +28,7 @@ from app.api.operator_runs import router as operator_runs_router
 from app.api.auth_routes import router as auth_router
 from app.api.admin_routes import router as admin_router
 from app.api.scenario_upload import router as scenario_upload_router
+from app.api.agentteams_routes import router as agentteams_router
 from app.api.websocket import manager
 from app.auth.dependencies import decode_ws_token
 from app.config import load_config
@@ -165,6 +166,7 @@ app.include_router(operator_runs_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(scenario_upload_router)
+app.include_router(agentteams_router)
 from app.api.factory_routes import router as factory_router  # noqa: E402
 app.include_router(factory_router)
 from app.agent_gateway.routes import router as agent_gateway_router  # noqa: E402

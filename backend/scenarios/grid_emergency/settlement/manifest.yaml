@@ -1,0 +1,32 @@
+execution:
+  default:
+    mode: simulation
+    provider_id: grid2op_simulator
+    world_adapter_id: builtin:grid2op
+providers:
+  - id: grid2op_simulator
+    authority: simulation
+    rule_version: grid2op.l2rpn_case14_sandbox.v1
+    handles: [action_resolved, finalize]
+victory:
+  provider_id: grid2op_simulator
+  value: cumulative_reward
+  order: descending
+  label: Grid2Op 累计恢复收益
+display_values:
+  cumulative_reward: 累计恢复收益
+  max_rho: 最大线路负载率
+  disconnected_lines: 断开线路数
+metric_bindings:
+  cumulative_reward: {value: cumulative_reward, transform: identity}
+  max_rho: {value: max_rho, transform: identity}
+  disconnected_lines: {value: disconnected_lines, transform: identity}
+operator_trace:
+  title: 电网物理反馈链
+  process_chain_type: simulation
+  empty_hint: 每一回合按“读取电网观测 → 调度动作 → Grid2Op 潮流反馈 → 安全指标 → 路径比较”展开。
+  nodes:
+    - {id: grid_observation, label: 电网观测, kind: observation, description: Grid2Op 给出的线路负载、连通状态、负荷和冷却状态。}
+    - {id: dispatch_action, label: 调度动作, kind: action, description: Agent 在许可和预算内提交维持隔离、线路恢复或备用调度动作。}
+    - {id: physical_transition, label: 物理转移, kind: world_event, description: Grid2Op 计算潮流、过载、断线和奖励变化。}
+    - {id: recovery_score, label: 路径比较, kind: settlement, description: 以累计收益、最大负载率和断线数比较策略。}

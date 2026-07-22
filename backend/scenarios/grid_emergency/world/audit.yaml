@@ -1,0 +1,13 @@
+audit:
+  tick_limit: 18
+  fallback_action_id: maintain_safe_isolation
+  termination:
+    end_when_one_survivor: false
+    any:
+      - {type: tick_limit, value: 18}
+  final_report:
+    include_metric_timeline: true
+    include_key_actions: true
+    include_decisive_source_refs: true
+  world_goals_title: 电网应急恢复目标
+  world_goals_footer: Grid2Op 模拟器决定每项操作后的潮流、负载、线路状态与结果；最终比较三条独立策略路径。

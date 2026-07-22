@@ -1,0 +1,27 @@
+metrics:
+  primary: cumulative_reward
+  visible: [cumulative_reward, max_rho, disconnected_lines]
+  labels:
+    cumulative_reward: 累计恢复收益
+    max_rho: 最大线路负载率
+    disconnected_lines: 断开线路数
+resources:
+  primary: dispatch_budget
+  labels:
+    dispatch_budget: 调度操作预算
+    response_window: 应急时间窗口
+panels:
+  left: ranking
+  center: grid_feedback
+  right: agent_detail
+thought_display_policy:
+  enabled: true
+  source: public_reasoning_summary
+  max_chars: 180
+trace:
+  route_name: 电网物理反馈链
+  route_steps:
+    - {id: grid_observation, label: 电网观测, helper: 模拟器给出的线路负载、线路状态、负荷和冷却状态。}
+    - {id: dispatch_action, label: 调度动作, helper: Agent 提交维持隔离、线路恢复或备用调度动作。}
+    - {id: physical_transition, label: 物理反馈, helper: Grid2Op 计算潮流、过载、断线和奖励。}
+    - {id: recovery_score, label: 路径比较, helper: 依据客观仿真指标比较三条策略。}

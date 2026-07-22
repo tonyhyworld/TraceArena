@@ -1,0 +1,30 @@
+metrics:
+  - id: cumulative_reward
+    name: 累计恢复收益
+    owner_type: agent
+    initial: 0
+    min: -100000
+    max: 100000
+    visible_to_owner: true
+    visible_to_others: true
+  - id: max_rho
+    name: 最大线路负载率
+    owner_type: agent
+    initial: 0
+    min: 0
+    max: 5
+    visible_to_owner: true
+    visible_to_others: true
+  - id: disconnected_lines
+    name: 断开线路数
+    owner_type: agent
+    initial: 0
+    min: 0
+    max: 100
+    visible_to_owner: true
+    visible_to_others: true
+metric_derivations: []
+ranking:
+  mode: single_metric
+  by: cumulative_reward
+  order: descending
