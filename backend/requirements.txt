@@ -13,4 +13,4 @@ bcrypt>=4.1              # 账户体系:密码哈希
 cryptography>=48.0.1     # 账户体系:BYOK API Key 落盘静态加密（Fernet）
 python-multipart>=0.0.31 # 账户体系:场景包 zip 上传(FastAPI UploadFile)
 mcp>=1.28.1,<2  # MCP 外部工具（Agent OS 轨道 A，需 Python 3.10+）
-akshare>=1.18.72             # A/H 股财报、新闻、宏观与行业供需公开数据
+akshare>=1.18.74             # A/H 股财报、新闻、宏观与行业供需公开数据
