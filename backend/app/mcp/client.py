@@ -119,7 +119,7 @@ def _import_mcp_stdio():
         from mcp.client.stdio import stdio_client
     except ImportError as exc:
         raise MCPUnavailableError(
-            "未安装 MCP SDK 或 Python 版本过低（需要 Python>=3.10 且 pip install 'mcp>=1.27,<2'）"
+            "未安装 MCP SDK 或 Python 版本过低（需要 Python>=3.10 且 pip install 'mcp>=1.28.1,<2'）"
         ) from exc
     return ClientSession, StdioServerParameters, stdio_client
 
