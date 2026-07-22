@@ -29,10 +29,14 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: "0.11.31"
+          enable-cache: true
+
       - name: 安装依赖
         run: |
-          python -m pip install --upgrade pip==26.1.2
-          python -m pip install uv==0.11.31
           uv sync --locked --extra dev
           echo "REPLAY_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
 
