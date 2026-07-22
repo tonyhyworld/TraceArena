@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "pixi.js": "^8.6.0",
-    "three": "^0.184.0",
+    "three": "^0.185.1",
     "vue": "^3.5.13"
   },
   "devDependencies": {
