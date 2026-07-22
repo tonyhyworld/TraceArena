@@ -50,6 +50,7 @@ jobs:
             backend/tests/test_market_replay_cli.py \
             backend/tests/test_market_replay_pipeline.py \
             backend/tests/test_investment_benchmark_cli.py \
+            backend/tests/test_investment_benchmark_colab.py \
             backend/tests/test_public_asset_provenance.py \
             backend/tests/test_frontend_i18n_contract.py \
             backend/tests/test_security_boundaries.py \

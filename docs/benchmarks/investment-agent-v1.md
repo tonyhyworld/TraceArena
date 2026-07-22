@@ -18,6 +18,8 @@ We will label results as model comparisons only when every entry includes model/
 
 ## Reproduce
 
+Fastest path: [open the pinned Colab notebook](https://colab.research.google.com/github/tonyhyworld/TraceArena/blob/main/examples/investment_benchmark/TraceArena_Investment_Benchmark_v1.ipynb). It clones v0.1.12, runs the no-key benchmark, and verifies the generated report against the published baseline.
+
 ```bash
 python backend/scripts/investment_benchmark.py \
   --output runs/investment_agent_benchmark_v1

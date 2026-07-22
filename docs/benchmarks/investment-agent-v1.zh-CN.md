@@ -18,6 +18,8 @@ TraceArena 评测投资智能体能否把有引用的研究证据转化为合法
 
 ## 复现方法
 
+最快方式：[打开固定版本的 Colab Notebook](https://colab.research.google.com/github/tonyhyworld/TraceArena/blob/main/examples/investment_benchmark/TraceArena_Investment_Benchmark_v1.ipynb)。它会克隆 v0.1.12、运行无 Key 基准，并把生成报告与已发布基线进行核对。
+
 ```bash
 python backend/scripts/investment_benchmark.py \
   --output runs/investment_agent_benchmark_v1
