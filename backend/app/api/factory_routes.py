@@ -27,7 +27,7 @@ from pydantic import BaseModel, Field
 from app.auth.dependencies import require_permission
 from app.auth.models import User
 from app.auth.permissions import Permission
-from app.core.path_safety import path_beneath
+from app.core.path_safety import path_beneath, safe_path_component
 
 router = APIRouter(prefix="/factory")
 
@@ -246,7 +246,9 @@ async def download_file(dataset_id: str, name: str, user: User = _dep) -> FileRe
     if name not in _EXPORT_FILES:
         raise HTTPException(400, "非法文件名")
     ds_dir = _safe_dataset_dir(dataset_id, user.user_id)
-    target = (ds_dir / name).resolve()
+    target = path_beneath(
+        ds_dir, safe_path_component(name, label="export filename")
+    )
     if ds_dir not in target.parents or not target.is_file():
         raise HTTPException(404, "文件不存在")
     return FileResponse(str(target), filename=name, media_type="application/octet-stream")
