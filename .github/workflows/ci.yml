@@ -51,6 +51,7 @@ jobs:
             backend/tests/test_market_replay_pipeline.py \
             backend/tests/test_public_asset_provenance.py \
             backend/tests/test_frontend_i18n_contract.py \
+            backend/tests/test_security_boundaries.py \
             backend/tests/test_scenario_locale.py
 
       - name: Validate static public Viewer

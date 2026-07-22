@@ -18,10 +18,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-import yaml
-
 from app.auth.dependencies import get_current_user
 from app.auth.models import User
+from app.core.path_safety import path_beneath
 
 router = APIRouter(prefix="/operator")
 
@@ -40,7 +39,7 @@ RISK_ACTIONS: set[str] = set()
 def _scenario_label_maps(
     run_dir: Path,
 ) -> Tuple[Dict[str, str], Dict[str, str], set[str], set[str], set[str]]:
-    """优先从 run_manifest.scenario.path 指向的场景包读取 labels；失败时退回默认。"""
+    """只读取归档中冻结的术语，不跟随归档提供的本地文件路径。"""
     action_labels = dict(ACTION_LABELS)
     metric_labels = dict(METRIC_LABELS)
     interaction_actions = set(INTERACTION_ACTIONS)
@@ -81,88 +80,24 @@ def _scenario_label_maps(
         fallback_aid = str(terminology.get("fallback_action_id") or "").strip()
         if fallback_aid:
             wait_actions.add(fallback_aid)
-    scenario_path = str(
-        ((manifest or {}).get("scenario") or {}).get("path") or ""
-    ).strip()
-    if not scenario_path:
-        return action_labels, metric_labels, interaction_actions, risk_actions, wait_actions
-    scenario_dir = Path(scenario_path)
-    if not scenario_dir.is_dir():
-        return action_labels, metric_labels, interaction_actions, risk_actions, wait_actions
-    actions_path = scenario_dir / "world" / "actions.yaml"
-    metrics_path = scenario_dir / "world" / "metrics.yaml"
-    audit_path = scenario_dir / "world" / "audit.yaml"
-    risky_categories: set[str] = set()
-    fallback_action_id = ""
-    if audit_path.is_file():
-        try:
-            audit_cfg = yaml.safe_load(audit_path.read_text(encoding="utf-8")) or {}
-            audit_body = (audit_cfg.get("audit") or {}) if isinstance(audit_cfg, dict) else {}
-            risky_categories = {
-                str(item)
-                for item in (audit_body.get("risky_categories") or [])
-                if item
-            }
-            fallback_action_id = str(audit_body.get("fallback_action_id") or "").strip()
-        except Exception:
-            risky_categories = set()
-            fallback_action_id = ""
-    if actions_path.is_file():
-        try:
-            actions_cfg = yaml.safe_load(actions_path.read_text(encoding="utf-8")) or {}
-            actions = actions_cfg.get("actions") if isinstance(actions_cfg, dict) else actions_cfg
-            if isinstance(actions, list):
-                interaction_actions = set()
-                risk_actions = set()
-                wait_actions = set()
-                for item in actions:
-                    if not isinstance(item, dict):
-                        continue
-                    aid = str(item.get("id", "") or "").strip()
-                    if not aid:
-                        continue
-                    action_labels[aid] = str(item.get("name") or aid)
-                    if item.get("interaction_role") or str(item.get("target_kind", "")) == "agent":
-                        interaction_actions.add(aid)
-                    category = str(item.get("category", "") or "")
-                    if category in risky_categories:
-                        risk_actions.add(aid)
-                    if (
-                        str(item.get("intent") or "") == "wait"
-                        or aid == fallback_action_id
-                    ):
-                        wait_actions.add(aid)
-                if fallback_action_id:
-                    wait_actions.add(fallback_action_id)
-        except Exception:
-            pass
-    if metrics_path.is_file():
-        try:
-            metrics_cfg = yaml.safe_load(metrics_path.read_text(encoding="utf-8")) or {}
-            metrics = metrics_cfg.get("metrics") if isinstance(metrics_cfg, dict) else []
-            if isinstance(metrics, list):
-                for item in metrics:
-                    if not isinstance(item, dict):
-                        continue
-                    mid = str(item.get("id", "") or "").strip()
-                    if not mid:
-                        continue
-                    metric_labels[mid] = str(item.get("name") or mid)
-        except Exception:
-            pass
     return action_labels, metric_labels, interaction_actions, risk_actions, wait_actions
 
 
 def _runs_base(user_id: str) -> Path:
     """该用户的 runs 根目录：AIWORLD_LOG_DIR/<user_id>，与 EngineManager 的 log_dir 布局一致。"""
-    return (Path(os.environ.get("AIWORLD_LOG_DIR", "./runs")).resolve() / user_id)
+    return path_beneath(
+        Path(os.environ.get("AIWORLD_LOG_DIR", "./runs")), user_id
+    )
 
 
 def _safe_run_dir(run_id: str, user_id: str) -> Path:
     if not _RUN_ID_RE.match(run_id):
         raise HTTPException(400, "非法 run_id")
     base = _runs_base(user_id)
-    run_dir = (base / run_id).resolve()
+    try:
+        run_dir = path_beneath(base, run_id)
+    except ValueError as exc:
+        raise HTTPException(400, "非法 run_id") from exc
     if run_dir != base and base not in run_dir.parents:
         raise HTTPException(400, "非法 run_id")
     if not run_dir.is_dir():
@@ -173,8 +108,11 @@ def _safe_run_dir(run_id: str, user_id: str) -> Path:
 def _safe_file(run_dir: Path, subdir: str, name: str, suffix: str) -> Path:
     if not _NAME_RE.match(name):
         raise HTTPException(400, "非法文件名")
-    target = (run_dir / subdir / f"{name}{suffix}").resolve()
-    if run_dir not in target.parents:
+    try:
+        target = path_beneath(run_dir, subdir, f"{name}{suffix}")
+    except ValueError as exc:
+        raise HTTPException(400, "非法路径") from exc
+    if run_dir.resolve() not in target.parents:
         raise HTTPException(400, "非法路径")
     if not target.is_file():
         raise HTTPException(404, f"文件不存在: {subdir}/{name}{suffix}")

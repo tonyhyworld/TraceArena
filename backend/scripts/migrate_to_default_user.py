@@ -4,7 +4,7 @@
 用法：cd backend && ./.venv/bin/python scripts/migrate_to_default_user.py
 
 做的事：
-1. 在 user_data/users.json 里创建 default 账号（随机初始密码，打印到终端）
+1. 在 user_data/users.json 里创建 default 账号（密码由管理员交互输入）
 2. runs/run_* → runs/default/run_*
 3. agents_persistent/prince_* → agents_persistent/default/prince_*
 
@@ -12,7 +12,7 @@
 """
 from __future__ import annotations
 
-import secrets
+import getpass
 import shutil
 import sys
 from pathlib import Path
@@ -65,16 +65,18 @@ def ensure_default_account() -> None:
     if user_store.get_by_id(DEFAULT_USER_ID) is not None:
         print("[skip] default 账号已存在")
         return
-    password = secrets.token_urlsafe(9)
+    password = getpass.getpass("为 default 管理员设置初始密码: ")
+    password2 = getpass.getpass("再次输入初始密码: ")
+    if password != password2:
+        raise RuntimeError("两次输入的密码不一致")
+    if len(password) < 12:
+        raise RuntimeError("管理员密码至少 12 位")
     user_store.create_user(
         username="default", password=password,
         display_name="默认账号（历史数据归属）", is_admin=True,
         user_id=DEFAULT_USER_ID,
     )
-    print("=" * 50)
-    print(f"[ok] 已创建 default 账号，初始密码：{password}")
-    print("请妥善保存，登录后可自行改密（如无改密接口，找开发者协助）。")
-    print("=" * 50)
+    print("[ok] 已创建 default 账号；初始密码未写入日志或文件")
 
 
 if __name__ == "__main__":

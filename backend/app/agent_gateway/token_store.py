@@ -11,6 +11,8 @@ from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, Optional
 
+from app.core.path_safety import path_beneath
+
 logger = logging.getLogger(__name__)
 
 _lock = Lock()
@@ -38,7 +40,7 @@ class SlotTokenRecord:
 
 
 def _user_tokens_path(user_id: str) -> Path:
-    return Path("./user_data") / user_id / "agent_slot_tokens.json"
+    return path_beneath("./user_data", user_id, "agent_slot_tokens.json")
 
 
 def _index_path() -> Path:

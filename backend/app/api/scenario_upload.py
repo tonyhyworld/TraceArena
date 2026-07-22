@@ -14,6 +14,7 @@ ScenarioBootKernel.load() + validate() 校验，通过才落到该用户的
 from __future__ import annotations
 
 import shutil
+import stat
 import uuid
 import zipfile
 from pathlib import Path
@@ -26,28 +27,53 @@ from app.auth.models import User
 from app.auth.permissions import Permission
 from app.core.exceptions import ScenarioLoadError
 from app.engine.scenario_boot.loader import ScenarioBootKernel
+from app.core.path_safety import path_beneath
 
 router = APIRouter(prefix="/scenarios", tags=["scenario-upload"])
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20MB，场景包只是文本+少量资源清单，够用
+MAX_EXTRACTED_BYTES = 100 * 1024 * 1024
 _NAME_RE = __import__("re").compile(r"^[A-Za-z0-9_\-]{1,64}$")
 
 
 def _user_scenarios_root(user_id: str) -> Path:
-    return Path("./user_data") / user_id / "scenarios"
+    return path_beneath("./user_data", user_id, "scenarios")
 
 
 def _safe_extract(zf: zipfile.ZipFile, dest: Path) -> None:
-    """解压前逐条校验 entry 路径，防 zip slip（写到 dest 之外）"""
+    """逐项解压普通文件，拒绝路径穿越、符号链接和特殊文件。"""
     dest_resolved = dest.resolve()
+    total_size = sum(info.file_size for info in zf.infolist() if not info.is_dir())
+    if total_size > MAX_EXTRACTED_BYTES:
+        raise HTTPException(400, "压缩包解压后体积超过 100MB，已拒绝")
     for info in zf.infolist():
-        name = info.filename
-        if name.startswith("/") or name.startswith("\\") or ".." in Path(name).parts:
+        name = info.filename.replace("\\", "/")
+        parts = [part for part in name.split("/") if part]
+        mode = info.external_attr >> 16
+        file_type = stat.S_IFMT(mode)
+        if (
+            not parts
+            or name.startswith("/")
+            or "\x00" in name
+            or ":" in parts[0]
+            or any(part in {".", ".."} for part in parts)
+            or stat.S_ISLNK(mode)
+            or file_type not in {0, stat.S_IFREG, stat.S_IFDIR}
+        ):
             raise HTTPException(400, f"压缩包内含非法路径，已拒绝: {name}")
-        target = (dest / name).resolve()
-        if dest_resolved != target and dest_resolved not in target.parents:
+        target = dest_resolved.joinpath(*parts).resolve()
+        try:
+            target.relative_to(dest_resolved)
+        except ValueError as exc:
+            raise HTTPException(400, f"压缩包内含非法路径，已拒绝: {name}") from exc
+        if info.is_dir():
+            target.mkdir(parents=True, exist_ok=True)
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if target.exists() and target.is_symlink():
             raise HTTPException(400, f"压缩包内含非法路径，已拒绝: {name}")
-    zf.extractall(dest)
+        with zf.open(info, "r") as source, target.open("wb") as output:
+            shutil.copyfileobj(source, output)
 
 
 def _find_scenario_root(extract_dir: Path) -> Path:
@@ -79,11 +105,11 @@ async def upload_scenario(
 
     user_root = _user_scenarios_root(user.user_id)
     user_root.mkdir(parents=True, exist_ok=True)
-    final_dir = user_root / scenario_name
+    final_dir = path_beneath(user_root, scenario_name)
     if final_dir.exists() and not overwrite:
         raise HTTPException(409, f"场景包 {scenario_name} 已存在，加 overwrite=true 覆盖")
 
-    tmp_dir = user_root / f".tmp_{uuid.uuid4().hex[:10]}"
+    tmp_dir = path_beneath(user_root, f"tmp_{uuid.uuid4().hex[:10]}")
     tmp_dir.mkdir(parents=True, exist_ok=True)
     try:
         import io

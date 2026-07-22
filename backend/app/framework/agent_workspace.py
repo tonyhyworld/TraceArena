@@ -32,6 +32,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from app.core.path_safety import path_beneath, safe_path_component
+
 logger = logging.getLogger(__name__)
 
 # 跨局持久根目录（相对 backend cwd）。所有 agent 的长期记忆都落到这里。
@@ -50,9 +52,9 @@ class AgentWorkspace:
         self, run_dir: Path, agent_id: str, agent_name: str,
         long_term_root: Path = LONG_TERM_ROOT,
     ):
-        self.agent_id = agent_id
+        self.agent_id = safe_path_component(agent_id, label="agent_id")
         self.agent_name = agent_name
-        self.dir = run_dir / "agents" / agent_id
+        self.dir = path_beneath(run_dir, "agents", self.agent_id)
         self.cot_dir = self.dir / "cot"
         self.harness_dir = self.dir / "harness"
         self.dir.mkdir(parents=True, exist_ok=True)
@@ -101,7 +103,7 @@ class AgentWorkspace:
         data = (content or "").encode("utf-8")
         if len(data) > max_bytes:
             raise ValueError(f"代码文件超过大小限制 {max_bytes} 字节")
-        path = self.code_dir / name
+        path = path_beneath(self.code_dir, name)
         if not path.is_file():
             existing = self.list_code_files()
             if len(existing) >= max_files:
@@ -111,14 +113,14 @@ class AgentWorkspace:
 
     def read_code_file(self, filename: str) -> str:
         name = self._normalize_code_filename(filename)
-        path = self.code_dir / name
+        path = path_beneath(self.code_dir, name)
         if not path.is_file():
             raise FileNotFoundError(name)
         return path.read_text(encoding="utf-8")
 
     def delete_code_file(self, filename: str) -> None:
         name = self._normalize_code_filename(filename)
-        path = self.code_dir / name
+        path = path_beneath(self.code_dir, name)
         if path.is_file():
             path.unlink()
 
@@ -166,7 +168,9 @@ class AgentWorkspace:
 
     @property
     def long_term_path(self) -> Path:
-        return self._long_term_root / self.agent_id / "long_term_memory.md"
+        return path_beneath(
+            self._long_term_root, self.agent_id, "long_term_memory.md"
+        )
 
     def read_long_term(self) -> str:
         """读取本 agent 在所有过往局的总结记忆。新 agent 返回空串。"""
