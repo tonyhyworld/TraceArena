@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
+from app.core.json_extraction import extract_json_candidates
 from app.mcp.tool_request import normalize_tool_request
 
 class ActionParser:
@@ -241,10 +242,26 @@ class ActionParser:
     ) -> Optional[Dict[str, Any]]:
         candidates = [
             item for item in self._extract_json_candidates(raw)
-            if isinstance(item, dict) and (item.get("action_id") or item.get("intent"))
+            if isinstance(item, dict) and (
+                item.get("action_id")
+                or item.get("intent")
+                or str(item.get("agent_loop_step") or "").strip().lower() == "continue"
+            )
         ]
         if not candidates:
             return current
+        # A loop continuation is an instruction to execute exactly one tool.
+        # Some providers emit several JSON objects in one answer.  Taking the
+        # last one caused earlier requests to be silently skipped, while the
+        # model assumed they had all run.  Execute the first continuation and
+        # let its tool result drive the next model turn.
+        continuations = [
+            item for item in candidates
+            if str(item.get("agent_loop_step") or "").strip().lower() == "continue"
+            and item.get("tool_request")
+        ]
+        if continuations:
+            return continuations[0]
         final = candidates[-1]
         if current is None:
             return final
@@ -331,43 +348,7 @@ class ActionParser:
     @staticmethod
     def _extract_json_candidates(text: str) -> List[Any]:
         """按出现顺序提取文本中所有可解析 JSON 候选。"""
-        decoder = json.JSONDecoder()
-        candidates: List[Any] = []
-        seen: set[str] = set()
-
-        def add(value: Any) -> None:
-            if not isinstance(value, (dict, list)):
-                return
-            try:
-                marker = json.dumps(value, ensure_ascii=False, sort_keys=True)
-            except TypeError:
-                return
-            if marker in seen:
-                return
-            seen.add(marker)
-            candidates.append(value)
-
-        for match in re.finditer(
-            r"```(?:json)?\s*\n(.*?)```",
-            text,
-            re.DOTALL | re.IGNORECASE,
-        ):
-            block = match.group(1).strip()
-            try:
-                add(json.loads(block))
-            except json.JSONDecodeError:
-                pass
-
-        for idx, char in enumerate(text):
-            if char not in "{[":
-                continue
-            try:
-                value, _ = decoder.raw_decode(text[idx:])
-            except json.JSONDecodeError:
-                continue
-            add(value)
-
-        return candidates
+        return extract_json_candidates(text)
 
     def _infer_missing_fields(self, base: Dict[str, Any]) -> None:
         """模型未填的可选字段给中性默认值，交给 Judge 按内容语义评。
@@ -406,13 +387,9 @@ class ActionParser:
 
     @staticmethod
     def _try_json(text: str) -> Optional[Dict[str, Any]]:
-        # 尝试找 JSON 对象
-        m = re.search(r"\{.*\}", text, re.DOTALL)
-        if m:
-            try:
-                return json.loads(m.group())
-            except json.JSONDecodeError:
-                pass
+        for candidate in extract_json_candidates(text):
+            if isinstance(candidate, dict):
+                return candidate
         try:
             return json.loads(text)
         except json.JSONDecodeError:

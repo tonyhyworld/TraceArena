@@ -248,6 +248,65 @@ def _call_trades(args):
     return {"symbol": sym, "trades": _obj_to_dict(_get_ctx().trades(sym, count))}
 
 
+def _call_option_chain(args):
+    """US option expiries/chain with optional contract quotes."""
+    sym = _one_symbol(args)
+    expiries_raw = _obj_to_dict(
+        _get_ctx().option_chain_expiry_date_list(sym)
+    )
+    expiries = [
+        str(item) for item in (expiries_raw or []) if str(item)
+    ]
+    requested = str(args.get("expiry_date") or "").strip()
+    today = datetime.datetime.now(datetime.timezone.utc).date()
+    future_expiries = []
+    for item in expiries:
+        try:
+            parsed_date = datetime.date.fromisoformat(item[:10])
+        except ValueError:
+            continue
+        if parsed_date >= today:
+            future_expiries.append(item)
+    expiry_text = requested or (
+        future_expiries[0] if future_expiries
+        else (expiries[-1] if expiries else "")
+    )
+    if not expiry_text:
+        raise ValueError(f"data_unavailable: no option expiry for {sym}")
+    try:
+        expiry = datetime.date.fromisoformat(expiry_text[:10])
+    except ValueError as exc:
+        raise ValueError("expiry_date must be YYYY-MM-DD") from exc
+    chain = _obj_to_dict(
+        _get_ctx().option_chain_info_by_date(sym, expiry)
+    )
+    contract_symbols: List[str] = []
+    for row in chain if isinstance(chain, list) else []:
+        if not isinstance(row, dict):
+            continue
+        for key in ("call_symbol", "put_symbol"):
+            value = str(row.get(key) or "").strip()
+            if value:
+                contract_symbols.append(value)
+    max_contracts = max(
+        0, min(40, int(args.get("max_contract_quotes") or 20))
+    )
+    quotes: Any = []
+    if max_contracts and contract_symbols:
+        quotes = _obj_to_dict(
+            _get_ctx().option_quote(contract_symbols[:max_contracts])
+        )
+    return {
+        "symbol": sym,
+        "symbols": [sym],
+        "expiry_date": expiry.isoformat(),
+        "available_expiries": expiries[:24],
+        "option_chain": chain,
+        "option_quotes": quotes,
+        "research_categories": ["options"],
+    }
+
+
 _SYM = {"symbol": {"type": "string"}}
 _SYMS = {"symbols": {"type": "array", "items": {"type": "string"}}, "symbol": {"type": "string"}}
 _TOOLS = {
@@ -261,6 +320,17 @@ _TOOLS = {
     "longport_depth": ("盘口买卖档。symbol", _SYM, ["symbol"], _call_depth),
     "longport_intraday": ("当日分时行情。symbol", _SYM, ["symbol"], _call_intraday),
     "longport_trades": ("逐笔成交。symbol、count(默认20)", {**_SYM, "count": {"type": "number"}}, ["symbol"], _call_trades),
+    "longport_option_chain": (
+        "美股期权到期日、认购/认沽合约链及部分合约行情。"
+        "symbol、可选 expiry_date(YYYY-MM-DD)、max_contract_quotes",
+        {
+            **_SYM,
+            "expiry_date": {"type": "string"},
+            "max_contract_quotes": {"type": "integer"},
+        },
+        ["symbol"],
+        _call_option_chain,
+    ),
 }
 
 

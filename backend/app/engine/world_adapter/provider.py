@@ -189,7 +189,9 @@ class WorldAdapterEvaluationProvider:
                 )
             outcome = {
                 "accepted": "success",
+                "needs_approval": "no_effect",
                 "executed": "success",
+                "rolled_back": "success",
                 "rejected": "invalid",
                 "failed": "error",
             }[receipt.status]

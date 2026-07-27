@@ -1,0 +1,19 @@
+objects:
+  portfolio_book_render:
+    display_mode: ui_card
+    asset: assets/objects/portfolio_ledger.svg
+    format: svg
+    icon: assets/icons/default_market_icon.svg
+    position: {anchor: object_anchor_1}
+    effects: {positive_delta: glow, negative_delta: warning_flash, no_effect: neutral_pulse}
+    ui: {show_card: true, show_core_value: true, show_factors: true}
+    fallback: {missing_asset: default_object, missing_icon: default_icon}
+  risk_dashboard_render:
+    display_mode: ui_card
+    asset: assets/objects/risk_dashboard.svg
+    format: svg
+    icon: assets/icons/default_market_icon.svg
+    position: {anchor: object_anchor_2}
+    effects: {positive_delta: glow, negative_delta: warning_flash, no_effect: neutral_pulse}
+    ui: {show_card: true, show_core_value: true, show_factors: true}
+    fallback: {missing_asset: default_object, missing_icon: default_icon}

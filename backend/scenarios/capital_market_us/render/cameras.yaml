@@ -1,0 +1,5 @@
+# Dashboard 演绎仍可能引用镜头 primitive；本场景不启用地图走动，仅保留必要机位 ID。
+cameras:
+  camera_close: {type: closeup, distance: 3, height: 1.6}
+  actor_closeup: {type: closeup, distance: 2.2, height: 1.7}
+  object_focus: {type: focus, distance: 3, height: 1.2}

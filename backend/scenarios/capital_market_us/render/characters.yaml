@@ -1,0 +1,46 @@
+characters:
+  investor_a_render:
+    asset: assets/characters/defensive_fund_avatar.svg
+    format: svg
+    scale: 1.45
+    default_animation: idle
+    animations:
+      idle: idle
+      walk: walk
+      run: run
+      talk: talk
+      think: think
+      observe: observe
+      inspect: inspect
+      use_tool: use_tool
+      success: success
+      fail: fail
+    labels:
+      display_name: 陈稳 · 价值型
+      badge: 稳
+    fallback:
+      missing_animation: idle
+      missing_model: default_character
+
+  investor_b_render:
+    asset: assets/characters/aggressive_fund_avatar.svg
+    format: svg
+    scale: 1.45
+    default_animation: idle
+    animations:
+      idle: idle
+      walk: walk
+      run: run
+      talk: talk
+      think: think
+      observe: observe
+      inspect: inspect
+      use_tool: use_tool
+      success: success
+      fail: fail
+    labels:
+      display_name: 林锋 · 成长型
+      badge: 进
+    fallback:
+      missing_animation: idle
+      missing_model: default_character

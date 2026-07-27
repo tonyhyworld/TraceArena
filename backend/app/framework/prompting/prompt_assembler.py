@@ -248,10 +248,18 @@ class PromptAssembler:
                 action_name = item.get("action_name") or item.get("action_id")
                 message = item.get("message") or "上一回合有行动意图尚未落地。"
                 lines.append(f"  - {message}")
-                lines.append(
-                    f"    本回合请明确选择：执行「{action_name}」、缩小方案，"
-                    "或者放弃并说明原因；不要无故重做同一份研究。"
-                )
+                if item.get("retry_blocked_until_change"):
+                    repeat_count = int(item.get("repeat_count", 2) or 2)
+                    lines.append(
+                        f"    同一动作已因同一原因连续失败 {repeat_count} 次。"
+                        "在导致失败的外部状态或前置条件明确变化前，禁止原样重提；"
+                        "请选择等待、替代动作或先补齐缺失条件。"
+                    )
+                else:
+                    lines.append(
+                        f"    本回合请明确选择：执行「{action_name}」、缩小方案，"
+                        "或者放弃并说明原因；不要无故重做同一份研究。"
+                    )
 
         # 回合阶段由场景 clock.yaml 声明、OS 统一算并注入 round_phase。
         # OS 只透传阶段名与场景描述，不自行解读任何标志（如是否可交易）——
@@ -348,6 +356,43 @@ class PromptAssembler:
                 for k, v in pressure.items():
                     if v is not None:
                         lines.append(f"    {audience_label(k, terminology)}: {v}")
+
+        # Scenario-declared executable worlds (simulators, external systems,
+        # deterministic verifiers, etc.) may publish an actor-scoped
+        # observation through the adapter boundary.  This is a *generic* OS
+        # capability: the prompt only transports opaque values and never
+        # interprets a domain field.  It must be visible in the final prompt,
+        # otherwise an agent can see the data in ``raw_context`` during
+        # assembly but has no usable way to base its decision on it.
+        adapter_observation = (
+            brief.raw_context.get("world_adapter_observation")
+            if brief.raw_context else None
+        )
+        adapter_observations = (
+            brief.raw_context.get("world_adapter_observations")
+            if brief.raw_context else None
+        )
+        if adapter_observation or adapter_observations:
+            import json as _json
+            payload = adapter_observations or adapter_observation
+            try:
+                rendered_observation = _json.dumps(
+                    payload, ensure_ascii=False, sort_keys=True
+                )
+            except (TypeError, ValueError):
+                rendered_observation = str(payload)
+            # A malformed third-party adapter must not explode the prompt or
+            # consume the entire model context.  The full canonical record is
+            # still retained in the audit trace; this is the decision view.
+            if len(rendered_observation) > 12000:
+                rendered_observation = rendered_observation[:12000] + "…[truncated]"
+            lines.append("\n### 可执行世界的权威观测（本回合已提供）")
+            lines.append(
+                "  以下数据来自场景声明的世界适配器，是当前角色可直接据以决策的"
+                "客观反馈。不要尝试在个人沙箱中导入、安装或重建该外部世界；"
+                "沙箱不可访问并不表示观测缺失。"
+            )
+            lines.append(f"  {rendered_observation}")
 
         # 5b. 可用资源
         if brief.available_resources:
@@ -747,11 +792,42 @@ class PromptAssembler:
 
         if brief.raw_context and brief.raw_context.get("agent_loop_enabled"):
             max_steps = brief.raw_context.get("agent_loop_max_steps", 5)
+            sandbox_policy = (
+                (agent_sandbox or {}).get("policy", {})
+                if isinstance(agent_sandbox, dict) else {}
+            )
+            package_install_allowed = bool(
+                sandbox_policy.get("package_install_allowed", False)
+            )
+            network_allowed = bool(
+                sandbox_policy.get("network_allowed", False)
+            )
             lines.append("\n### Agent 循环（本回合可多步推理）")
             lines.append(
                 f"  本回合启用 Agent 循环，最多 {max_steps} 步。"
                 "你可以先调工具/试跑代码，再提交最终行动。"
             )
+            suspendable = (
+                str(
+                    brief.raw_context.get(
+                        "agent_loop_completion_mode", "require_action"
+                    )
+                ) == "suspendable"
+            )
+            if suspendable:
+                lines.append(
+                    "  当前场景允许研究跨周期延续：研究尚未完成时不要为了结束本周期"
+                    "而提交等待或其他世界动作。你可以明确挂起研究："
+                )
+                lines.append(
+                    '  {"agent_loop_step":"suspend",'
+                    '"public_reasoning_summary":"本周期确认了什么、还缺什么",'
+                    '"plan":"下一周期的具体研究步骤"}'
+                )
+                lines.append(
+                    "  挂起状态、已验证证据和公开研究摘要会在下一周期恢复；"
+                    "不要在挂起内容中声称尚未发生的成交。"
+                )
             lines.append(
                 "  只要你需要外部事实、计算结果或缺少某项能力，就必须先输出中间步；"
                 "不要把申请工具伪装成场景最终行动，也不要在尚未取得结果时直接提交行动。"
@@ -767,13 +843,23 @@ class PromptAssembler:
                 '{"capability_request": {"operation": "discover", '
                 '"query": "你要解决的问题或所需能力"}}}'
             )
-            lines.append(
-                "  发现需要 Python 依赖时，可申请安装到你自己的隔离环境："
-            )
-            lines.append(
-                '  {"agent_loop_step": "continue", "tool_request": '
-                '{"package_install": {"packages": ["package_name==version"]}}}'
-            )
+            if package_install_allowed:
+                lines.append(
+                    "  发现需要 Python 依赖时，可申请安装到你自己的隔离环境："
+                )
+                lines.append(
+                    '  {"agent_loop_step": "continue", "tool_request": '
+                    '{"package_install": {"packages": ["package_name==version"]}}}'
+                )
+            else:
+                lines.append(
+                    "  当前 Sandbox 禁止安装 Python 依赖；不要申请 package_install，"
+                    "应使用已就绪工具或仅使用标准库。"
+                )
+            if not network_allowed:
+                lines.append(
+                    "  当前 Sandbox 代码禁止联网；外部事实必须通过已授权 MCP/场景工具获取。"
+                )
             lines.append(
                 "  安装后运行工作区脚本时，指定 execution_mode=agent_process；"
                 "脚本通过标准输出返回观察结果，不能直接修改世界。"
@@ -784,6 +870,10 @@ class PromptAssembler:
             lines.append(
                 "  最终步：正常行动 JSON（必须含 action_id），"
                 "不要重复附带已在中间步执行过的 tool_request。"
+            )
+            lines.append(
+                "  每次回复只能输出一个 JSON 对象：一次只申请一个工具或提交一个最终行动。"
+                "必须等待系统返回该工具结果后，才能申请下一项工具。"
             )
 
         # 10. 输出格式
@@ -899,15 +989,32 @@ class PromptAssembler:
                     "禁止留空，也禁止只把内容写在 plan/text 里。"
                 )
 
+        audience_language = str(
+            (brief.raw_context or {}).get("audience_language")
+            or (brief.raw_context or {}).get("scenario_locale")
+            or contract.get("audience_language")
+            or "zh-CN"
+        )
+        wants_english = audience_language.lower().startswith("en")
+
         # ── 输出语言约束（区分 ID 字段和文本字段）────────────────
-        lines.append("\n### ⚠️ 输出语言约束（非常重要）")
-        lines.append("  - intent / target_object_id 字段：必须使用英文 id（从上面的列表中选择）")
-        lines.append("  - text / character_monologue / plan / public_reasoning_summary / action_name / expected_effect 字段：必须使用纯中文")
-        lines.append("  - character_monologue 必须是第一人称角色短独白，只表达当下目标、顾虑或取舍，不得输出分析步骤或隐藏推理")
-        lines.append("  - public_reasoning_summary 是给观众看的投资策略短摘要，与 character_monologue 分工不同，两者都要填且内容不要完全相同")
-        lines.append("  - text/character_monologue/plan 中绝对禁止出现任何英文 id，包括括号内也不行")
-        lines.append("  - 指标只能使用上方显示的中文名；禁止写 public_trust、governance_score 等内部字段名")
-        lines.append("  - 英文 id 仅允许出现在 action_id、target_id、tool_id 等结构化控制字段中")
+        if wants_english:
+            lines.append("\n### ⚠️ Output language contract (critical)")
+            lines.append("  - action_id / intent / target_object_id / tool_id fields: use the stable IDs from the lists above.")
+            lines.append("  - text / character_monologue / plan / public_reasoning_summary / action_name / expected_effect: write in clear English.")
+            lines.append("  - character_monologue must be a short first-person line for the audience; do not expose hidden chain-of-thought.")
+            lines.append("  - public_reasoning_summary is an audience-facing investment strategy summary; keep it distinct from character_monologue.")
+            lines.append("  - Do not mix Chinese prose into audience-facing text fields unless quoting a Chinese company name or market term is necessary.")
+            lines.append("  - Internal IDs are allowed only in structured control fields or evidence references, not as audience copy.")
+        else:
+            lines.append("\n### ⚠️ 输出语言约束（非常重要）")
+            lines.append("  - intent / target_object_id 字段：必须使用英文 id（从上面的列表中选择）")
+            lines.append("  - text / character_monologue / plan / public_reasoning_summary / action_name / expected_effect 字段：必须使用纯中文")
+            lines.append("  - character_monologue 必须是第一人称角色短独白，只表达当下目标、顾虑或取舍，不得输出分析步骤或隐藏推理")
+            lines.append("  - public_reasoning_summary 是给观众看的投资策略短摘要，与 character_monologue 分工不同，两者都要填且内容不要完全相同")
+            lines.append("  - text/character_monologue/plan 中绝对禁止出现任何英文 id，包括括号内也不行")
+            lines.append("  - 指标只能使用上方显示的中文名；禁止写 public_trust、governance_score 等内部字段名")
+            lines.append("  - 英文 id 仅允许出现在 action_id、target_id、tool_id 等结构化控制字段中")
         # 动态示例：优先从当前场景可见对象/可达地点/可用工具中取一个
         loc_example_id = ""
         loc_example_name = ""
@@ -936,22 +1043,23 @@ class PromptAssembler:
         obj_example_name = terminology.get(obj_example_id) if isinstance(terminology, dict) else None
         if not obj_example_name:
             obj_example_name = obj_example_id
-        if loc_example_id:
-            lines.append(f"  - 错误示例：'前往 {loc_example_name}（{loc_example_id}）' ← 禁止这样写")
-            lines.append(f"  - 正确写法：'前往{loc_example_name}' ← 只写中文")
-        else:
-            lines.append("  - 错误示例：'前往某地点（location_id）' ← 禁止这样写")
-            lines.append("  - 正确写法：'前往某地点' ← 只写中文")
-        lines.append(f"  - 错误示例：'{obj_example_name}（{obj_example_id}）' ← 禁止这样写")
-        lines.append(f"  - 正确写法：'{obj_example_name}' ← 只写中文")
-        if tool_example_id:
-            lines.append(f"  - 错误示例：'使用 {tool_example_id}' ← 禁止这样写")
-            lines.append(f"  - 正确写法：'使用 {tool_example_name}' ← 只写中文")
-        else:
-            lines.append("  - 错误示例：'使用 tool_id' ← 禁止这样写")
-            lines.append("  - 正确写法：'使用工具中文名' ← 只写中文")
-        lines.append("  - 如果需要提及对象，使用上述「可见世界对象」中的中文名称")
-        lines.append("  - 如果需要提及工具，使用上述「可用工具」中的中文名称")
+        if not wants_english:
+            if loc_example_id:
+                lines.append(f"  - 错误示例：'前往 {loc_example_name}（{loc_example_id}）' ← 禁止这样写")
+                lines.append(f"  - 正确写法：'前往{loc_example_name}' ← 只写中文")
+            else:
+                lines.append("  - 错误示例：'前往某地点（location_id）' ← 禁止这样写")
+                lines.append("  - 正确写法：'前往某地点' ← 只写中文")
+            lines.append(f"  - 错误示例：'{obj_example_name}（{obj_example_id}）' ← 禁止这样写")
+            lines.append(f"  - 正确写法：'{obj_example_name}' ← 只写中文")
+            if tool_example_id:
+                lines.append(f"  - 错误示例：'使用 {tool_example_id}' ← 禁止这样写")
+                lines.append(f"  - 正确写法：'使用 {tool_example_name}' ← 只写中文")
+            else:
+                lines.append("  - 错误示例：'使用 tool_id' ← 禁止这样写")
+                lines.append("  - 正确写法：'使用工具中文名' ← 只写中文")
+            lines.append("  - 如果需要提及对象，使用上述「可见世界对象」中的中文名称")
+            lines.append("  - 如果需要提及工具，使用上述「可用工具」中的中文名称")
 
         # 近期事件
         recent = brief.recent_events

@@ -11,6 +11,7 @@ from app.contracts.os2 import (
     WorldEvent,
 )
 from app.engine.presentation.audience_guard import AudienceTextGuard
+from app.framework.presentation.audience_text import enforce_english_audience_text
 
 
 class DirectorRuntime:
@@ -23,6 +24,7 @@ class DirectorRuntime:
         render_bindings: Optional[Dict[str, Any]] = None,
         render_config: Optional[Any] = None,
         terminology: Optional[Dict[str, str]] = None,
+        locale: str = "zh-CN",
     ):
         self._bindings = dict(render_bindings or {})
         if hasattr(render_config, "model_dump"):
@@ -30,6 +32,17 @@ class DirectorRuntime:
         self._render = dict(render_config or {})
         self._audience = AudienceTextGuard(terminology)
         self._terms = dict(terminology or {})
+        self._locale = locale or "zh-CN"
+
+    def set_locale(self, locale: str) -> None:
+        if locale in {"zh-CN", "en-US"}:
+            self._locale = locale
+
+    def _public_text(self, text: object, *, fallback: str = "") -> str:
+        cleaned = self._audience.clean(text, fallback=fallback)
+        if str(self._locale).lower().startswith("en"):
+            return enforce_english_audience_text(cleaned, fallback=fallback)
+        return cleaned
 
     def _binding(self, section: str, semantic_id: str) -> Optional[str]:
         values = self._bindings.get(section, {}) or {}
@@ -115,24 +128,11 @@ class DirectorRuntime:
         settlements: Sequence[SettlementRecord] = (),
         activities: Sequence[AgentActivityFact] = (),
     ) -> Optional[DirectorPlan]:
-        # Agent/tool work is collected concurrently.  The authoritative facts
-        # are immutable, but their arrival order must not change the watchable
-        # plan or its replay digest.  Use stable contract identifiers for the
-        # presentation order rather than asyncio completion order.
-        visible = sorted(
-            (event for event in events if event.visibility == "public"),
-            key=lambda event: str(event.event_id),
-        )
-        visible_activities = sorted(
-            (
-                activity for activity in activities
-                if activity.visibility == "public"
-            ),
-            key=lambda activity: (
-                str(activity.source_action_ref or ""),
-                str(activity.activity_id),
-            ),
-        )
+        visible = [event for event in events if event.visibility == "public"]
+        visible_activities = [
+            activity for activity in activities
+            if activity.visibility == "public"
+        ]
         visible_settlements = [
             record for record in settlements
             if set(record.source_event_refs).issubset(
@@ -179,9 +179,13 @@ class DirectorRuntime:
             ))
 
         for index, event in enumerate(visible):
-            summary = self._audience.clean(
+            summary = self._public_text(
                 event.public_summary,
-                fallback="本回合行动已经完成，世界已记录结果。",
+                fallback=(
+                    "This cycle’s action has been recorded."
+                    if str(self._locale).lower().startswith("en")
+                    else "本回合行动已经完成，世界已记录结果。"
+                ),
             )
             if summary:
                 summaries.append(summary)
@@ -273,12 +277,17 @@ class DirectorRuntime:
         event_order = {event.event_id: index for index, event in enumerate(visible)}
         for offset, record in enumerate(visible_settlements, start=len(visible)):
             settlement_refs.append(record.settlement_id)
-            summary = self._audience.clean(
+            summary = self._public_text(
                 record.explanation,
-                fallback="本回合结算已经完成。",
+                fallback=(
+                    "This cycle’s settlement is complete."
+                    if str(self._locale).lower().startswith("en")
+                    else "本回合结算已经完成。"
+                ),
             )
             if summary:
                 summaries.append(summary)
+            had_fill = bool((record.details or {}).get("had_fill"))
             outcome_binding = self._binding("outcomes", record.outcome)
             outcome_render = self._action_render(outcome_binding)
             settlement_start = (
@@ -299,10 +308,32 @@ class DirectorRuntime:
                 include_character=True,
                 parameters={
                     "outcome": record.outcome,
+                    "had_fill": had_fill,
                     "values": dict(record.values),
                 },
                 binding_id=outcome_binding,
             )
+            # A secondary outcome is an additional authoritative fact, not a
+            # replacement for the primary settlement. Preserve its UI/binding
+            # and add only the scene-declared confirmation sound.
+            if had_fill:
+                fill_binding = self._binding("outcomes", "trade_executed")
+                fill_render = self._action_render(fill_binding)
+                fill_sound = str(fill_render.get("sound") or "")
+                if fill_sound and fill_sound != "none":
+                    commands.append(RenderCommand(
+                        command_id=(
+                            f"render:{world_tick}:{offset}:outcome:fill_sound"
+                        ),
+                        command_type="sound",
+                        semantic_action=fill_sound,
+                        source_event_refs=list(record.source_event_refs),
+                        source_settlement_refs=[record.settlement_id],
+                        target_ids=list(record.subject_ids),
+                        parameters={"outcome": "trade_executed"},
+                        start_ms=settlement_start,
+                        duration_ms=1,
+                    ))
             commands.append(RenderCommand(
                 command_id=f"render:{world_tick}:{offset}:settlement",
                 command_type="ui",
@@ -321,8 +352,11 @@ class DirectorRuntime:
                 duration_ms=max(1600, min(4800, len(summary) * 90)),
             ))
         narrative = " ".join(summaries) or (
-            f"第 {world_tick} 回合产生了 {len(visible)} 条公开世界事件。"
+            f"Cycle {world_tick} produced {len(visible)} public world events."
+            if str(self._locale).lower().startswith("en")
+            else f"第 {world_tick} 回合产生了 {len(visible)} 条公开世界事件。"
         )
+        narrative = self._public_text(narrative)
         plan = DirectorPlan(
             plan_id=f"director_plan:{world_tick}",
             run_id=run_id,
@@ -342,13 +376,23 @@ class DirectorRuntime:
     def _activity_text(self, activity: AgentActivityFact) -> str:
         # 观众活动字幕只播角色独白；研报正文/MCP 套话留给卡片与结算字幕。
         actor = self._label(activity.agent_id)
-        monologue = self._audience.clean(activity.character_monologue)
+        monologue = self._public_text(activity.character_monologue)
         if monologue:
-            return self._audience.clean(f"{actor}说：{monologue}", fallback="")
+            text = (
+                f"{actor} says: {monologue}"
+                if str(self._locale).lower().startswith("en")
+                else f"{actor}说：{monologue}"
+            )
+            return self._public_text(text, fallback="")
         fallback = activity.public_intent or activity.action_label
         if fallback:
-            return self._audience.clean(
-                f"{actor}准备执行：{self._label(fallback)}",
+            text = (
+                f"{actor} is preparing to execute: {self._label(fallback)}"
+                if str(self._locale).lower().startswith("en")
+                else f"{actor}准备执行：{self._label(fallback)}"
+            )
+            return self._public_text(
+                text,
                 fallback="",
             )
         return ""

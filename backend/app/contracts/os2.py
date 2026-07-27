@@ -58,6 +58,25 @@ class HarnessStep(ContractModel):
     finished_at: Optional[float] = None
 
 
+class HarnessResearchEvent(ContractModel):
+    """Public, structured account of research progress without private CoT."""
+
+    event_id: str
+    research_id: str
+    run_id: str
+    scenario_id: str
+    world_tick: int = Field(ge=0)
+    agent_id: str
+    event_type: str
+    status: Literal["started", "running", "succeeded", "failed", "suspended", "completed"]
+    summary: str = ""
+    evidence_refs: List[str] = Field(default_factory=list)
+    tool_id: str = ""
+    source: str = ""
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    occurred_at: float = Field(default_factory=time.time)
+
+
 class HarnessTrace(ContractModel):
     """Complete agent work trace for one world tick."""
 
@@ -70,9 +89,12 @@ class HarnessTrace(ContractModel):
     perception_ref: str
     objective: str
     status: Literal[
-        "running", "completed", "failed", "blocked", "budget_exhausted"
+        "running", "completed", "failed", "blocked", "budget_exhausted",
+        "suspended",
     ] = "running"
+    termination_reason: str = ""
     steps: List[HarnessStep] = Field(default_factory=list)
+    research_events: List[HarnessResearchEvent] = Field(default_factory=list)
     final_action_ref: Optional[str] = None
     memory_write_refs: List[str] = Field(default_factory=list)
     budget: Dict[str, float] = Field(default_factory=dict)
@@ -209,7 +231,9 @@ class AgentActivityFact(ContractModel):
     tool_activity: List[Dict[str, Any]] = Field(default_factory=list)
     evidence_refs: List[str] = Field(default_factory=list)
     observation_refs: List[str] = Field(default_factory=list)
-    status: Literal["submitted", "executed", "rejected", "fallback"] = "submitted"
+    status: Literal[
+        "submitted", "executed", "rejected", "fallback", "suspended",
+    ] = "submitted"
     visibility: Visibility = "public"
     created_at: float = Field(default_factory=time.time)
 

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="340" viewBox="0 0 560 340">
+  <rect width="560" height="340" rx="30" fill="#101827" stroke="#ffd166" stroke-width="4"/>
+  <text x="38" y="60" fill="#ffe8a3" font-family="PingFang SC, Microsoft YaHei, Arial" font-size="30" font-weight="800">持仓账本</text>
+  <g font-family="PingFang SC, Microsoft YaHei, Arial" font-size="20">
+    <text x="48" y="112" fill="#90a4bd">现金</text>
+    <rect x="136" y="92" width="350" height="28" rx="14" fill="#253049"/>
+    <rect x="136" y="92" width="236" height="28" rx="14" fill="#5ee7ff"/>
+    <text x="48" y="168" fill="#90a4bd">持仓</text>
+    <rect x="136" y="148" width="350" height="28" rx="14" fill="#253049"/>
+    <rect x="136" y="148" width="172" height="28" rx="14" fill="#68f7a5"/>
+    <text x="48" y="224" fill="#90a4bd">盈亏</text>
+    <rect x="136" y="204" width="350" height="28" rx="14" fill="#253049"/>
+    <rect x="136" y="204" width="284" height="28" rx="14" fill="#ffd166"/>
+  </g>
+  <path d="M48 284h454" stroke="#ffffff" stroke-opacity=".12"/>
+  <text x="48" y="312" fill="#c8d5e8" font-family="PingFang SC, Microsoft YaHei, Arial" font-size="18">逐回合按场景结算插件更新</text>
+</svg>

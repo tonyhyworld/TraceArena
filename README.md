@@ -24,6 +24,8 @@ TraceArena starts with a concrete question: **when two investment Agents receive
 
 The [`capital_market` Public Edition](backend/scenarios/capital_market/) is a professional evaluation pack, not a stock-picking chatbot or auto-trading product. A value-oriented Agent and a growth-oriented Agent research, submit typed portfolio actions and face the same simulated execution and settlement rules.
 
+The new [`capital_market_us` pack](backend/scenarios/capital_market_us/) applies the same auditable contract to U.S. equities, using read-only SEC, Nasdaq and FRED research plus optional Longport market data. Orders remain inside the simulated ledger; no brokerage execution is enabled.
+
 | What is evaluated | How TraceArena makes it reviewable |
 | --- | --- |
 | Research quality | observations carry sources, freshness and verification state |

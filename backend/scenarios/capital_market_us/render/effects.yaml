@@ -1,0 +1,9 @@
+effects:
+  glow: {type: highlight, color: positive, duration_ms: 1200}
+  warning_flash: {type: flash, color: warning, duration_ms: 1000}
+  scan_pulse: {type: pulse, color: info, duration_ms: 1200}
+  order_flash: {type: flash, color: "#ffd166", duration_ms: 900}
+  risk_wave: {type: wave, color: warning, duration_ms: 1400}
+  rebalance_line: {type: line, color: info, duration_ms: 1500}
+  neutral_pulse: {type: pulse, color: neutral, duration_ms: 900}
+  backlash_hit: {type: backlash_hit, color: "#ff5252", duration_ms: 700}

@@ -3,26 +3,29 @@ runtime_mode: story
 tick_interval_sec: 10.0
 agent_timeout_sec: 60.0
 provider_health_check: true
+# 启动探测只验证连通性，不占用回合；共享同一上游账号的角色合并探测。
+# DeepSeek 推理模型偶有十余秒首 token 延迟，30 秒可避免把正常抖动误报为故障。
+provider_health_timeout_sec: 30.0
 agents:
   - id: investor_a
     name: 稳健基金
-    provider: minimax
-    model: MiniMax-M2.7-highspeed
+    provider: deepseek
+    model: deepseek-v4-pro
     color: "#4cc9f0"
     extra:
       temperature: 0.6
       max_tokens: 2500
   - id: investor_b
     name: 进取基金
-    provider: minimax
-    model: MiniMax-M2.7-highspeed
+    provider: deepseek
+    model: deepseek-v4-pro
     color: "#ffbe0b"
     extra:
       temperature: 0.8
       max_tokens: 2500
 director:
-  provider: minimax
-  model: MiniMax-M2.7-highspeed
+  provider: deepseek
+  model: deepseek-v4-pro
   enabled: true
 judge:
   # 投资结果由真实行情 + 确定性组合账本结算，不评价动作“聪不聪明”。
@@ -34,7 +37,7 @@ sandbox:
   timeout_sec: 5.0
   max_artifacts_per_agent: 8
   max_code_lines: 200
-  process_backend: auto
+  process_backend: python_audit
   allow_network: true
   allow_package_install: true
   process_timeout_sec: 45.0
@@ -43,17 +46,24 @@ mcp:
   enabled: true
   servers_path: ./mcp_servers.yaml
 tts:
-  enabled: true
+  enabled: false
   voice_id: presenter_male
   speed: 1.0
   timeout_sec: 20.0
 log_dir: ./runs
 agent_loop:
   enabled: true
-  max_steps: 12
-  # 实时局节拍预算：1 tick ≈ 1 真实分钟，单拍决策放任到 5 分钟会把节奏
-  # 拖成 3-5 分钟/拍。180s 已够 4-6 次带工具的推理步；连续策略驳回另有
-  # 3 次封顶（OS 层），不会再出现整拍 35 步撞墙。
+  max_steps: 8
+  # 投资研究可以跨 tick 延续；预算用尽时保存研究轨迹，不再强制伪装成
+  # wait_and_review 世界动作。其他场景未声明时仍沿用 require_action/fallback。
+  completion_mode: suspendable
+  on_budget_exhausted: suspend
+  # 多源投资研究需要容纳模型思考、行情、财报和反证路径。单步仍有硬超时，
+  # 整拍预算耗尽时保存研究进度并跨拍续跑，不伪造交易动作。
   session_timeout_sec: 180.0
+  step_timeout_sec: 40.0
+  tool_max_attempts: 2
+  tool_retry_backoff_sec: 0.25
+  tool_circuit_breaker_threshold: 3
 external_agent:
   turn_timeout_ms: 180000

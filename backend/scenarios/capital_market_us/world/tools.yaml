@@ -1,0 +1,134 @@
+tools:
+  - id: us_quote
+    name: 美股实时报价
+    description: 获取目标美股或 ETF 的当前价格、成交量与交易状态；只用于下单前价格确认。
+    type: mcp
+    mcp_server: longport
+    mcp_tool: longport_quote
+    timeout_sec: 25
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbols: {type: array, items: {type: string}}
+      required: [symbols]
+
+  - id: us_valuation_metrics
+    name: 美股估值与市场指标
+    description: 获取 PE、PB、市值、涨跌幅、换手率、股息率等估值与交易指标。
+    type: mcp
+    mcp_server: longport
+    mcp_tool: longport_calc_indexes
+    timeout_sec: 25
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbols: {type: array, items: {type: string}}
+        indexes: {type: array, items: {type: string}}
+      required: [symbols]
+
+  - id: us_financial_statements
+    name: SEC 结构化财务数据
+    description: 按股票代码获取 SEC XBRL 最新收入、利润、资产负债、现金流和每股收益；无需自行构造 URL。
+    type: mcp
+    mcp_server: us_market_research
+    mcp_tool: us_financial_statements
+    timeout_sec: 30
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbol: {type: string}
+        statement: {type: string, enum: [summary, income, balance, cash_flow]}
+      required: [symbol]
+
+  - id: us_sec_filings
+    name: SEC 披露与公告
+    description: 按股票代码获取 SEC EDGAR 的 10-K、10-Q、8-K、6-K、Form 4 等披露；无需 CIK 或 URL。
+    type: mcp
+    mcp_server: us_market_research
+    mcp_tool: us_sec_filings
+    timeout_sec: 30
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbol: {type: string}
+        forms: {type: array, items: {type: string}}
+        limit: {type: integer}
+      required: [symbol]
+
+  - id: us_company_news
+    name: 美股公司重大事件
+    description: 按股票代码读取 SEC 8-K/6-K 权威重大事件披露，核验财报、监管、并购和管理层变化等催化剂。
+    type: mcp
+    mcp_server: us_market_research
+    mcp_tool: us_company_material_events
+    timeout_sec: 30
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbol: {type: string}
+        limit: {type: integer}
+      required: [symbol]
+
+  - id: us_earnings_calendar
+    name: 财报日历与业绩预期
+    description: 按日期读取 Nasdaq 财报日历，可按股票代码筛选，返回 EPS 预期、机构预测数和盘前/盘后时间。
+    type: mcp
+    mcp_server: us_market_research
+    mcp_tool: us_earnings_calendar
+    timeout_sec: 30
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbol: {type: string}
+        date: {type: string}
+        limit: {type: integer}
+
+  - id: us_macro_indicators
+    name: 美国宏观与利率指标
+    description: 从 FRED 获取联邦基金利率、CPI、非农、失业率、2/10 年国债收益率和 VIX 的最新官方观测。
+    type: mcp
+    mcp_server: us_market_research
+    mcp_tool: us_macro_indicators
+    timeout_sec: 30
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        indicator: {type: string, enum: [fed_funds, treasury_10y, treasury_2y, cpi, unemployment, payrolls, vix]}
+        indicators: {type: array, items: {type: string}}
+
+  - id: us_sector_indicators
+    name: 美股行业景气与板块表现
+    description: 获取行业 ETF 或指数 ETF 的实时价格与涨跌，代理板块相对强弱；symbols 需使用 XLF.US、XLK.US、SMH.US 等代码。
+    type: mcp
+    mcp_server: longport
+    mcp_tool: longport_quote
+    timeout_sec: 30
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbols: {type: array, items: {type: string}}
+      required: [symbols]
+
+  - id: us_options_chain
+    name: 期权链与隐含波动率
+    description: 通过 Longport 获取美股期权到期日、认购/认沽合约链及部分合约行情，用于核验事件风险和市场定价。
+    type: mcp
+    mcp_server: longport
+    mcp_tool: longport_option_chain
+    timeout_sec: 30
+    can_generate_evidence: true
+    input_schema:
+      type: object
+      properties:
+        symbol: {type: string}
+        expiry_date: {type: string}
+        max_contract_quotes: {type: integer}
+      required: [symbol]

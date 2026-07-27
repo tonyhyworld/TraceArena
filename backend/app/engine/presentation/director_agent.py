@@ -15,6 +15,7 @@ from app.contracts.os2 import (
     SettlementRecord,
     WorldEvent,
 )
+from app.core.json_extraction import extract_json_candidates
 from app.engine.presentation.director_runtime import DirectorRuntime
 
 
@@ -260,21 +261,30 @@ class DirectorAgent:
 
     @staticmethod
     def _parse_selection(raw: str) -> Dict[str, Any]:
-        text = str(raw or "").strip()
-        if text.startswith("```"):
-            text = text.strip("`")
-            if text.lstrip().startswith("json"):
-                text = text.lstrip()[4:].lstrip()
-        start, end = text.find("{"), text.rfind("}")
-        if start < 0 or end < start:
+        candidates = [
+            item for item in extract_json_candidates(raw)
+            if isinstance(item, dict)
+        ]
+        if not candidates:
             raise ValueError("director_output_not_json")
-        data = json.loads(text[start:end + 1])
         allowed = {
             "selected_event_refs",
             "selected_settlement_refs",
             "selected_activity_refs",
             "pace",
         }
+        data = next(
+            (
+                item for item in candidates
+                if set(item).issubset(allowed)
+                and (
+                    item.get("selected_event_refs")
+                    or item.get("selected_settlement_refs")
+                    or item.get("selected_activity_refs")
+                )
+            ),
+            candidates[-1],
+        )
         unknown = set(data) - allowed
         if unknown:
             raise ValueError("director_output_unknown_fields:" + ",".join(sorted(unknown)))

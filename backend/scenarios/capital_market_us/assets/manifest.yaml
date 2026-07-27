@@ -1,0 +1,70 @@
+assets:
+  characters:
+    - id: defensive_fund_avatar
+      path: assets/characters/defensive_fund_avatar.svg
+      type: image
+      format: svg
+      source: project_original
+      author: 张诺亚
+      license: Apache-2.0
+      sha256: 0479297b20bc1d2c9cd7c16445d686433a7ff71778610e15260212b6a161460b
+    - id: aggressive_fund_avatar
+      path: assets/characters/aggressive_fund_avatar.svg
+      type: image
+      format: svg
+      source: project_original
+      author: 张诺亚
+      license: Apache-2.0
+      sha256: bd6fa09a847b1d2a8a4edf0631d2a86f8c03e83a091ea9971136170ff40babdd
+  objects:
+    - id: portfolio_ledger_panel
+      path: assets/objects/portfolio_ledger.svg
+      type: image
+      format: svg
+      source: project_original
+      author: 张诺亚
+      license: Apache-2.0
+      sha256: 7d8d365508eeba8fb774573703dcf55aa7b1adbcbd840464bb634ad4cc4e1e41
+    - id: risk_dashboard_panel
+      path: assets/objects/risk_dashboard.svg
+      type: image
+      format: svg
+      source: project_original
+      author: 张诺亚
+      license: Apache-2.0
+      sha256: 4c69c10428ce9245b887768bf55663f0b14defb11d7d8d054fa4bd8b89d4b32c
+  audio:
+    - id: market_synth_wave
+      path: assets/audio/market_synth_wave.mp3
+      type: audio
+      format: mp3
+      source: OpenGameArt / Alex McCulloch
+      author: Alex McCulloch
+      license: CC0-1.0
+      sha256: 67be34d2c311147c93fadc4660d780c90ff393f7b55efd38536745f8c247fb9b
+      provenance: assets/audio/market_synth_wave.LICENSE.md
+    - id: market_floor_loop
+      path: assets/audio/market_floor_loop.json
+      type: music_prompt
+      format: json
+      source: project_original
+      author: 张诺亚
+      license: Apache-2.0
+      sha256: ff41394f8824afab74fbc038335a341dcf3ae4382f6d27d0cdba9edba50cd2f4
+    - id: market_action_sting
+      path: assets/audio/market_action_sting.json
+      type: sound_prompt
+      format: json
+      source: project_original
+      author: 张诺亚
+      license: Apache-2.0
+      sha256: b967244087b70c285540b33123ca8515ed63a1dcfc130cad37ab659b3f172074
+  icons:
+    - id: default_market_icon
+      path: assets/icons/default_market_icon.svg
+      type: icon
+      format: svg
+      source: project_original
+      author: 张诺亚
+      license: Apache-2.0
+      sha256: 3fa735bf670a6454fb8ba362f9cb267fc1701a475b01a86d37669afa943576b0

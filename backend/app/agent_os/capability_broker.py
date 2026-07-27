@@ -54,7 +54,27 @@ class CapabilityBroker:
         ]
         candidates = self._scene_candidates(query)
         candidates.extend(self._skill_candidates(query))
-        candidates.extend(await self._mcp_candidates(query))
+        mcp_catalog = await self._mcp_candidates("")
+        if query:
+            candidates.extend([
+                item.model_copy(update={
+                    "score": self._match_score(
+                        query, f"{item.source} {item.name} {item.description}"
+                    )
+                })
+                for item in mcp_catalog
+                if self._match_score(
+                    query, f"{item.source} {item.name} {item.description}"
+                ) > 0
+            ])
+        else:
+            candidates.extend(mcp_catalog)
+        # OS-level web research/browser capabilities are useful across all
+        # domains, but a domain-specific query (for example "A股估值") has no
+        # lexical overlap with their names. Keep one representative from each
+        # generic group discoverable without exposing an unbounded catalog.
+        generic = self._generic_mcp_candidates(mcp_catalog)
+        candidates.extend(generic)
         # Semantic matching is intentionally lightweight; a Chinese goal may
         # share no literal token with an English capability id. Returning the
         # scoped catalog is safer than falsely claiming that no capability
@@ -145,6 +165,21 @@ class CapabilityBroker:
             return (preferred_rank, -item.score, item.name.lower())
 
         return sorted(selected, key=_sort_key)
+
+    @staticmethod
+    def _generic_mcp_candidates(
+        candidates: List[CapabilityCandidate],
+    ) -> List[CapabilityCandidate]:
+        groups = {
+            "web": {"web_search", "web_fetch"},
+            "browser": {"browser_navigate", "browser_click", "browser_extract"},
+        }
+        picked: List[CapabilityCandidate] = []
+        for names in groups.values():
+            item = next((candidate for candidate in candidates if candidate.name in names), None)
+            if item is not None:
+                picked.append(item.model_copy(update={"score": max(item.score, 0.35)}))
+        return picked
 
     def _scene_candidates(self, query: str) -> List[CapabilityCandidate]:
         out: List[CapabilityCandidate] = []

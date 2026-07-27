@@ -110,6 +110,9 @@ async def execute_mcp_tool(
     errors = list(call.errors)
     if not call.ok and not errors:
         errors = ["mcp_call_failed"]
+    failure_meta = (
+        call.structured if isinstance(call.structured, dict) else {}
+    )
 
     return ToolRunResult(
         run_id=run_id,
@@ -126,4 +129,11 @@ async def execute_mcp_tool(
         duration_ms=call.duration_ms,
         mcp_server_id=server_id,
         mcp_tool_name=mcp_tool,
+        failure_class=(
+            str(failure_meta.get("failure_class") or "") or None
+        ),
+        retryable=(
+            bool(failure_meta.get("retryable"))
+            if "retryable" in failure_meta else None
+        ),
     )

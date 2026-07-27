@@ -1,0 +1,11 @@
+skills:
+  - skill_id: market_decision_sequence
+    name: 投资决策镜头编排
+    authority: presentation_only
+    operations: [select_facts, sequence_commands, choose_camera]
+    source: scenario_package
+  - skill_id: portfolio_result_display
+    name: 组合结算展示
+    authority: presentation_only
+    operations: [format_subtitle, choose_effect]
+    source: scenario_package

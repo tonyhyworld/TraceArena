@@ -40,6 +40,9 @@ class PhaseSpec:
     id: str
     name: str = ""
     actors: Actors = "all"
+    # 该阶段连续占用多少个 tick。默认 1，保持既有“每 tick 推进一个阶段”行为。
+    # 多阶段场景可用它表达“盘前研究 5 拍、开盘交易 115 拍”等业务节奏。
+    duration_ticks: int = 1
     # 阶段级布尔/枚举标志，语义由场景解释（如 {tradable: true}）。OS 不解释。
     flags: Dict[str, Any] = field(default_factory=dict)
     description: str = ""
@@ -140,13 +143,20 @@ class RoundModel:
         """OS 统一的 tick→阶段映射（唯一真相来源，取代插件取模）。"""
         if not self.phases:
             return None
-        index = (max(1, int(tick or 1)) - 1) % len(self.phases)
-        return self.phases[index]
+        cycle_len = sum(max(1, int(phase.duration_ticks or 1)) for phase in self.phases)
+        offset = (max(1, int(tick or 1)) - 1) % max(1, cycle_len)
+        cursor = 0
+        for phase in self.phases:
+            cursor += max(1, int(phase.duration_ticks or 1))
+            if offset < cursor:
+                return phase
+        return self.phases[-1]
 
     def cycle_for_tick(self, tick: int) -> int:
         if not self.phases:
             return 1
-        return ((max(1, int(tick or 1)) - 1) // len(self.phases)) + 1
+        cycle_len = sum(max(1, int(phase.duration_ticks or 1)) for phase in self.phases)
+        return ((max(1, int(tick or 1)) - 1) // max(1, cycle_len)) + 1
 
 
 # 默认同步回合模型：单阶段、全员每拍行动、每拍推进。
@@ -174,6 +184,7 @@ def load_round_model(scenario_dir: str | Path) -> RoundModel:
             id=str(item.get("id") or ""),
             name=str(item.get("name") or item.get("id") or ""),
             actors=item.get("actors", "all"),
+            duration_ticks=max(1, int(item.get("duration_ticks") or 1)),
             flags=dict(item.get("flags") or {}),
             description=str(item.get("description") or ""),
         )

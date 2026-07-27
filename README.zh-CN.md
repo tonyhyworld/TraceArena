@@ -37,6 +37,8 @@ TraceArena 首先回答一个具体问题：**当两个投资 Agent 获得相同
 
 [`capital_market` Public Edition](backend/scenarios/capital_market/) 是专业评测场景包，不是荐股聊天机器人，也不是自动交易系统。价值型与成长型 Agent 在同一规则下研究、提交结构化组合行动，并接受相同的模拟成交与结算。
 
+新增的 [`capital_market_us` 场景包](backend/scenarios/capital_market_us/) 将同一套可审计评测契约用于美股，提供只读 SEC、Nasdaq、FRED 研究工具及可选 Longport 行情。所有订单仍只进入模拟账本，不启用真实券商交易。
+
 | 评测对象 | TraceArena 如何让它可审查 |
 | --- | --- |
 | 研究质量 | 外部观察记录来源、新鲜度与验证状态 |

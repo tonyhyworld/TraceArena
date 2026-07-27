@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="lfbg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a1c0d"/>
+      <stop offset="1" stop-color="#160f06"/>
+    </linearGradient>
+    <linearGradient id="lfsuit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6e4a16"/>
+      <stop offset="1" stop-color="#40290c"/>
+    </linearGradient>
+    <radialGradient id="lfglow" cx="0.5" cy="0.34" r="0.6">
+      <stop offset="0" stop-color="#ffbe0b" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#ffbe0b" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="104" fill="url(#lfbg)"/>
+  <rect width="512" height="512" rx="104" fill="url(#lfglow)"/>
+  <!-- 强势拉升的箭头：成长派的进攻性 -->
+  <polyline points="70,372 150,352 210,372 280,300 350,332 430,246" fill="none"
+    stroke="#ffd166" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+  <path d="M430 246l-34 6 12-30z" fill="#ffd166" opacity="0.9"/>
+  <path d="M118 452c14-86 66-130 138-130s124 44 138 130z" fill="url(#lfsuit)"/>
+  <path d="M256 322l34 30-34 96-34-96z" fill="#ffe8a3" opacity="0.92"/>
+  <path d="M256 322l20 26-20 60-20-60z" fill="#ff5c8a"/>
+  <circle cx="256" cy="196" r="82" fill="#f3d3b6"/>
+  <path d="M172 190c2-56 42-92 84-92s82 36 84 92c6-30-6-52-40-64l-26 30-24-30c-38 8-56 34-62 64z" fill="#2a1a10"/>
+  <circle cx="228" cy="196" r="8" fill="#2a1a10"/>
+  <circle cx="284" cy="196" r="8" fill="#2a1a10"/>
+  <path d="M230 230c16 14 36 14 52 0" fill="none" stroke="#2a1a10" stroke-width="6" stroke-linecap="round"/>
+  <text x="256" y="486" text-anchor="middle" fill="#ffe8a3" font-family="'PingFang SC','Microsoft YaHei',Arial" font-size="46" font-weight="700">林锋</text>
+</svg>

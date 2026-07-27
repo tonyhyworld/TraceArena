@@ -1,0 +1,98 @@
+actions:
+  - id: buy_asset
+    name: 买入建仓
+    category: portfolio_action
+    execution_semantics: reality_order
+    target_optional_for_settlement: true
+    followup_when_mentioned: true
+    intent_aliases: [买入, 建仓, 加仓, 仓位, 试探进攻, 进攻]
+    followup_on_settlement_outcomes: [order_rejected]
+    intent: improve
+    description: 基于已经获取并验证的数据提交买入订单；真实交易标的由 parameters.asset_id 指定，成交金额由组合账本按真实价格扣减现金。
+    requires_target: false
+    target_kind: object
+    target_types: [portfolio]
+    cost: {}
+    cooldown: 0
+    permissions_required: [trading_access]
+    parameters_schema:
+      type: object
+      required: [asset_id, quantity]
+      properties:
+        asset_id: {type: string, description: 美股真实交易代码，例如 AAPL.US、MSFT.US、NVDA.US 或 SPY.US}
+        asset_name: {type: string, description: 与代码对应的公司英文名称或标准简称，必须与已验证行情名称一致}
+        quantity: {type: number, description: 买入数量，必须大于 0，且按已验证行情现价估算}
+        expected_price: {type: number, description: 下单时依据的已验证行情现价，用于身份一致性校验}
+        price_evidence_ref: {type: string, description: 已验证行情证据 ID；如留空，结算层会尝试使用有效期内该标的最近一次已验证价格}
+
+  - id: sell_asset
+    name: 卖出减仓
+    category: portfolio_action
+    execution_semantics: reality_order
+    target_optional_for_settlement: true
+    followup_when_mentioned: true
+    intent_aliases: [卖出, 减仓, 止损, 兑现, 降低敞口, 防守]
+    followup_on_settlement_outcomes: [order_rejected]
+    intent: reduce
+    description: 基于已经获取并验证的数据提交卖出订单；真实交易标的由 parameters.asset_id 指定，用于降低敞口、兑现收益或止损。
+    requires_target: false
+    target_kind: object
+    target_types: [portfolio]
+    cost: {}
+    cooldown: 0
+    permissions_required: [trading_access]
+    parameters_schema:
+      type: object
+      required: [asset_id, quantity, sell_reason]
+      properties:
+        asset_id: {type: string, description: 已持有标的的美股真实交易代码，例如 AAPL.US、MSFT.US、NVDA.US 或 SPY.US}
+        asset_name: {type: string, description: 与代码对应的公司英文名称或标准简称，必须与已验证行情名称一致}
+        quantity: {type: number, description: 卖出数量，必须大于 0 且不超过持仓}
+        expected_price: {type: number, description: 下单时依据的已验证行情现价，用于身份一致性校验}
+        price_evidence_ref: {type: string, description: 已验证行情证据 ID；如留空，结算层会尝试使用有效期内该标的最近一次已验证价格}
+        sell_reason: {type: string, enum: [stop_loss, take_profit, thesis_invalidated, rebalance, risk_reduction], description: 标准化卖出原因；用于核验退出纪律与投后归因}
+
+  - id: wait_and_review
+    name: 等待复盘
+    category: wait
+    intent: wait
+    description: 保持当前现金和持仓，复盘上一回合决策；不改变净值。
+    requires_target: false
+    cost: {}
+    cooldown: 0
+    permissions_required: [basic_access]
+
+  - id: update_investment_plan
+    name: 更新投资计划
+    category: research_action
+    execution_semantics: deterministic_state_update
+    followup_when_mentioned: true
+    intent_aliases: [投资计划, 投资论点, 主线仓, 观察名单, 目标仓位, 入场触发, 退出条件]
+    followup_on_settlement_outcomes: [investment_plan_rejected]
+    intent: improve
+    description: 将研究结论写入权威 InvestmentBook；只更新策略状态，不改变现金和持仓。首次建仓前应先完成此动作。
+    requires_target: false
+    cost: {}
+    cooldown: 0
+    permissions_required: [research_access]
+    parameters_schema:
+      type: object
+      required: [asset_id, thesis, counter_evidence, target_weight_pct, entry_trigger, exit_condition, style_alignment, entry_price_max, stop_loss_price, risk_budget_pct]
+      properties:
+        asset_id: {type: string, description: 候选或主线标的真实交易代码}
+        asset_name: {type: string, description: 公司英文名称或标准简称}
+        status: {type: string, enum: [candidate, active, monitoring, invalidated, closed], description: 当前论点状态}
+        thesis: {type: string, description: 可被事实证伪的核心投资论点}
+        counter_evidence: {type: string, description: 主动寻找的反证、风险或尚未解决的问题}
+        conviction: {type: number, minimum: 0, maximum: 1, description: 当前置信度，0 到 1}
+        expected_return_pct: {type: number, description: 评测窗口内的预期收益率}
+        entry_price_max: {type: number, minimum: 0, description: 允许买入的最高行情价；高于该值买单会被拒绝}
+        stop_loss_price: {type: number, minimum: 0, description: 数字化止损触发价，必须低于入场上限}
+        take_profit_price: {type: number, minimum: 0, description: 可选数字化止盈触发价，必须高于入场上限}
+        thesis_expiry_tick: {type: integer, minimum: 1, description: 论点必须复核或失效的世界 tick}
+        risk_budget_pct: {type: number, minimum: 0, maximum: 100, description: 按止损价估算的最大组合损失预算百分比}
+        target_weight_pct: {type: number, minimum: 0, maximum: 100, description: 该标的目标组合仓位百分比}
+        entry_trigger: {type: string, description: 满足什么价格或事实条件才允许入场}
+        exit_condition: {type: string, description: 止损、止盈或论点证伪条件}
+        style_alignment: {type: string, description: 说明为何符合该投资经理的价值或成长策略}
+        decision: {type: string, description: research / watch / prepare_buy / hold / invalidate}

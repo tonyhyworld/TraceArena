@@ -29,6 +29,9 @@ roles:
     public_persona: A mainland China and Hong Kong growth investor who follows industry momentum and catalysts and accepts higher volatility.
     hidden_goal: Deliver positive risk-adjusted excess return and show that catalyst-driven returns survive transaction costs.
 actions:
+  update_investment_plan:
+    name: Update investment plan
+    description: Write the falsifiable thesis, counter-evidence, sizing target, entry trigger, exit discipline, and style alignment into the authoritative InvestmentBook without changing cash or positions.
   buy_asset:
     name: Buy / open position
     description: Submit a buy order using acquired and verified data. The instrument is supplied in parameters.asset_id; the simulated portfolio ledger deducts cash at the verified price.
@@ -76,29 +79,68 @@ render_ui:
       metric_max_drawdown: Maximum drawdown
       metric_risk_adjusted_return: Risk-adjusted excess return
       metric_turnover: Turnover
+      metric_strategy_discipline: Strategy discipline
   resources:
-    labels: {cash: Available cash}
+    labels:
+      cash: Available cash
   market_panels:
-    portfolio: {title: Portfolio ledger, empty: "No fills yet; the portfolio remains fully in cash."}
-    orders: {title: Simulated orders, empty: "No buy or sell orders yet."}
-    evidence: {title: Market evidence, empty: "Waiting for the agent to obtain quotes or research evidence."}
-  trace: {route_name: Investment evidence chain}
-  status_labels: {active: Active, inactive: Stopped, eliminated: Evaluation stopped}
+    portfolio:
+      title: Portfolio ledger
+      empty: No fills yet; the portfolio remains fully in cash.
+    orders:
+      title: Simulated orders
+      empty: No buy or sell orders yet.
+    evidence:
+      title: Market evidence
+      empty: Waiting for the agent to obtain quotes or research evidence.
+  trace:
+    route_name: Investment evidence chain
+  status_labels:
+    active: Active
+    inactive: Stopped
+    eliminated: Evaluation stopped
 settlement:
   portfolio_ledger:
     description: Buy and sell actions are simulated inside AI World and never connect to a real broker. Cash, positions, fills, transaction costs, and P&L are maintained by the scenario settlement layer. Hong Kong equities are converted from HKD to CNY for ledger accounting.
-  benchmark: {name: Cash benchmark}
+  benchmark:
+    name: Cash benchmark
   operator_trace:
     title: Investment evidence chain
     empty_hint: After the run starts, the decision chain expands from inputs through tools, reasoning, output, order, fill, and portfolio ledger; settlement attribution appears alongside it.
     nodes:
-      - {id: data_source, label: Data sources, description: "Quotes, news, and financial facts acquired by the agent through tools, code, or external data providers.", next_label: Supports thesis}
-      - {id: investment_thesis, label: Investment thesis, description: "The evidence-based reason to buy, sell, wait, or reduce risk.", next_label: Forms instruction}
-      - {id: simulated_order, label: Simulated order, description: Scenario actions enter the simulated world ledger., next_label: Portfolio validation}
-      - {id: fill, label: Fill / rejection, description: "The settlement layer checks cash, positions, trading window, and price evidence.", next_label: Updates positions}
-      - {id: portfolio, label: Portfolio ledger, description: "Cash, positions, market value, and post-order portfolio state.", next_label: Calculates P&L}
-      - {id: pnl, label: Professional evaluation result, description: "Excess return, maximum drawdown, turnover, transaction costs, and risk-adjusted performance."}
-  victory: {label: Risk-adjusted excess return}
+      - id: data_source
+        label: Data sources
+        description: Quotes, news, and financial facts acquired by the agent through tools, code, or external data providers.
+        next_label: Supports thesis
+      - id: investment_thesis
+        label: Investment thesis
+        description: The evidence-based reason to buy, sell, wait, or reduce risk.
+        next_label: Forms instruction
+      - id: strategy_book
+        label: Investment strategy ledger
+        description: Stores the thesis, counter-evidence, numeric triggers, sizing target, and exit discipline and reconciles them against actual positions.
+        next_label: Constrains execution
+      - id: attribution
+        label: Strategy execution and attribution
+        description: Records plan revisions, trigger compliance, rejections, fills, and thesis-level realized and unrealized P&L.
+        next_label: Feeds professional evaluation
+      - id: simulated_order
+        label: Simulated order
+        description: Scenario actions enter the simulated world ledger.
+        next_label: Portfolio validation
+      - id: fill
+        label: Fill / rejection
+        description: The settlement layer checks cash, positions, trading window, and price evidence.
+        next_label: Updates positions
+      - id: portfolio
+        label: Portfolio ledger
+        description: Cash, positions, market value, and post-order portfolio state.
+        next_label: Calculates P&L
+      - id: pnl
+        label: Professional evaluation result
+        description: Excess return, maximum drawdown, turnover, transaction costs, and risk-adjusted performance.
+  victory:
+    label: Risk-adjusted excess return
   display_values:
     portfolio_value: Total portfolio value
     pnl: Cumulative P&L
@@ -112,6 +154,11 @@ settlement:
     cash: Available cash
     market_value: Position market value
     position_count: Number of positions
+    strategy_discipline_score: Strategy discipline score
+    plan_revision_count: Plan revisions
+    planned_trade_count: Planned fills
+    strategy_rejection_count: Strategy rejections
+    active_thesis_count: Active investment theses
 prompt_contract:
   audience_language: en-US
   harness_policy:
@@ -136,15 +183,22 @@ prompt_contract:
     - Simulated fills apply the same commission and slippage rules. The primary metric is excess return after the maximum-drawdown penalty.
     - The system does not preload quotes, news, or financials. Discover and use external capabilities through the agent loop.
     - Before opening the first position, obtain a live quote and at least two non-quote research results. A historical price or a single quote is insufficient.
+    - After research, use update_investment_plan to write a structured thesis into the authoritative InvestmentBook before buying on a later tick.
+    - The settlement-owned InvestmentBook is reconciled against actual cash and positions and takes precedence over private note_to_self memory.
+    - Plans must translate prose into numeric discipline using entry_price_max, stop_loss_price, and risk_budget_pct; take_profit_price and thesis_expiry_tick are optional.
+    - A buy fills only after its entry, position-size, cash-floor, and stop-risk constraints pass deterministically.
+    - Every sell supplies sell_reason: stop_loss, take_profit, thesis_invalidated, rebalance, or risk_reduction. A claimed stop or take-profit must match the numeric trigger.
+    - InvestmentBook maintains an immutable decision journal and thesis-level realized/unrealized attribution. Discipline is diagnostic and does not replace risk-adjusted excess return as the ranking metric.
     - The value manager requires structured financial statements plus valuation or cash-flow evidence. The growth manager requires a filing or news catalyst plus capital-flow, order-book, or industry evidence.
     - Never fabricate market data or claim knowledge of future prices. Use only acquired, verified, and still-valid evidence.
-    - Only buy_asset and sell_asset change cash or positions. Research, code execution, and waiting do not change NAV.
+    - Only buy_asset and sell_asset change cash or positions. update_investment_plan changes strategy state only; research, code execution, and waiting do not change NAV.
     - A high-quality wait_and_review is valid when no defensible thesis exists, a suitable asset is unaffordable, or an exit condition has not triggered.
     - Follow the personal style lock in AGENT.md. Do not drift from value to momentum or from growth to defensive blue chips without the required evidence.
     - Every buy_asset or sell_asset public_reasoning_summary must briefly cover thesis, sizing intent, exit condition, and style check; otherwise choose wait_and_review.
     - Keep public_reasoning_summary concise and maintain note_to_self with the core position, watchlist, triggers, and stops.
+    - If the InvestmentBook has an active/monitoring/candidate thesis, the verified current quote satisfies entry_price_max, and the evaluation trading window is open, the next cycle must submit buy_asset. Do not use wait_and_review or repeat update_investment_plan as a substitute for opening the planned position.
     - Idle cash or a low share price alone is never a sufficient reason to buy.
-    - Orders fill only during mainland China market trading windows.
+    - Orders fill only during the evaluation’s mainland China simulated trading window.
     - Orders require parameters.asset_id and quantity, plus price_evidence_ref and evidence_refs when verified quote evidence exists.
     - Also provide parameters.asset_name and parameters.expected_price matching the verified quote; mismatches are rejected or degraded to waiting.
     - Size orders from the verified current price, never from stale memory or another company's quote.

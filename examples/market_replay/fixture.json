@@ -8,7 +8,7 @@
     "description": "Small deterministic fixture for offline pipeline verification"
   },
   "asset": "600036.SH",
-  "ticks": 2,
+  "ticks": 6,
   "agents": {
     "investor_a": {
       "observations": [
@@ -18,7 +18,7 @@
       ],
       "actions": [
         {"tick": 1, "action_id": "wait_and_review", "reason": "先完成可审计研究", "reason_en": "Complete the auditable research first."},
-        {"tick": 2, "action_id": "buy_asset", "quantity": 2, "price_evidence_ref": "quote_a_t1", "reason": "证据链完整，按回放规则执行", "reason_en": "The evidence chain is complete; execute the recorded replay action."}
+        {"tick": 6, "action_id": "buy_asset", "quantity": 2, "price_evidence_ref": "quote_a_t1", "reason": "证据链完整，按回放规则执行", "reason_en": "The evidence chain is complete; execute the recorded replay action."}
       ]
     },
     "investor_b": {
@@ -29,7 +29,7 @@
       ],
       "actions": [
         {"tick": 1, "action_id": "wait_and_review", "reason": "先完成可审计研究", "reason_en": "Complete the auditable research first."},
-        {"tick": 2, "action_id": "wait_and_review", "reason": "保持记录中的现金状态", "reason_en": "Keep the recorded cash position."}
+        {"tick": 6, "action_id": "wait_and_review", "reason": "保持记录中的现金状态", "reason_en": "Keep the recorded cash position."}
       ]
     }
   }

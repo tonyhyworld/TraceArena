@@ -206,7 +206,25 @@ class WorldStateKernel:
 
         # Agent 指标数据（从 internal.metrics 提取）
         agent_metrics = {}
-        raw_metrics = getattr(self._state, "internal", {}).get("metrics", {})
+        raw_metrics = dict(
+            getattr(self._state, "internal", {}).get("metrics", {}) or {}
+        )
+        # External world adapters own their physical metrics.  Project them
+        # generically into the existing per-agent snapshot contract so any
+        # scenario (Grid2Op, robotics, logistics, etc.) can use the standard
+        # dashboard without OS-level knowledge of domain metric names.
+        adapter_metrics = (
+            getattr(self._state, "internal", {})
+            .get("world_adapter", {})
+            .get("metrics", {})
+        )
+        if isinstance(adapter_metrics, dict):
+            for agent_id, values in adapter_metrics.items():
+                if isinstance(values, dict):
+                    existing = raw_metrics.get(agent_id)
+                    merged = dict(existing) if isinstance(existing, dict) else {}
+                    merged.update(values)
+                    raw_metrics[agent_id] = merged
         if raw_metrics and agent_snapshots:
             for snap in agent_snapshots:
                 aid = snap.agent_id

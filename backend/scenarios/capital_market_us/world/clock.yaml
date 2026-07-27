@@ -1,0 +1,34 @@
+# Round / clock model. The OS only reads this declaration; all market meaning
+# belongs to this scenario package.
+clock:
+  unit: real_minute
+  cycle_label: Evaluation day
+  advance:
+    mode: every_tick
+  pacing:
+    mode: wall_clock
+    tick_seconds: 60
+  live_window:
+    timezone: America/New_York
+    weekdays: [1, 2, 3, 4, 5]
+    ranges: ["09:30-16:00"]
+    closed_message: >-
+      当前不在本评测允许的美股常规模拟成交窗口（纽约时间周一至周五 09:30-16:00），
+      暂不可下单；可继续研究 SEC 披露、财报、新闻、估值、行业和宏观证据，开盘后再提交订单。
+  phases:
+    - id: pre_open_research
+      name: Pre-market research
+      actors: all
+      duration_ticks: 5
+      flags: {tradable: false}
+      description: >-
+        盘前研究阶段：只能获取行情、SEC 披露、财报、新闻、估值、行业和宏观证据，
+        建立或更新投资计划；不允许成交、建仓、调仓或产生持仓市值结算。
+    - id: regular_session
+      name: Regular session
+      actors: all
+      duration_ticks: 115
+      flags: {tradable: true}
+      description: >-
+        演绎已进入美股常规交易阶段；仍需叠加真实纽约交易窗口，窗口开放时才可建仓、
+        调仓、止盈止损，并按已验证行情结算持仓。

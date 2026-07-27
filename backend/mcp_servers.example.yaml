@@ -1,8 +1,26 @@
 # MCP Server 注册表示例 — 复制为 mcp_servers.yaml 并按环境修改（勿提交密钥）
 #
-# 需要 Python >= 3.10 且: pip install "mcp>=1.28.1,<2"
+# 需要 Python >= 3.10 且: pip install "mcp>=1.27,<2"
 
 servers:
+  # 白名单网页研究（搜索端点通过 AIWORLD_WEB_SEARCH_ENDPOINT 配置）
+  - id: web_research
+    transport: stdio
+    command: .venv/bin/python
+    args:
+      - ./scripts/web_research_mcp_server.py
+    enabled: true
+    timeout_sec: 30
+
+  # 无 JavaScript 的受限浏览器会话
+  - id: browser
+    transport: stdio
+    command: .venv/bin/python
+    args:
+      - ./scripts/browser_mcp_server.py
+    enabled: true
+    timeout_sec: 30
+
   # 本地文件系统（stdio 子进程）
   - id: filesystem
     transport: stdio
@@ -30,6 +48,15 @@ servers:
     command: .venv/bin/python
     args:
       - ./scripts/china_market_research_mcp_server.py
+    enabled: true
+    timeout_sec: 30
+
+  # 美股专业投研：SEC XBRL/公告、Nasdaq 财报日历、FRED 宏观数据（公开数据，无密钥）
+  - id: us_market_research
+    transport: stdio
+    command: .venv/bin/python
+    args:
+      - ./scripts/us_market_research_mcp_server.py
     enabled: true
     timeout_sec: 30
 

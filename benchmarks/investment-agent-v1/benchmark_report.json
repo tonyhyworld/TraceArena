@@ -5,12 +5,12 @@
   "official_model_leaderboard": false,
   "claim_scope": "Deterministic protocol proof only; these entries are scripted controls, not model-comparison results.",
   "scenario_id": "capital_market_dual_agent_v0",
-  "scenario_version": "0.3.0",
+  "scenario_version": "0.4.0",
   "fixture_id": "value_catalyst_synthetic_v1",
-  "fixture_sha256": "cdfa13be2d1c1595d89d7e0c5514ba919fadb84496ca6fd6eab4114d7e66c4fd",
+  "fixture_sha256": "4463f8cc4a24eb38fb8ab2bee18b5f91028b688ba52f902ca7650e28da69dd43",
   "fixture_provenance_status": "internal_synthetic_pending_approval",
   "fixture_license": "CC0-1.0 (pending maintainer confirmation)",
-  "deterministic_replay_sha256": "e26fbc165d0e2f17264242df598ed9aa19428a9e092f07c19ca34d1019dbd865",
+  "deterministic_replay_sha256": "eaac4bdf522e871509d3c3372d63b8bc60ad2f804dcd0f7e7dd61670fe0ce6a5",
   "execution_boundary": {
     "network": "disabled",
     "brokerage": "disabled",
@@ -43,7 +43,7 @@
       "authority": {
         "mode": "hybrid",
         "verifier_id": "portfolio_ledger",
-        "rule_version": "capital_market.portfolio_mark_to_market.v2"
+        "rule_version": "capital_market.portfolio_mark_to_market.v3"
       },
       "rank": 1
     },
@@ -67,10 +67,10 @@
       "authority": {
         "mode": "hybrid",
         "verifier_id": "portfolio_ledger",
-        "rule_version": "capital_market.portfolio_mark_to_market.v2"
+        "rule_version": "capital_market.portfolio_mark_to_market.v3"
       },
       "rank": 2
     }
   ],
-  "report_sha256": "65cd80e8c9fd33df23ee80eacfb97102d28166ad0c87a1e39f19fa381cf549e1"
+  "report_sha256": "fbfe0405636a7b3cd9fc72b9bacef839207314e90dacf0edaff9cf197bc0ab77"
 }

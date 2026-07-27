@@ -1,16 +1,14 @@
 # 回合 / 时钟模型（RoundModel 契约，见 backend/app/contracts/round_model.py）
 #
-# 资本市场：专业评测窗口 ≈ A股连续交易时段内的 1 小时真实时间。
+# 资本市场：专业评测窗口 ≈ A股交易日内的 1 小时真实时间。
 # 关键点由 OS 通用执行、场景只声明：
 #   1) pacing.wall_clock —— 相邻 tick 的起点至少间隔 tick_seconds 真实秒，
 #      让实时行情在 tick 之间真正发生变化（这是"实时数据驱动策略"的物理前提）。
-#   2) live_window —— 只约束「当前墙钟能否下单」，不约束开局时刻。
-#      允许 9:00 盘前开局做研究；到 9:30 后本局未关即可成交。
-#      午休/收盘时 RoundModel 把 tradable 置 false，结算层拒单。
-#   3) 单一"连续交易"阶段全程声明 tradable:true —— 实际能否成交再叠加 live_window。
+#   2) phase.duration_ticks —— 先演绎盘前研究，再进入开盘交易；盘前不能成交。
+#   3) live_window —— 真实 A 股交易窗口二次门禁；午休/收盘即使演绎已开盘也不能成交。
 clock:
   unit: real_minute
-  cycle_label: 交易时段
+  cycle_label: 评测日
   advance:
     mode: every_tick
   pacing:
@@ -21,13 +19,22 @@ clock:
     weekdays: [1, 2, 3, 4, 5]
     ranges: ["09:30-11:30", "13:00-15:00"]
     closed_message: >-
-      当前非 A股连续竞价时段（周一至周五 9:30–11:30、13:00–15:00），
+      当前不在本评测允许的 A股模拟成交窗口（周一至周五 9:30–11:30、13:00–15:00），
       暂不可下单；可继续研究，开盘后本局即可提交订单。
   phases:
-    - id: continuous_session
-      name: 连续交易
+    - id: pre_open_research
+      name: 盘前研究
       actors: all
+      duration_ticks: 5
+      flags: {tradable: false}
+      description: >-
+        盘前研究阶段：只能获取行情、财报、新闻、资金流等证据，建立或更新投资计划；
+        不允许成交、建仓、调仓或产生持仓市值结算。
+    - id: continuous_session
+      name: 开盘交易
+      actors: all
+      duration_ticks: 115
       flags: {tradable: true}
       description: >-
-        可随时研究与准备下单；真正成交以当前是否处于 A股交易窗口为准。
-        盘前开局后，到开盘时刻即可建仓、调仓、止盈止损。
+        演绎已进入开盘交易阶段；仍需叠加真实 A 股交易窗口，窗口开放时才可建仓、
+        调仓、止盈止损，并按已验证行情结算持仓。

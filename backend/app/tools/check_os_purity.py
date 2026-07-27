@@ -35,6 +35,7 @@ BASELINE_PATH = Path(__file__).resolve().parent / "os_purity_baseline.tsv"
 
 # 扫描的 OS 层目录（相对仓库根）——这些目录必须与具体场景无关
 SCAN_ROOTS = [
+    "backend/app/agent_os",
     "backend/app/contracts",
     "backend/app/engine",
     "backend/app/framework",

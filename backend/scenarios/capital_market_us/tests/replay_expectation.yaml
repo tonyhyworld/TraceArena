@@ -1,0 +1,19 @@
+replay_expectation:
+  expected_reconstructable_artifacts:
+    - initial_world_state
+    - perception_packets
+    - harness_traces
+    - world_actions
+    - tool_run_results
+    - external_observations
+    - world_events
+    - settlements
+    - director_plans
+    - render_commands
+    - final_settlement_records
+  invariants:
+    - world_event_must_reference_world_action_or_system_origin
+    - external_observation_must_have_provenance
+    - settlement_must_reference_world_event
+    - director_plan_must_reference_trusted_facts
+    - winner_only_from_scene_settlement

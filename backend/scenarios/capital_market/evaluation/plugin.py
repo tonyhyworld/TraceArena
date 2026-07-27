@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from app.contracts.os2 import SettlementAuthority, SettlementRecord, WorldEvent
 from app.engine.evaluation.settlement import SettlementContext
+from scenarios.capital_market.evaluation.investment_book import InvestmentBook
 
 
 @dataclass
@@ -19,7 +20,7 @@ class PortfolioAccount:
 
 
 class CapitalMarketSettlementPlugin:
-    plugin_id = "capital_market.portfolio.v2"
+    plugin_id = "capital_market.portfolio.v3"
 
     def __init__(self) -> None:
         self._accounts: Dict[str, PortfolioAccount] = {}
@@ -27,8 +28,13 @@ class CapitalMarketSettlementPlugin:
         self._asset_names: Dict[str, str] = {}
         self._last_event_refs: List[str] = []
         self._event_observations: Dict[str, List[str]] = {}
+        self._investment_books: Dict[str, InvestmentBook] = {}
         # 上一拍面向展示的账本快照：用于识别「零变化」静默结算
         self._last_presentation_snapshot: Dict[str, Tuple[Any, ...]] = {}
+
+    @staticmethod
+    def _is_english(context: SettlementContext) -> bool:
+        return str(context.world_state.get("locale") or "").lower().startswith("en")
 
     def settle(
         self,
@@ -47,6 +53,7 @@ class CapitalMarketSettlementPlugin:
         verified_refs = self._ingest_verified_prices(context)
         affected = set()
         filled = set()
+        strategy_updated = set()
         rejected: List[SettlementRecord] = []
         has_market_close = False
         for event in events:
@@ -55,6 +62,17 @@ class CapitalMarketSettlementPlugin:
                 affected.add(event.actor_id)
                 filled.add(str(event.actor_id))
             elif event.event_type == "action_resolved" and event.actor_id:
+                action_type = str(event.deltas.get("action_type") or "")
+                if action_type == "update_investment_plan":
+                    applied, reason = self._apply_investment_plan(event, context)
+                    if applied:
+                        affected.add(event.actor_id)
+                        strategy_updated.add(str(event.actor_id))
+                    else:
+                        rejected.append(
+                            self._strategy_rejection_record(event, reason, context)
+                        )
+                    continue
                 applied, reason = self._apply_resolved_action(event, context)
                 if applied:
                     affected.add(event.actor_id)
@@ -79,6 +97,7 @@ class CapitalMarketSettlementPlugin:
                 context,
                 final=False,
                 had_fill=str(agent_id) in filled,
+                had_strategy_update=str(agent_id) in strategy_updated,
             )
             for agent_id in sorted(affected)
             if agent_id in self._accounts
@@ -165,6 +184,13 @@ class CapitalMarketSettlementPlugin:
                     selected_quote = alt_selected
         price = selected_quote.get("price")
         asset_id = str(selected_quote.get("asset_id") or requested_asset)
+        self._normalize_order_identity_parameters(
+            parameters, selected_quote, asset_id, selected_ref,
+        )
+        try:
+            event.deltas["parameters"] = parameters
+        except Exception:
+            pass
         if quantity is None:
             return False, "quantity_missing"
         if not asset_id:
@@ -230,9 +256,68 @@ class CapitalMarketSettlementPlugin:
         )
         if action_type == "buy_asset" and gross_notional + commission > account.cash:
             return False, "insufficient_cash"
+        investment_policy = dict(
+            context.world_state.get("investment_policy") or {}
+        )
+        enforce_in_runtime = self._investment_policy_enabled(
+            investment_policy, context
+        )
+        book = self._investment_books.get(str(event.actor_id))
+        strategy_asset_id = requested_asset or asset_id
+        if book is not None and strategy_asset_id not in book.theses:
+            strategy_asset_id = next((
+                known_id for known_id in book.theses
+                if self._ticker_matches(known_id, strategy_asset_id)
+            ), strategy_asset_id)
+        strategy_refs = [
+            *list(event.evidence_refs or []),
+            *list(event.observation_refs or []),
+        ]
+        if (
+            action_type == "buy_asset"
+            and enforce_in_runtime
+            and book is not None
+        ):
+            current_qty = float(account.positions.get(asset_id, 0.0) or 0.0)
+            current_value = (
+                current_qty * reference_price * fx
+            )
+            portfolio_value = account.cash + sum(
+                float(position_qty)
+                * float(self._prices.get(position_id, 0.0) or 0.0)
+                * self._fx_multiplier(position_id, context)
+                for position_id, position_qty in account.positions.items()
+            )
+            accepted, strategy_reason = book.validate_buy(
+                strategy_asset_id,
+                post_position_value=current_value + gross_notional,
+                post_cash=account.cash - gross_notional - commission,
+                post_portfolio_value=portfolio_value - commission,
+                reference_price=reference_price,
+                tick=context.world_tick,
+                evidence_refs=strategy_refs,
+            )
+            if not accepted:
+                book.record_rejection(
+                    strategy_asset_id, strategy_reason, context.world_tick
+                )
+                return False, strategy_reason
         if action_type == "sell_asset":
             if signed_quantity > account.positions.get(asset_id, 0.0):
                 return False, "insufficient_position"
+            if enforce_in_runtime and book is not None:
+                accepted, strategy_reason = book.validate_sell(
+                    strategy_asset_id,
+                    tick=context.world_tick,
+                    reference_price=reference_price,
+                    sell_reason=str(parameters.get("sell_reason") or ""),
+                    evidence_refs=strategy_refs,
+                )
+                if not accepted:
+                    book.record_rejection(
+                        strategy_asset_id, strategy_reason, context.world_tick
+                    )
+                    return False, strategy_reason
             signed_quantity = -signed_quantity
         if selected_ref:
             refs = self._event_observations.setdefault(event.event_id, [])
@@ -276,10 +361,74 @@ class CapitalMarketSettlementPlugin:
                 "slippage_bps": slippage_bps,
                 "price_evidence_ref": selected_ref,
                 "market_phase": clock_phase,
+                "sell_reason": str(parameters.get("sell_reason") or ""),
             },
         })
         self._apply_trade(synthetic)
+        if book is not None:
+            book.record_trade(
+                strategy_asset_id,
+                "buy" if action_type == "buy_asset" else "sell",
+                context.world_tick,
+                strategy_refs,
+                quantity=abs(signed_quantity),
+                gross_notional=gross_notional,
+                commission=commission,
+                fill_price=fill_price,
+                sell_reason=str(parameters.get("sell_reason") or ""),
+            )
         return True, ""
+
+    @staticmethod
+    def _investment_policy_enabled(
+        policy: Dict[str, Any], context: SettlementContext
+    ) -> bool:
+        if not policy.get("enabled"):
+            return False
+        runtime_mode = str(
+            context.world_state.get("runtime_mode") or ""
+        ).strip().lower()
+        return (
+            runtime_mode != "replay"
+            or bool(policy.get("enforce_in_replay", False))
+        )
+
+    def _apply_investment_plan(
+        self, event: WorldEvent, context: SettlementContext
+    ) -> Tuple[bool, str]:
+        if str(event.deltas.get("outcome") or "") != "accepted":
+            return False, "strategy_action_not_accepted"
+        parameters = event.deltas.get("parameters") or {}
+        if not isinstance(parameters, dict):
+            return False, "parameters_missing"
+        book = self._investment_books.get(str(event.actor_id))
+        if book is None:
+            return False, "investment_book_missing"
+        submitted_refs = set(event.evidence_refs or []) | set(
+            event.observation_refs or []
+        )
+        refs = [
+            str(observation.get("observation_id") or "")
+            for observation in (
+                context.world_state.get("external_observations") or []
+            )
+            if isinstance(observation, dict)
+            and observation.get("verification_status") == "verified"
+            and str(observation.get("observation_id") or "") in submitted_refs
+        ]
+        policy = dict(context.world_state.get("investment_policy") or {})
+        if policy.get("require_verified_evidence") and not refs:
+            return False, "strategy_verified_evidence_missing"
+        accepted, reason = book.update_plan(
+            parameters, refs, context.world_tick
+        )
+        if not accepted:
+            book.record_rejection(
+                str(parameters.get("asset_id") or ""),
+                reason,
+                context.world_tick,
+            )
+        return accepted, reason
 
     @staticmethod
     def _observation_research_categories(
@@ -544,11 +693,13 @@ class CapitalMarketSettlementPlugin:
                 "expected_price",
                 "limit_price",
                 "price_evidence_ref",
+                "sell_reason",
             )
             if key in raw_order
         }
         account = self._accounts.get(str(event.actor_id))
         req_code = order.get("asset_id") or "?"
+        english = self._is_english(context)
         labels = {
             "parameters_missing": "订单缺少 parameters",
             "verified_price_evidence_missing": (
@@ -583,7 +734,81 @@ class CapitalMarketSettlementPlugin:
                 f"订单参考价与代码 {req_code} 的已验证行情偏差过大，"
                 "请按最新行情重新估算数量后再下单"
             ),
+            "strategy_plan_missing": (
+                "该标的尚未建立权威投资计划。请先提交 update_investment_plan，"
+                "下一拍再下单"
+            ),
+            "strategy_plan_inactive": "该标的投资论点已失效或关闭，买单未成交。",
+            "strategy_position_limit_exceeded": "成交后单票仓位将超过角色上限。",
+            "strategy_target_weight_exceeded": "订单将使实际仓位明显超过策略账本目标。",
+            "strategy_cash_floor_breached": "成交后现金比例将低于角色风控底线。",
+            "strategy_reversal_without_new_evidence": (
+                "两拍内反向交易缺少新增证据，订单未成交。"
+            ),
+            "strategy_thesis_expired": "投资论点已过期，须先复核并更新计划。",
+            "strategy_entry_trigger_not_met": "当前价格尚未满足策略账本的入场条件。",
+            "strategy_order_risk_budget_exceeded": "订单的止损风险超过计划风险预算。",
+            "strategy_sell_reason_missing": (
+                "卖单缺少标准化 sell_reason：stop_loss / take_profit / "
+                "thesis_invalidated / rebalance / risk_reduction。"
+            ),
+            "strategy_stop_trigger_not_met": "当前价格尚未触发计划止损价。",
+            "strategy_take_profit_trigger_not_met": "当前价格尚未触发计划止盈价。",
+            "strategy_thesis_not_invalidated": "策略账本尚未将该论点标记为失效。",
         }
+        if english:
+            labels = {
+                "parameters_missing": "Order parameters are missing.",
+                "verified_price_evidence_missing": (
+                    "The order does not reference a valid verified quote. "
+                    "Obtain a live quote for this asset before placing the order."
+                ),
+                "price_lookup_failed": (
+                    f"No verified price matched order ticker {req_code}. Check ticker format "
+                    "(A-share examples: 600036.SH / 000858.SZ; Hong Kong example: 00700.HK), "
+                    "or fetch a live quote for this asset first."
+                ),
+                "quantity_missing": "Order quantity is missing.",
+                "asset_missing": "Order asset_id is missing.",
+                "quantity_not_numeric": "Order quantity is not numeric.",
+                "quantity_must_be_positive": "Order quantity must be positive.",
+                "portfolio_account_missing": "Portfolio account is missing.",
+                "insufficient_cash": (
+                    f"Insufficient cash; order was not filled (available cash {account.cash:.0f}). "
+                    "Reduce quantity or choose a lower-priced asset."
+                    if account else "Insufficient cash; order was not filled."
+                ),
+                "insufficient_position": "Insufficient position; sell order was not filled.",
+                "trading_window_closed": "The trading window is closed; submit orders during the tradable session.",
+                "asset_market_not_allowed": "The asset is outside the allowed A-share / Hong Kong universe.",
+                "asset_identity_mismatch": (
+                    f"The claimed company name does not match the verified quote for {req_code}. "
+                    "Check ticker and name before ordering."
+                ),
+                "asset_price_identity_mismatch": (
+                    f"The reference price is too far from the verified quote for {req_code}. "
+                    "Recalculate quantity using the latest quote."
+                ),
+                "strategy_plan_missing": (
+                    "This asset has no authoritative investment plan. Submit "
+                    "update_investment_plan first and place any order in a later cycle."
+                ),
+                "strategy_plan_inactive": "The investment thesis is inactive or closed; buy order was not filled.",
+                "strategy_position_limit_exceeded": "The filled position would exceed the role's single-position limit.",
+                "strategy_target_weight_exceeded": "The order would exceed the target weight in the strategy ledger.",
+                "strategy_cash_floor_breached": "The order would breach the role's minimum cash floor.",
+                "strategy_reversal_without_new_evidence": "A reversal within the cooldown window needs new evidence.",
+                "strategy_thesis_expired": "The investment thesis has expired; review and update the plan first.",
+                "strategy_entry_trigger_not_met": "The current price does not satisfy the entry trigger.",
+                "strategy_order_risk_budget_exceeded": "The order's stop-loss risk exceeds the plan risk budget.",
+                "strategy_sell_reason_missing": (
+                    "Sell orders require sell_reason: stop_loss / take_profit / "
+                    "thesis_invalidated / rebalance / risk_reduction."
+                ),
+                "strategy_stop_trigger_not_met": "The current price has not triggered the stop-loss level.",
+                "strategy_take_profit_trigger_not_met": "The current price has not triggered the take-profit level.",
+                "strategy_thesis_not_invalidated": "The strategy ledger has not marked this thesis invalidated.",
+            }
         if reason.startswith("research_evidence_missing:"):
             raw_missing = reason.partition(":")[2].split(",")
             category_labels = {
@@ -598,14 +823,32 @@ class CapitalMarketSettlementPlugin:
                 "non_quote_2": "至少两类非行情研究证据",
                 "non_quote_results_2": "至少两次非行情研究工具调用",
             }
+            if english:
+                category_labels = {
+                    "financials": "structured financial statements",
+                    "cash_flow": "company cash flow",
+                    "valuation": "valuation metrics",
+                    "news": "company financial news",
+                    "catalyst": "filing or news catalyst",
+                    "macro": "macroeconomic indicators",
+                    "industry": "industry cycle or supply/demand evidence",
+                    "fund_flow": "capital flow or order book evidence",
+                    "non_quote_2": "at least two non-quote research categories",
+                    "non_quote_results_2": "at least two non-quote research tool calls",
+                }
             readable = [
                 category_labels.get(item, item)
                 for item in raw_missing if item
             ]
             labels[reason] = (
-                "建仓研究不完整，订单未成交。仍缺少："
-                + "、".join(readable)
-                + "。请继续调用对应研究工具，并引用可验证结果后再下单"
+                "Trade research is incomplete; order was not filled. Missing: "
+                + ", ".join(readable)
+                + ". Continue using the corresponding research tools and cite verified results before ordering."
+                if english else (
+                    "建仓研究不完整，订单未成交。仍缺少："
+                    + "、".join(readable)
+                    + "。请继续调用对应研究工具，并引用可验证结果后再下单"
+                )
             )
         return SettlementRecord(
             settlement_id=f"capital_market:{event.actor_id}:order_rejected:{context.world_tick}",
@@ -631,7 +874,128 @@ class CapitalMarketSettlementPlugin:
                 "reason_code": reason,
                 "requested_order": order,
             },
-            explanation=labels.get(reason, f"订单未成交：{reason}"),
+            explanation=labels.get(
+                reason,
+                f"Order was not filled: {reason}" if english else f"订单未成交：{reason}",
+            ),
+            affects_world=False,
+            affects_victory=False,
+        )
+
+    def _strategy_rejection_record(
+        self,
+        event: WorldEvent,
+        reason: str,
+        context: SettlementContext,
+    ) -> SettlementRecord:
+        role_policy = dict(
+            ((context.world_state.get("investment_policy") or {}).get("by_agent") or {})
+            .get(str(event.actor_id)) or {}
+        )
+        max_single = role_policy.get("max_single_position_pct")
+        english = self._is_english(context)
+        labels = {
+            "strategy_asset_missing": "投资计划缺少标的代码。",
+            "strategy_target_weight_invalid": "目标仓位必须大于 0 且不超过 100%。",
+            "strategy_position_limit_exceeded": (
+                "目标仓位超过该投资经理的单票上限"
+                + (f"（{max_single}%）" if max_single is not None else "")
+                + "。"
+            ),
+            "strategy_conviction_invalid": "置信度 conviction 必须在 0 到 1 之间。",
+            "strategy_style_mismatch": "风格自检与该投资经理的既定策略不一致。",
+            "strategy_status_invalid": (
+                "投资计划状态不是允许的标准状态。可用：candidate / monitoring / "
+                "active / invalidated / closed。"
+            ),
+            "strategy_verified_evidence_missing": (
+                "投资计划没有引用已验证研究证据，不能写入权威策略账本。"
+            ),
+            "strategy_numeric_trigger_invalid": "数字化价格触发器或风险预算无效。",
+            "strategy_stop_not_below_entry": "止损价必须低于计划入场上限。",
+            "strategy_take_profit_not_above_entry": "止盈价必须高于计划入场上限。",
+            "strategy_risk_budget_exceeded": "单笔风险预算超过该角色的上限。",
+            "strategy_expiry_invalid": "论点到期 tick 必须晚于当前 tick。",
+            "strategy_revision_without_new_evidence": (
+                "活动论点的实质性修订没有新增验证证据。"
+            ),
+            "parameters_missing": "投资计划缺少 parameters。",
+            "investment_book_missing": "投资策略账本尚未初始化。",
+        }
+        if english:
+            labels = {
+                "strategy_asset_missing": "Investment plan asset_id is missing.",
+                "strategy_target_weight_invalid": "Target weight must be greater than 0 and no more than 100%.",
+                "strategy_position_limit_exceeded": (
+                    "Target weight exceeds this manager's single-position limit"
+                    + (f" ({max_single}%)." if max_single is not None else ".")
+                ),
+                "strategy_conviction_invalid": "conviction must be between 0 and 1.",
+                "strategy_style_mismatch": "Style alignment does not match this manager's strategy.",
+                "strategy_status_invalid": (
+                    "Investment plan status is invalid. Use candidate / monitoring / "
+                    "active / invalidated / closed."
+                ),
+                "strategy_verified_evidence_missing": (
+                    "The investment plan does not cite verified research evidence and cannot be written to the authoritative ledger."
+                ),
+                "strategy_numeric_trigger_invalid": "Numeric price trigger or risk budget is invalid.",
+                "strategy_stop_not_below_entry": "Stop-loss price must be below the entry price limit.",
+                "strategy_take_profit_not_above_entry": "Take-profit price must be above the entry price limit.",
+                "strategy_risk_budget_exceeded": "Risk budget exceeds this role's limit.",
+                "strategy_expiry_invalid": "Thesis expiry tick must be later than the current tick.",
+                "strategy_revision_without_new_evidence": (
+                    "A material revision to an active thesis requires new verified evidence."
+                ),
+                "parameters_missing": "Investment plan parameters are missing.",
+                "investment_book_missing": "Investment strategy ledger has not been initialized.",
+            }
+        explanation = labels.get(reason)
+        if reason.startswith("strategy_fields_missing:"):
+            fields = reason.partition(":")[2]
+            explanation = (
+                f"Investment plan is incomplete; missing structured fields: {fields}."
+                if english else f"投资计划不完整，仍缺少结构化字段：{fields}。"
+            )
+        if reason.startswith("strategy_numeric_risk_fields_missing:"):
+            fields = reason.partition(":")[2]
+            explanation = (
+                f"Investment plan is missing numeric risk fields: {fields}."
+                if english else f"投资计划缺少数字化风险字段：{fields}。"
+            )
+        if not explanation:
+            explanation = (
+                f"Investment plan was not written to the strategy ledger: {reason}"
+                if english else f"投资计划未写入策略账本：{reason}"
+            )
+        return SettlementRecord(
+            settlement_id=(
+                f"capital_market:{event.actor_id}:strategy_rejected:"
+                f"{context.world_tick}"
+            ),
+            run_id=context.run_id,
+            scenario_id=context.scenario_id,
+            world_tick=context.world_tick,
+            evaluator_id=self.plugin_id,
+            authority=SettlementAuthority(
+                mode="deterministic_verifier",
+                provider_id="investment_book_validator",
+                verifier_id="investment_book_validator",
+                rule_version="capital_market.investment_book.v3",
+                reproducible=True,
+                deterministic=True,
+            ),
+            kind="deterministic",
+            subject_ids=[str(event.actor_id)],
+            source_event_refs=[event.event_id],
+            rule_refs=["capital_market.investment_book.v3"],
+            outcome="investment_plan_rejected",
+            values={"accepted": 0.0},
+            details={
+                "reason_code": reason,
+                "requested_plan": dict(event.deltas.get("parameters") or {}),
+            },
+            explanation=explanation,
             affects_world=False,
             affects_victory=False,
         )
@@ -765,6 +1129,39 @@ class CapitalMarketSettlementPlugin:
             if verified > 0 and abs(expected_price - verified) / verified > 0.08:
                 return "asset_price_identity_mismatch"
         return ""
+
+    def _normalize_order_identity_parameters(
+        self,
+        parameters: Dict[str, Any],
+        selected_quote: Dict[str, object],
+        asset_id: str,
+        selected_ref: str,
+    ) -> None:
+        """Backfill verifiable identity fields from the accepted quote.
+
+        The settlement layer should reject genuine risk breaches, not harmless
+        omissions.  If the order has already anchored itself to a verified quote,
+        missing display identity and reference-price fields can be normalized
+        deterministically without changing economic intent.
+        """
+        if selected_ref and not str(parameters.get("price_evidence_ref") or "").strip():
+            parameters["price_evidence_ref"] = selected_ref
+        if not str(parameters.get("asset_name") or "").strip():
+            verified_name = self._clean_asset_name(
+                selected_quote.get("name"), asset_id,
+            ) or self._lookup_asset_name(asset_id)
+            if verified_name:
+                parameters["asset_name"] = verified_name
+        if all(
+            parameters.get(key) in (None, "")
+            for key in ("expected_price", "limit_price", "reference_price")
+        ):
+            price = selected_quote.get("price")
+            if price is not None:
+                try:
+                    parameters["expected_price"] = float(price)
+                except (TypeError, ValueError):
+                    pass
 
     @classmethod
     def _extract_quotes(
@@ -919,12 +1316,17 @@ class CapitalMarketSettlementPlugin:
 
     def _ensure_accounts(self, context: SettlementContext) -> None:
         initial_cash = float(context.world_state.get("initial_cash", 1000.0))
+        policy = dict(context.world_state.get("investment_policy") or {})
         for agent_id in context.world_state.get("agent_ids", []):
             if agent_id not in self._accounts:
                 self._accounts[agent_id] = PortfolioAccount(
                     cash=initial_cash,
                     initial_value=initial_cash,
                     peak_value=initial_cash,
+                )
+            if agent_id not in self._investment_books:
+                self._investment_books[agent_id] = InvestmentBook.from_policy(
+                    str(agent_id), policy
                 )
 
     def _fx_multiplier(
@@ -986,6 +1388,7 @@ class CapitalMarketSettlementPlugin:
             "slippage_bps": float(event.deltas.get("slippage_bps", 0.0)),
             "price_evidence_ref": event.deltas.get("price_evidence_ref"),
             "market_phase": event.deltas.get("market_phase"),
+            "sell_reason": event.deltas.get("sell_reason"),
         })
 
     def _apply_market_close(self, event: WorldEvent) -> None:
@@ -1005,6 +1408,7 @@ class CapitalMarketSettlementPlugin:
         *,
         final: bool,
         had_fill: bool = False,
+        had_strategy_update: bool = False,
     ) -> SettlementRecord:
         account = self._accounts[agent_id]
         market_value = sum(
@@ -1057,6 +1461,53 @@ class CapitalMarketSettlementPlugin:
         cash_ratio_pct = (
             account.cash / portfolio_value * 100.0 if portfolio_value else 0.0
         )
+        investment_book = self._investment_books.get(agent_id)
+        if investment_book is not None:
+            reconciled_positions: Dict[str, float] = {}
+            reconciled_prices: Dict[str, float] = {}
+            reconciled_fx: Dict[str, float] = {}
+            for asset_id, quantity in account.positions.items():
+                book_asset_id = next((
+                    known_id for known_id in investment_book.theses
+                    if self._ticker_matches(known_id, asset_id)
+                ), asset_id)
+                reconciled_positions[book_asset_id] = (
+                    reconciled_positions.get(book_asset_id, 0.0)
+                    + float(quantity)
+                )
+                reconciled_prices[book_asset_id] = float(
+                    self._prices.get(asset_id, 0.0) or 0.0
+                )
+                reconciled_fx[book_asset_id] = self._fx_multiplier(
+                    asset_id, context
+                )
+            # Candidate plans also need a mark so the ledger can expose
+            # ready_to_enter / waiting_entry without requiring a position.
+            for book_asset_id in investment_book.theses:
+                if book_asset_id in reconciled_prices:
+                    continue
+                priced_asset_id = next((
+                    known_id for known_id in self._prices
+                    if self._ticker_matches(known_id, book_asset_id)
+                ), "")
+                if priced_asset_id:
+                    reconciled_prices[book_asset_id] = float(
+                        self._prices.get(priced_asset_id, 0.0) or 0.0
+                    )
+                    reconciled_fx[book_asset_id] = self._fx_multiplier(
+                        priced_asset_id, context
+                    )
+            investment_book.reconcile(
+                cash=account.cash,
+                positions=reconciled_positions,
+                prices=reconciled_prices,
+                fx_multipliers=reconciled_fx,
+                tick=context.world_tick,
+            )
+        discipline = (
+            investment_book.discipline_metrics()
+            if investment_book is not None else {}
+        )
         display_name = str(
             (context.world_state.get("agent_names", {}) or {}).get(agent_id)
             or agent_id
@@ -1094,6 +1545,7 @@ class CapitalMarketSettlementPlugin:
         material = bool(
             final
             or had_fill
+            or had_strategy_update
             or (ledger_changed and (has_positions or abs(pnl) > 1e-9
                                     or abs(account.cash - account.initial_value) > 1e-9))
         )
@@ -1104,32 +1556,62 @@ class CapitalMarketSettlementPlugin:
             explanation = ""
         elif final:
             explanation = (
-                f"{display_name}终局结算："
-                f"当前资产 {portfolio_value:.2f} 元，"
-                f"累计盈亏 {pnl:+.2f} 元，收益率 {return_pct:+.2f}%，"
-                f"基准超额 {excess_return_pct:+.2f}%，最大回撤 {drawdown_pct:.2f}%，"
-                f"风险调整超额 {risk_adjusted_excess_return:+.2f}，"
-                f"现金 {account.cash:.2f} 元，持仓市值 {market_value:.2f} 元。"
+                f"{display_name} final settlement: portfolio value {portfolio_value:.2f}, "
+                f"cumulative P&L {pnl:+.2f}, return {return_pct:+.2f}%, "
+                f"excess return {excess_return_pct:+.2f}%, max drawdown {drawdown_pct:.2f}%, "
+                f"risk-adjusted excess {risk_adjusted_excess_return:+.2f}, "
+                f"cash {account.cash:.2f}, position market value {market_value:.2f}."
+                if self._is_english(context) else (
+                    f"{display_name}终局结算："
+                    f"当前资产 {portfolio_value:.2f} 元，"
+                    f"累计盈亏 {pnl:+.2f} 元，收益率 {return_pct:+.2f}%，"
+                    f"基准超额 {excess_return_pct:+.2f}%，最大回撤 {drawdown_pct:.2f}%，"
+                    f"风险调整超额 {risk_adjusted_excess_return:+.2f}，"
+                    f"现金 {account.cash:.2f} 元，持仓市值 {market_value:.2f} 元。"
+                )
             )
         elif had_fill:
             explanation = (
-                f"{display_name}成交后更新账本："
-                f"当前资产 {portfolio_value:.2f} 元，"
-                f"累计盈亏 {pnl:+.2f} 元，收益率 {return_pct:+.2f}%，"
-                f"现金 {account.cash:.2f} 元，持仓市值 {market_value:.2f} 元。"
+                f"{display_name} ledger updated after fill: portfolio value {portfolio_value:.2f}, "
+                f"cumulative P&L {pnl:+.2f}, return {return_pct:+.2f}%, "
+                f"cash {account.cash:.2f}, position market value {market_value:.2f}."
+                if self._is_english(context) else (
+                    f"{display_name}成交后更新账本："
+                    f"当前资产 {portfolio_value:.2f} 元，"
+                    f"累计盈亏 {pnl:+.2f} 元，收益率 {return_pct:+.2f}%，"
+                    f"现金 {account.cash:.2f} 元，持仓市值 {market_value:.2f} 元。"
+                )
+            )
+        elif had_strategy_update:
+            explanation = (
+                f"{display_name} updated the authoritative investment strategy ledger; "
+                "this changes only the research plan, not cash or positions."
+                if self._is_english(context) else (
+                    f"{display_name}已更新权威投资策略账本；"
+                    "本次只改变研究计划，不改变现金和持仓。"
+                )
             )
         elif has_positions:
             explanation = (
-                f"{display_name}按已验证行情更新持仓市值："
-                f"当前资产 {portfolio_value:.2f} 元，"
-                f"累计盈亏 {pnl:+.2f} 元，收益率 {return_pct:+.2f}%，"
-                f"现金 {account.cash:.2f} 元，持仓市值 {market_value:.2f} 元。"
+                f"{display_name} marked positions to verified quotes: portfolio value {portfolio_value:.2f}, "
+                f"cumulative P&L {pnl:+.2f}, return {return_pct:+.2f}%, "
+                f"cash {account.cash:.2f}, position market value {market_value:.2f}."
+                if self._is_english(context) else (
+                    f"{display_name}按已验证行情更新持仓市值："
+                    f"当前资产 {portfolio_value:.2f} 元，"
+                    f"累计盈亏 {pnl:+.2f} 元，收益率 {return_pct:+.2f}%，"
+                    f"现金 {account.cash:.2f} 元，持仓市值 {market_value:.2f} 元。"
+                )
             )
         else:
             explanation = (
-                f"{display_name}组合状态已更新："
-                f"当前资产 {portfolio_value:.2f} 元，"
-                f"累计盈亏 {pnl:+.2f} 元，现金 {account.cash:.2f} 元。"
+                f"{display_name} portfolio state updated: portfolio value {portfolio_value:.2f}, "
+                f"cumulative P&L {pnl:+.2f}, cash {account.cash:.2f}."
+                if self._is_english(context) else (
+                    f"{display_name}组合状态已更新："
+                    f"当前资产 {portfolio_value:.2f} 元，"
+                    f"累计盈亏 {pnl:+.2f} 元，现金 {account.cash:.2f} 元。"
+                )
             )
         return SettlementRecord(
             settlement_id=f"capital_market:{agent_id}:{suffix}",
@@ -1144,7 +1626,7 @@ class CapitalMarketSettlementPlugin:
                     if has_external_price else "portfolio_cash_ledger"
                 ),
                 verifier_id="portfolio_ledger",
-                rule_version="capital_market.portfolio_mark_to_market.v2",
+                rule_version="capital_market.portfolio_mark_to_market.v3",
                 observation_refs=observation_refs,
                 component_modes=(
                     ["external_reality", "deterministic_verifier"]
@@ -1156,7 +1638,7 @@ class CapitalMarketSettlementPlugin:
             kind="scenario_outcome",
             subject_ids=[agent_id],
             source_event_refs=list(refs),
-            rule_refs=["capital_market.portfolio_mark_to_market.v2"],
+            rule_refs=["capital_market.portfolio_mark_to_market.v3"],
             outcome="portfolio_marked_to_market",
             values={
                 "cash": round(account.cash, 6),
@@ -1178,8 +1660,27 @@ class CapitalMarketSettlementPlugin:
                 "position_count": float(sum(
                     1 for quantity in account.positions.values() if quantity > 0
                 )),
+                "strategy_discipline_score": float(
+                    discipline.get("strategy_discipline_score", 100.0)
+                ),
+                "plan_revision_count": float(
+                    discipline.get("plan_revision_count", 0)
+                ),
+                "planned_trade_count": float(
+                    discipline.get("planned_trade_count", 0)
+                ),
+                "strategy_rejection_count": float(
+                    discipline.get("strategy_rejection_count", 0)
+                ),
+                "active_thesis_count": float(
+                    discipline.get("active_thesis_count", 0)
+                ),
             },
             details={
+                # Presentation must never infer a fill merely from an accepted
+                # world action.  Only the authoritative portfolio ledger can
+                # assert this flag after applying the order.
+                "had_fill": bool(had_fill),
                 "positions": {
                     asset_id: round(quantity, 8)
                     for asset_id, quantity in account.positions.items()
@@ -1198,6 +1699,9 @@ class CapitalMarketSettlementPlugin:
                     and abs(account.positions.get(asset_id, 0.0)) > 1e-12
                 },
                 "orders": list(account.orders[-10:]),
+                "investment_book": (
+                    investment_book.to_dict() if investment_book else {}
+                ),
                 "market_phase": self._market_phase(context),
                 "evaluation": {
                     "benchmark_id": str(benchmark.get("id") or "cash"),
@@ -1209,7 +1713,19 @@ class CapitalMarketSettlementPlugin:
                     ),
                 },
                 # 给 Agent 看的可读状态文案（场景自己表达业务含义，OS 只透传）
-                "display_text": self._holdings_display_text(account, market_value, pnl),
+                "display_text": "\n".join(
+                    item for item in (
+                        self._holdings_display_text(
+                            account, market_value, pnl,
+                            english=self._is_english(context),
+                        ),
+                        investment_book.display_text(
+                            english=self._is_english(context),
+                        )
+                        if investment_book else "",
+                    ) if item
+                ),
+                "strategy_updated": bool(had_strategy_update),
                 "silent": silent,
                 "presentation_silent": silent,
             },
@@ -1302,31 +1818,45 @@ class CapitalMarketSettlementPlugin:
         rows.sort(key=lambda item: abs(float(item.get("quantity") or 0.0)), reverse=True)
         return rows
 
-    def _holdings_display_text(self, account, market_value: float, pnl: float) -> str:
+    def _holdings_display_text(
+        self, account, market_value: float, pnl: float, *, english: bool = False,
+    ) -> str:
         """给 Agent 看的可读持仓/盈亏文案（本场景业务表达，OS 不认识）。"""
         dd = (
             (account.peak_value - (account.cash + market_value)) / account.peak_value * 100.0
             if account.peak_value else 0.0
         )
-        lines = [
+        lines = [(
+            f"- Cash {account.cash:.0f}, position market value {market_value:.0f}, "
+            f"cumulative P&L {pnl:+.0f}, current drawdown {dd:.1f}%"
+        ) if english else (
             f"- 现金 {account.cash:.0f}，持仓市值 {market_value:.0f}，"
             f"累计盈亏 {pnl:+.0f}，当前回撤 {dd:.1f}%"
-        ]
+        )]
         transaction_cost = sum(
             float(order.get("commission", 0.0) or 0.0)
             + float(order.get("slippage_cost", 0.0) or 0.0)
             for order in account.orders
         )
-        lines.append(f"- 累计交易成本 {transaction_cost:.2f} 元")
+        lines.append(
+            f"- Cumulative transaction costs {transaction_cost:.2f}"
+            if english else f"- 累计交易成本 {transaction_cost:.2f} 元"
+        )
         holds = [(a, q) for a, q in account.positions.items() if abs(q) > 1e-9]
         if holds:
             bits = []
             for asset_id, qty in holds[:6]:
                 label = self._lookup_asset_name(asset_id) or asset_id
-                bits.append(f"{label}({asset_id}) {qty:.0f}股")
-            lines.append("- 持仓：" + "，".join(bits))
+                bits.append(
+                    f"{label} ({asset_id}) {qty:.0f} shares" if english
+                    else f"{label}({asset_id}) {qty:.0f}股"
+                )
+            lines.append(
+                "- Holdings: " + ", ".join(bits)
+                if english else "- 持仓：" + "，".join(bits)
+            )
         else:
-            lines.append("- 当前无持仓")
+            lines.append("- No current holdings" if english else "- 当前无持仓")
         if account.orders:
             order_bits = []
             for o in account.orders[-3:]:
@@ -1334,10 +1864,18 @@ class CapitalMarketSettlementPlugin:
                 label = self._lookup_asset_name(aid) or aid
                 order_bits.append(
                     f"T{o.get('tick')} "
-                    f"{'买入' if o.get('side') == 'buy' else '卖出'} "
-                    f"{label} {o.get('quantity')}股@{o.get('price')}"
+                    f"{'buy' if o.get('side') == 'buy' else 'sell'} "
+                    f"{label} {o.get('quantity')} shares@{o.get('price')}"
+                    if english else (
+                        f"T{o.get('tick')} "
+                        f"{'买入' if o.get('side') == 'buy' else '卖出'} "
+                        f"{label} {o.get('quantity')}股@{o.get('price')}"
+                    )
                 )
-            lines.append("- 最近成交：" + "；".join(order_bits))
+            lines.append(
+                "- Recent fills: " + "; ".join(order_bits)
+                if english else "- 最近成交：" + "；".join(order_bits)
+            )
         return "\n".join(lines)
 
     @staticmethod

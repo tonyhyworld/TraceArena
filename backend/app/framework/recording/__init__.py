@@ -1,3 +1,3 @@
-from app.framework.recording.recorder import RunRecorder
+from app.framework.recording.recorder import RunRecorder, verify_archive_directory
 
-__all__ = ["RunRecorder"]
+__all__ = ["RunRecorder", "verify_archive_directory"]

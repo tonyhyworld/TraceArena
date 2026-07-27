@@ -15,6 +15,7 @@ import os
 import platform
 import re
 import resource
+import signal
 import shutil
 import subprocess
 import sys
@@ -406,6 +407,14 @@ class AgentProcessSandbox:
             ),
             "network_allowed": self.policy.allow_network,
             "package_install_allowed": self.policy.allow_package_install,
+            "policy": {
+                "backend": self.backend,
+                "network_allowed": self.policy.allow_network,
+                "package_install_allowed": self.policy.allow_package_install,
+                "command_timeout_sec": self.policy.command_timeout_sec,
+                "install_timeout_sec": self.policy.install_timeout_sec,
+                "max_output_bytes": self.policy.max_output_bytes,
+            },
             "limitations": (
                 [] if self.backend == "sandbox_exec" else
                 ["no_kernel_namespace_boundary", "python_execution_only"]
@@ -471,6 +480,7 @@ class AgentProcessSandbox:
                 "AI_WORLD_SANDBOX_NETWORK": "1" if network else "0",
             })
         started = time.monotonic()
+        process: Optional[asyncio.subprocess.Process] = None
         try:
             process = await asyncio.create_subprocess_exec(
                 *actual,
@@ -485,14 +495,21 @@ class AgentProcessSandbox:
                 process.communicate(), timeout=timeout_sec
             )
         except asyncio.TimeoutError:
-            process.kill()
-            await process.wait()
+            if process is not None:
+                await self._terminate_process_group(process)
             return SandboxCommandResult(
                 ok=False,
                 command_kind=command_kind,
                 errors=[f"timeout>{timeout_sec}s"],
                 duration_ms=int((time.monotonic() - started) * 1000),
             )
+        except asyncio.CancelledError:
+            if process is not None:
+                # The parent Agent turn may be cancelled by its tick deadline.
+                # Kill the whole session, not just the direct interpreter,
+                # otherwise grandchildren can outlive the Harness turn.
+                await asyncio.shield(self._terminate_process_group(process))
+            raise
         except Exception as exc:
             return SandboxCommandResult(
                 ok=False,
@@ -513,6 +530,28 @@ class AgentProcessSandbox:
             errors=errors,
             duration_ms=int((time.monotonic() - started) * 1000),
         )
+
+    @staticmethod
+    async def _terminate_process_group(
+        process: asyncio.subprocess.Process,
+    ) -> None:
+        if process.returncode is not None:
+            return
+        try:
+            if os.name == "posix":
+                os.killpg(process.pid, signal.SIGKILL)
+            else:
+                process.kill()
+        except ProcessLookupError:
+            pass
+        try:
+            await asyncio.wait_for(process.wait(), timeout=2.0)
+        except asyncio.TimeoutError:
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass
+            await process.wait()
 
     def _install_python_audit_guard(self) -> None:
         guard = self.policy_dir / "sitecustomize.py"

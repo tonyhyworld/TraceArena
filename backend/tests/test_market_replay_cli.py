@@ -43,7 +43,7 @@ def test_market_replay_cli_is_no_key_and_exports_authoritative_replay(tmp_path):
     assert manifest["provider"] == "replay"
     assert manifest["brokerage"] == "disabled"
     assert manifest["network"] == "disabled"
-    assert len(replay["ticks"]) == 2
+    assert len(replay["ticks"]) == 6
     terminal = replay["ticks"][-1]["settlements"]
     investor_a = next(item for item in terminal if "investor_a" in item["subject_ids"])
     assert investor_a["outcome"] == "portfolio_marked_to_market"

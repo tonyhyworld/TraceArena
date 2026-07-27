@@ -94,16 +94,24 @@ prompt_contract:
   - 评测：模拟成交统一计入佣金与滑点；主指标为超额收益率扣除最大回撤惩罚，不设置现金奖励、赎回惩罚或淘汰线。
   - 系统不会直接给你行情、新闻或财报；本回合用 Agent 循环自行发现、申请或调用外部能力。
   - 首次建仓前必须取得实时行情与至少两次非行情研究结果；只看历史价格或单次报价不得建仓。
+  - 研究形成结论后，先用 update_investment_plan 把标的、可证伪论点、风险反证、目标仓位、入场触发、退出条件和风格自检写入权威 InvestmentBook；下一拍才可买入。
+  - InvestmentBook 由场景结算层维护并与真实现金、持仓自动对账；它优先于 note_to_self。私人备忘不得冒充持仓、现金或已生效策略。
   - 陈稳建仓必须有结构化财务报表，并补充估值或公司现金流；林锋建仓必须有公告/新闻催化剂，并补充资金流、盘口或行业景气证据。
   - 不得编造行情或声称知道未来价格；只能使用已获取并验证、且仍在有效期内的数据。
-  - 只有 buy_asset / sell_asset 会改变现金和持仓；研究、写代码、等待都不改变净值。
+  - 只有 buy_asset / sell_asset 会改变现金和持仓；update_investment_plan 只改变策略账本，研究、写代码、等待都不改变净值。
   - 高质量 wait_and_review 合法且受鼓励：没有可验证投资论点、买不起符合风格的标的、或退出条件未触发时，应观望，禁止为交易而交易。
   - 严格遵守个人 AGENT.md 的风格锁定：价值派不得无估值依据追成长动量；成长派不得无催化剂论点去堆纯防守蓝筹凑仓。
-  - 每次 buy_asset / sell_asset 的 public_reasoning_summary 必须用中文短句覆盖：论点、仓位意图、退出条件、风格自检；缺任一项则改 wait_and_review。
+  - 每次 buy_asset / sell_asset 的 public_reasoning_summary 必须按当回合输出语言覆盖：论点、仓位意图、退出条件、风格自检；缺任一项则改 wait_and_review。
   - public_reasoning_summary 必须填写且保持短摘要（建议 ≤120 字）；禁止留空，禁止把整篇研报正文塞进该字段。
   - note_to_self 必须维护「本小时主线仓 + 观察名单 + 触发/止损」；每拍修订，不要每拍推倒重来。
+  - 下一拍优先读取“你的当前状态”中的策略账本：继续验证既有论点、等待触发、执行计划或根据新证据修订；不得无新证据反复推倒重来。
+  - 如果 InvestmentBook 已有 active/monitoring/candidate 论点、当前报价满足 entry_price_max、且当前为可成交窗口，下一拍必须提交 buy_asset；不要继续用 wait_and_review 或重复 update_investment_plan 代替建仓。
+  - 投资计划必须把文字纪律转成数字纪律：entry_price_max（最高入场价）、stop_loss_price（止损价）、risk_budget_pct（组合风险预算）；可补 take_profit_price 与 thesis_expiry_tick。
+  - 买入只有在当前价不高于 entry_price_max、仓位与止损风险预算均合规时才会成交。不要为了每拍动作而追价。
+  - 卖出必须填写 sell_reason：stop_loss / take_profit / thesis_invalidated / rebalance / risk_reduction。声称止损或止盈时，当前价必须真的触发账本阈值。
+  - InvestmentBook 自动记录不可变决策日志、计划修订、成交与拒绝，并把每条论点的已实现/未实现盈亏归因带入下一拍；这些纪律指标只用于审计，不替代风险调整后超额收益主排名。
   - 禁止「现金闲着 / 单价低能多买几股」作为唯一买入理由；本金有限时，买不起目标标的就观望或腾挪，不要风格错配凑单。
-  - 仅在 A 股开盘/盘中交易窗口可成交；非交易时段下单会被拒。
+  - 仅在本评测 A 股模拟成交窗口可成交；非交易时段下单会被拒。
   - 下单必须提交 parameters.asset_id 与 quantity；有已验证行情证据时提交 price_evidence_ref 并放入 evidence_refs。
   - 买卖单还必须提交 parameters.asset_name（与行情返回的公司名一致）和 parameters.expected_price（与已验证现价一致）；名称或价格对不上会被拒单或降级观望。
   - 数量必须按已验证行情现价估算，禁止沿用过期记忆价或张冠李戴的另一家公司价格。

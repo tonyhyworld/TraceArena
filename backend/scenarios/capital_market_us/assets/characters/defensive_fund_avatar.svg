@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="cwbg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a2036"/>
+      <stop offset="1" stop-color="#061523"/>
+    </linearGradient>
+    <linearGradient id="cwsuit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#16506e"/>
+      <stop offset="1" stop-color="#0e3247"/>
+    </linearGradient>
+    <radialGradient id="cwglow" cx="0.5" cy="0.34" r="0.6">
+      <stop offset="0" stop-color="#4cc9f0" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#4cc9f0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="104" fill="url(#cwbg)"/>
+  <rect width="512" height="512" rx="104" fill="url(#cwglow)"/>
+  <polyline points="70,360 140,344 210,352 280,318 350,326 442,286" fill="none"
+    stroke="#6ee7f9" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+  <circle cx="442" cy="286" r="10" fill="#6ee7f9" opacity="0.85"/>
+  <path d="M118 452c14-86 66-130 138-130s124 44 138 130z" fill="url(#cwsuit)"/>
+  <path d="M256 322l34 30-34 96-34-96z" fill="#d8fff7" opacity="0.92"/>
+  <path d="M256 322l20 26-20 60-20-60z" fill="#4cc9f0"/>
+  <circle cx="256" cy="196" r="82" fill="#f0d9c4"/>
+  <path d="M174 186c0-58 40-96 82-96s82 38 82 96c0-40-30-58-82-58s-82 18-82 58z" fill="#20303b"/>
+  <circle cx="228" cy="196" r="8" fill="#20303b"/>
+  <circle cx="284" cy="196" r="8" fill="#20303b"/>
+  <path d="M232 232c14 12 34 12 48 0" fill="none" stroke="#20303b" stroke-width="6" stroke-linecap="round"/>
+  <text x="256" y="486" text-anchor="middle" fill="#d8fff7" font-family="'PingFang SC','Microsoft YaHei',Arial" font-size="46" font-weight="700">陈稳</text>
+</svg>

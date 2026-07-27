@@ -11,8 +11,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import re
 import time
+from collections import deque
 from typing import Any, Dict, List, Optional, Tuple
 
 from app.core.interfaces import (
@@ -23,11 +25,17 @@ from app.core.interfaces import (
     PerceptionPack,
 )
 from app.engine.scenario_boot.registry import ScenarioRuntime
-from app.framework.presentation.audience_text import sanitize_audience_text
+from app.core.redaction import redact_credentials, redact_structure
+from app.framework.presentation.audience_text import (
+    enforce_english_audience_text,
+    sanitize_audience_text,
+)
 
 logger = logging.getLogger(__name__)
 
 MAX_HISTORY_TURNS = 8
+MAX_HISTORY_MESSAGE_CHARS = 6000
+MAX_HISTORY_TOTAL_CHARS = 32000
 
 
 class AgentContext:
@@ -44,12 +52,55 @@ class AgentContext:
         self.private_notes: List[str] = []
         # 反思洞察：每 5 拍由本 agent 自己的模型提炼，置顶注入后续简报
         self.reflections: List[str] = []
+        # Suspendable harness research is public/auditable progress, not private
+        # chain-of-thought.  It survives a world tick so research-heavy scenes
+        # can continue instead of fabricating a fallback world action.
+        self.pending_harness_research: Optional[Dict[str, Any]] = None
 
     def push_history(self, user_msg: str, assistant_msg: str) -> None:
-        self.history.append({"role": "user", "content": user_msg})
-        self.history.append({"role": "assistant", "content": assistant_msg})
+        self.history.append({
+            "role": "user",
+            "content": self._compact_history_content(user_msg),
+        })
+        self.history.append({
+            "role": "assistant",
+            "content": self._compact_history_content(
+                assistant_msg, strip_private_reasoning=True,
+            ),
+        })
         if len(self.history) > MAX_HISTORY_TURNS * 2:
             self.history = self.history[-(MAX_HISTORY_TURNS * 2):]
+        while (
+            len(self.history) > 2
+            and sum(len(item.get("content", "")) for item in self.history)
+            > MAX_HISTORY_TOTAL_CHARS
+        ):
+            self.history = self.history[2:]
+
+    @staticmethod
+    def _compact_history_content(
+        content: str, *, strip_private_reasoning: bool = False,
+    ) -> str:
+        value = str(content or "")
+        if strip_private_reasoning:
+            value = re.sub(
+                r"<(?:think|analysis)>.*?</(?:think|analysis)>",
+                "",
+                value,
+                flags=re.IGNORECASE | re.DOTALL,
+            ).strip()
+            value = re.sub(
+                r"<(?:think|analysis)>.*$",
+                "",
+                value,
+                flags=re.IGNORECASE | re.DOTALL,
+            ).strip()
+        if len(value) <= MAX_HISTORY_MESSAGE_CHARS:
+            return value
+        return (
+            "[history truncated; newest content retained]\n"
+            + value[-MAX_HISTORY_MESSAGE_CHARS:]
+        )
 
     def build_system_prompt(self) -> str:
         parts = ["你是一个在 AI 世界中参与竞争的智能体。"]
@@ -99,6 +150,8 @@ class AgentRuntime:
         agent_workspaces: Optional[Any] = None,  # AgentWorkspaceRegistry
         user_id: str = "",
         external_turn_timeout_ms: int = 120_000,
+        concurrency_limit: int = 8,
+        cancellation_grace_sec: float = 1.0,
     ):
         """
         runtime: L0 ScenarioRuntime
@@ -112,12 +165,122 @@ class AgentRuntime:
         self._workspaces = agent_workspaces  # 可为 None（兼容无 workspace 场景）
         self._user_id = user_id
         self._external_turn_timeout_ms = int(external_turn_timeout_ms)
+        self._concurrency_limit = max(1, int(concurrency_limit))
+        self._cancellation_grace_sec = max(
+            0.0, float(cancellation_grace_sec)
+        )
+        self._last_scheduling: Dict[str, Any] = {
+            "scheduled": 0,
+            "concurrency_limit": self._concurrency_limit,
+            "peak_concurrency": 0,
+            "completed_before_deadline": 0,
+            "timed_out": 0,
+            "cancellation_pending": 0,
+            "duration_ms": 0,
+        }
+        # OS memory is deliberately separate from transient chat history.  It
+        # stores only agent-authored working notes and public decision
+        # summaries, never raw model reasoning or credentials.
+        from app.agent_os.memory_store import PersistentMemoryStore
+        self._persistent_memory = PersistentMemoryStore(
+            os.getenv("AIWORLD_MEMORY_ROOT", "./os_memory")
+        )
+        self._recent_harness_records = deque(maxlen=500)
         role_map = runtime.compiled.role_index
         self._contexts: Dict[str, AgentContext] = {}
         for slot in agent_slots:
             ctx = AgentContext(slot, role_map.get(slot.id))
             ctx.provider = build_provider(slot, user_id=user_id)
             self._contexts[slot.id] = ctx
+
+    @staticmethod
+    def _compact_for_audit(value: Any, *, max_text: int = 900) -> Any:
+        """Keep operator-visible injected context useful without dumping secrets or huge schemas."""
+        value = redact_structure(value)
+        if isinstance(value, str):
+            return value if len(value) <= max_text else value[:max_text] + "…"
+        if isinstance(value, list):
+            return [
+                AgentRuntime._compact_for_audit(item, max_text=max_text)
+                for item in value[:12]
+            ]
+        if isinstance(value, dict):
+            blocked = {
+                "agent_charter",
+                "system_prompt",
+                "full_prompt",
+                "messages",
+                "history",
+                "raw_response",
+            }
+            compact: Dict[str, Any] = {}
+            for key, item in value.items():
+                skey = str(key)
+                if skey in blocked:
+                    compact[skey] = "[omitted from operator audit view]"
+                    continue
+                if skey == "capabilities" and isinstance(item, list):
+                    compact[skey] = [
+                        {
+                            "capability_id": row.get("capability_id"),
+                            "name": row.get("name"),
+                            "status": row.get("status"),
+                            "tool_id": (row.get("invocation") or {}).get("tool_id"),
+                            "operation": (row.get("invocation") or {}).get("operation"),
+                        }
+                        for row in item[:12]
+                        if isinstance(row, dict)
+                    ]
+                    continue
+                compact[skey] = AgentRuntime._compact_for_audit(
+                    item, max_text=max_text,
+                )
+            return compact
+        return value
+
+    @classmethod
+    def _audit_brief_snapshot(cls, brief: AgentBrief) -> Dict[str, Any]:
+        raw = dict(brief.raw_context or {})
+        keep_raw = {
+            key: raw.get(key)
+            for key in (
+                "round_phase",
+                "agent_settlement_state",
+                "investment_policy",
+                "harness_policy",
+                "agent_sandbox",
+                "last_tool_results",
+                "world_adapter_observation",
+                "world_adapter_observations",
+                "memory_summary",
+                "run_memory",
+                "scenario_locale",
+                "audience_language",
+                "code_workspace",
+            )
+            if key in raw
+        }
+        return cls._compact_for_audit({
+            "agent_id": brief.agent_id,
+            "tick": brief.tick,
+            "identity": brief.identity,
+            "goal": brief.goal,
+            "rule_summary": brief.rule_summary,
+            "self_state": brief.self_state,
+            "ranking": brief.ranking,
+            "others_summary": brief.others_summary,
+            "visible_objects": brief.visible_objects,
+            "available_actions": brief.available_actions,
+            "available_tools": brief.available_tools,
+            "available_resources": brief.available_resources,
+            "pressure_state": brief.pressure_state,
+            "recent_events": brief.recent_events,
+            "output_contract": brief.output_contract,
+            "self_location": brief.self_location,
+            "reachable_locations": brief.reachable_locations,
+            "risk_hints": brief.risk_hints,
+            "raw_context": keep_raw,
+        })
 
     def set_user_context(self, user_id: str, *, external_turn_timeout_ms: Optional[int] = None) -> None:
         self._user_id = user_id
@@ -145,6 +308,33 @@ class AgentRuntime:
     def get_context(self, agent_id: str) -> AgentContext:
         return self._contexts.get(agent_id)  # type: ignore
 
+    def provider_health_snapshot(self) -> Dict[str, Dict[str, Any]]:
+        snapshots: Dict[str, Dict[str, Any]] = {}
+        for agent_id, context in self._contexts.items():
+            provider = getattr(context, "provider", None)
+            health = getattr(provider, "health_snapshot", None)
+            if callable(health):
+                try:
+                    snapshots[agent_id] = dict(health())
+                    continue
+                except Exception as exc:
+                    snapshots[agent_id] = {
+                        "provider": getattr(provider, "provider_name", "unknown"),
+                        "model": getattr(provider, "model_name", "unknown"),
+                        "circuit_open": False,
+                        "snapshot_error": type(exc).__name__,
+                    }
+                    continue
+            snapshots[agent_id] = {
+                "provider": getattr(provider, "provider_name", "unknown"),
+                "model": getattr(provider, "model_name", "unknown"),
+                "circuit_open": False,
+            }
+        return snapshots
+
+    def scheduling_snapshot(self) -> Dict[str, Any]:
+        return dict(getattr(self, "_last_scheduling", {}) or {})
+
     async def collect_actions(
         self,
         state: Any,
@@ -162,6 +352,29 @@ class AgentRuntime:
             if isinstance(entry, dict)
         }
         tasks = {}
+        scheduling_started = time.monotonic()
+        concurrency_limit = max(
+            1, int(getattr(self, "_concurrency_limit", 8) or 8)
+        )
+        semaphore = asyncio.Semaphore(concurrency_limit)
+        active_count = 0
+        peak_concurrency = 0
+
+        async def _query_with_backpressure(
+            agent_id: str, brief: AgentBrief,
+        ) -> Tuple[Optional[ActionPack], AgentLog]:
+            nonlocal active_count, peak_concurrency
+            async with semaphore:
+                active_count += 1
+                peak_concurrency = max(peak_concurrency, active_count)
+                try:
+                    return await self._query_agent(
+                        agent_id, state.tick, brief,
+                        loop_context=loop_context,
+                    )
+                finally:
+                    active_count -= 1
+
         for agent_id in alive:
             if agent_id not in self._contexts:
                 continue
@@ -171,20 +384,60 @@ class AgentRuntime:
             if brief is None:
                 raise ValueError(f"missing_agent_brief:{agent_id}")
             tasks[agent_id] = asyncio.create_task(
-                self._query_agent(
-                    agent_id, state.tick, brief,
-                    loop_context=loop_context,
-                )
+                _query_with_backpressure(agent_id, brief)
             )
 
         if not tasks:
             # 无人可行动（全员已淘汰/尚未装配）——asyncio.wait 空集合会抛错，
             # 这里直接返回空结果，交由上层终局逻辑处理，不让本拍崩溃。
+            self._last_scheduling = {
+                "scheduled": 0,
+                "concurrency_limit": concurrency_limit,
+                "peak_concurrency": 0,
+                "completed_before_deadline": 0,
+                "timed_out": 0,
+                "cancellation_pending": 0,
+                "duration_ms": int(
+                    (time.monotonic() - scheduling_started) * 1000
+                ),
+            }
             return {}, []
 
         done, pending = await asyncio.wait(tasks.values(), timeout=timeout_sec)
         for t in pending:
             t.cancel()
+        # Cancellation is cooperative.  Merely calling cancel() and returning
+        # can leave provider HTTP cleanup, workspace writes, or context
+        # mutation running into the next world tick.  Drain every cancelled
+        # task so its finally blocks have completed and cancellation exceptions
+        # are retrieved before this tick is committed.
+        cancellation_pending = 0
+        if pending:
+            grace = max(
+                0.0, float(getattr(self, "_cancellation_grace_sec", 1.0))
+            )
+            drained, stubborn = await asyncio.wait(pending, timeout=grace)
+            for task in drained:
+                try:
+                    task.exception()
+                except (asyncio.CancelledError, Exception):
+                    pass
+            cancellation_pending = len(stubborn)
+            if stubborn:
+                logger.error(
+                    "[AgentRuntime] %s cancelled agent task(s) did not drain "
+                    "within %.2fs",
+                    len(stubborn), grace,
+                )
+
+                def _consume_task_result(task: asyncio.Task) -> None:
+                    try:
+                        task.exception()
+                    except (asyncio.CancelledError, Exception):
+                        pass
+
+                for task in stubborn:
+                    task.add_done_callback(_consume_task_result)
 
         actions: Dict[str, Optional[ActionPack]] = {}
         logs: List[AgentLog] = []
@@ -197,7 +450,15 @@ class AgentRuntime:
                 # P0-f：LLM 调用失败时 ctx 仍可能返回 None action（如 provider
                 # 重试耗尽后抛异常被上层捕获）。这里把 None 升级成"wait"兜底
                 # ActionPack，避免那拍 agent 完全消失，剧情线不至于断。
-                if action is None:
+                trace_payload = (
+                    getattr(log, "harness_trace", None)
+                    if not isinstance(log, dict)
+                    else log.get("harness_trace")
+                )
+                trace_status = str(
+                    ((trace_payload or {}).get("status") if log else "") or ""
+                )
+                if action is None and trace_status != "suspended":
                     err = (log.error if log and log.error else "llm_unavailable")
                     action = self._fallback_wait_action(state.tick, agent_id, err)
                 actions[agent_id] = action
@@ -208,12 +469,71 @@ class AgentRuntime:
 
         for task in pending:
             agent_id = task_to_id[task]
-            actions[agent_id] = self._fallback_wait_action(
-                state.tick, agent_id, f"timeout>{timeout_sec}s",
+            loop_cfg = (loop_context or {}).get("config")
+            suspendable = bool(
+                loop_cfg is not None
+                and str(getattr(
+                    loop_cfg, "completion_mode", "require_action",
+                )) == "suspendable"
+                and str(getattr(
+                    loop_cfg, "on_budget_exhausted", "fallback",
+                )) == "suspend"
             )
-            logs.append(self._error_log(state.tick, agent_id, f"超时（>{timeout_sec}s）"))
+            # A harness deadline is not evidence that the model provider is
+            # down. Research-heavy scenes may carry no world action for this
+            # agent instead of fabricating a fallback settlement.
+            actions[agent_id] = (
+                None if suspendable else self._fallback_wait_action(
+                    state.tick, agent_id, f"agent_turn_timeout>{timeout_sec}s",
+                )
+            )
+            logs.append(self._error_log(
+                state.tick, agent_id,
+                f"agent_turn_timeout>{timeout_sec}s",
+            ))
 
+        self._record_harness_health(logs)
+        self._last_scheduling = {
+            "scheduled": len(tasks),
+            "concurrency_limit": concurrency_limit,
+            "peak_concurrency": peak_concurrency,
+            "completed_before_deadline": len(done),
+            "timed_out": len(pending),
+            "cancellation_pending": cancellation_pending,
+            "duration_ms": int(
+                (time.monotonic() - scheduling_started) * 1000
+            ),
+        }
         return actions, logs
+
+    def _record_harness_health(self, logs: List[AgentLog]) -> None:
+        records = getattr(self, "_recent_harness_records", None)
+        if records is None:
+            self._recent_harness_records = deque(maxlen=500)
+            records = self._recent_harness_records
+        for log in logs:
+            payload = (
+                log.model_dump(mode="json")
+                if hasattr(log, "model_dump") else dict(log)
+            )
+            records.append({
+                "tick": payload.get("tick"),
+                "agent_id": payload.get("agent_id"),
+                "tokens_used": payload.get("tokens_used"),
+                "error": payload.get("error"),
+                "harness_trace": payload.get("harness_trace"),
+            })
+
+    def harness_health_snapshot(self) -> Dict[str, Any]:
+        from app.agent_os.health import (
+            evaluate_production_gate,
+            summarize_harness_health,
+        )
+
+        records = list(getattr(self, "_recent_harness_records", []) or [])
+        result = evaluate_production_gate(summarize_harness_health(records))
+        result["window_capacity"] = 500
+        return result
 
     async def _query_agent(
         self,
@@ -249,6 +569,7 @@ class AgentRuntime:
                 # 压缩摘要原先只写在旧 build_system_prompt 路径，简报主路径从未注入。
                 if ctx.memory_summary:
                     brief.raw_context["memory_summary"] = ctx.memory_summary
+                self._inject_persistent_memory(agent_id, ctx, brief)
                 system_prompt = assembler.assemble_system(brief, role_extra=role_extra)
                 user_message = assembler.assemble_user_message(brief)
 
@@ -296,6 +617,12 @@ class AgentRuntime:
                             raw, aid, brief, parser, validator,
                         ),
                     )
+                    if loop_session.trace_status == "suspended":
+                        ctx.pending_harness_research = (
+                            loop_session.to_resume_snapshot()
+                        )
+                    elif action is not None:
+                        ctx.pending_harness_research = None
                     tokens = loop_tokens
                     history_user = (
                         loop_session.build_user_message(user_message)
@@ -374,7 +701,11 @@ class AgentRuntime:
                         )
 
             usage = await ctx.provider.get_usage()
-            tokens = sum(usage.values())
+            # get_usage() is explicitly the most recent provider call.  The
+            # loop runner already sums each call, so replacing it here made
+            # AgentLog and HarnessTrace disagree by 3-8x in real runs.
+            if loop_session is None:
+                tokens = sum(usage.values())
 
             # 写入记忆缓冲（供 compress_memory 压缩）
             if action and action.parsed_ok:
@@ -384,6 +715,7 @@ class AgentRuntime:
                 if action.public_reasoning_summary:
                     summary += f" | {action.public_reasoning_summary[:80]}"
                 ctx.memory_buffer.append(summary)
+                self._persist_agent_memory(agent_id, tick, action)
         except Exception as e:
             error = str(e)
             logger.exception(
@@ -400,6 +732,7 @@ class AgentRuntime:
         )
         if brief is not None:
             pack.perception = {
+                "brief": self._audit_brief_snapshot(brief),
                 "self_state": brief.self_state,
                 "ranking": brief.ranking,
                 "others_summary": brief.others_summary,
@@ -443,7 +776,7 @@ class AgentRuntime:
             provider=getattr(ctx.provider, "provider_name", "unknown"),
             model=getattr(ctx.provider, "model_name", "unknown"),
             perception_pack=pack,
-            raw_llm_response=raw_response, action_pack=action,
+            raw_llm_response=redact_credentials(raw_response), action_pack=action,
             duration_ms=duration_ms, tokens_used=tokens, error=error,
             harness_trace=(
                 harness_trace.model_dump(mode="json") if harness_trace else None
@@ -465,6 +798,8 @@ class AgentRuntime:
                         else (action if isinstance(action, dict) else None)
                     ),
                 )
+                if loop_session is not None:
+                    ws.save_harness_step_io(tick, loop_session.steps)
                 if harness_trace is not None:
                     ws.save_harness_trace(tick, harness_trace)
         except Exception as exc:  # CoT 落盘失败不能拖垮主循环
@@ -474,6 +809,63 @@ class AgentRuntime:
             )
 
         return action, log
+
+    def _inject_persistent_memory(
+        self, agent_id: str, ctx: AgentContext, brief: AgentBrief,
+    ) -> None:
+        """Restore a small, user/scenario/agent-scoped memory excerpt.
+
+        This makes the OS memory API part of the actual decision loop while
+        preserving the existing short-term summary and keeping prompts bounded.
+        """
+        if not self._user_id:
+            return
+        query_parts = [str((brief.goal or {}).get("summary") or "")]
+        query_parts.extend(str(x) for x in (brief.self_state or {}).values())
+        try:
+            records = self._persistent_memory.search(
+                user_id=self._user_id,
+                agent_id=agent_id,
+                scenario_id=self._runtime.scenario_name,
+                query=" ".join(query_parts)[:800],
+                limit=4,
+            )
+        except Exception as exc:
+            logger.debug("[AgentRuntime] persistent memory read skipped: %s", exc)
+            return
+        snippets = [str(item.get("text") or "").strip()[:240] for item in records]
+        snippets = [item for item in snippets if item]
+        if not snippets:
+            return
+        recalled = "\n".join(f"- {item}" for item in snippets)
+        existing = str(brief.raw_context.get("memory_summary") or "").strip()
+        brief.raw_context["memory_summary"] = (
+            (existing + "\n" if existing else "")
+            + "【跨局结构化记忆】\n" + recalled
+        )[:1800]
+
+    def _persist_agent_memory(
+        self, agent_id: str, tick: int, action: ActionPack,
+    ) -> None:
+        if not self._user_id:
+            return
+        entries: List[Tuple[str, str]] = []
+        if action.note_to_self:
+            entries.append(("note", str(action.note_to_self)))
+        if action.public_reasoning_summary:
+            entries.append(("decision", str(action.public_reasoning_summary)))
+        for kind, text in entries:
+            try:
+                self._persistent_memory.append(
+                    user_id=self._user_id,
+                    agent_id=agent_id,
+                    scenario_id=self._runtime.scenario_name,
+                    kind=kind,
+                    text=text,
+                    metadata={"tick": tick, "action_id": action.action_id},
+                )
+            except Exception as exc:
+                logger.debug("[AgentRuntime] persistent memory write skipped: %s", exc)
 
     @staticmethod
     def _should_use_agent_loop(
@@ -545,6 +937,16 @@ class AgentRuntime:
             except Exception:
                 return str(val)
         return str(val)
+
+    @staticmethod
+    def _to_optional_id(value: Any) -> Optional[str]:
+        """Normalize model-emitted identifiers before Pydantic validation."""
+        if value in (None, ""):
+            return None
+        if isinstance(value, (dict, list, tuple, set)):
+            return None
+        normalized = str(value).strip()
+        return normalized or None
 
     def _build_partial_action_pack(
         self, parsed: Dict[str, Any], agent_id: str,
@@ -636,6 +1038,17 @@ class AgentRuntime:
                     parsed.get("parse_errors") or []
                 ) + ["public_reasoning_summary 缺失，已从 plan/text 回填"]
 
+        english_public = str(
+            getattr(self._runtime, "locale", "") or ""
+        ).lower().startswith("en")
+        if english_public:
+            raw_text = enforce_english_audience_text(raw_text)
+            public_summary = enforce_english_audience_text(public_summary)
+            character_monologue = enforce_english_audience_text(character_monologue)
+            raw_thought = enforce_english_audience_text(raw_thought)
+            raw_plan = enforce_english_audience_text(raw_plan)
+            ee = enforce_english_audience_text(ee) if ee else ee
+
         _act_id = parsed.get("action_id", parsed.get("intent", _default_aid))
         if (
             _act_id == "wait"
@@ -661,14 +1074,17 @@ class AgentRuntime:
         return ActionPack(
             agent_id=agent_id,
             action_id=_act_id,
-            target_agent_id=parsed.get("target_agent_id"),
-            target_object_id=parsed.get("target_object_id"),
+            target_agent_id=self._to_optional_id(parsed.get("target_agent_id")),
+            target_object_id=self._to_optional_id(parsed.get("target_object_id")),
             text=raw_text,
             thought=raw_thought,
             character_monologue=character_monologue,
             public_reasoning_summary=public_summary,
             intent=self._to_str_field(parsed.get("intent") or _act_id),
-            action_name=self._to_str_field(parsed.get("action_name")),
+            action_name=(
+                enforce_english_audience_text(self._to_str_field(parsed.get("action_name")))
+                if english_public else self._to_str_field(parsed.get("action_name"))
+            ),
             plan=raw_plan,
             resource_commitment=parsed.get("resource_commitment"),
             risk_control=parsed.get("risk_control"),
@@ -676,14 +1092,20 @@ class AgentRuntime:
             tool_request=parsed.get("tool_request"),
             parameters=parameters,
             expected_effect=ee,
-            backup_plan=self._to_str_field(parsed.get("backup_plan")),
+            backup_plan=(
+                enforce_english_audience_text(self._to_str_field(parsed.get("backup_plan")))
+                if english_public else self._to_str_field(parsed.get("backup_plan"))
+            ),
             parsed_ok=parsed.get("parsed_ok", False),
             parse_errors=parsed.get("parse_errors", []),
             raw_model_output=raw_response,
             code=parsed.get("code"),
             attached_tool_id=parsed.get("attached_tool_id"),
             category=_act_category,
-            note_to_self=parsed.get("note_to_self"),
+            note_to_self=(
+                enforce_english_audience_text(parsed.get("note_to_self"))
+                if english_public else parsed.get("note_to_self")
+            ),
         )
 
     def _resolve_fallback_action_id(self) -> str:
@@ -703,18 +1125,38 @@ class AgentRuntime:
         action_id = self._resolve_fallback_action_id()
         rule = self._runtime.get_action_rule(action_id) or {}
         action_name = str(rule.get("name") or action_id)
+        english = str(
+            getattr(self._runtime, "locale", "") or ""
+        ).lower().startswith("en")
+        lowered = str(reason or "").lower()
+        provider_markers = (
+            "providererror", "provider_circuit_open", "请求失败",
+            "网络异常", "http 429", "rate_limit", "quota",
+            "用量上限", "余额",
+        )
+        error_code = (
+            "provider_unavailable"
+            if any(marker in lowered for marker in provider_markers)
+            else "agent_runtime_unavailable"
+        )
         return ActionPack(
             agent_id=agent_id,
             action_id=action_id,
             text="",
-            character_monologue="（此刻沉吟未决，按兵不动。）",
-            public_reasoning_summary=f"LLM 未响应，本拍系统兜底为 {action_id}",
+            character_monologue=(
+                "(No model response this cycle; staying put.)"
+                if english else "（此刻沉吟未决，按兵不动。）"
+            ),
+            public_reasoning_summary=(
+                f"LLM did not respond; the system safely fell back to {action_id}."
+                if english else f"LLM 未响应，本拍系统兜底为 {action_id}"
+            ),
             intent=str(rule.get("intent") or "wait"),
             action_name=action_name,
             category=rule.get("category"),
             parsed_ok=False,
             is_system_fallback=True,
-            parse_errors=[f"llm_unavailable: {reason}"],
+            parse_errors=[f"{error_code}: {reason}"],
         )
 
     def _error_log(self, tick: int, agent_id: str, error: str) -> AgentLog:

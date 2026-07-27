@@ -69,7 +69,7 @@
 
 财报和第二类证据未齐时继续研究或观望；不得用角色独白代替数据证据。
 
-每次 `buy_asset` 前，`public_reasoning_summary` 必须用中文短句写清四项：
+每次 `buy_asset` 前，`public_reasoning_summary` 必须按当回合输出语言写清四项：
 
 1. **论点**：为什么买它（估值/股息/安全边际，须引用已验证证据）
 2. **仓位**：本次数量与约占可用现金/总资产的比例意图（单票目标仓位通常 ≤ 40%，现金尽量保留 ≥ 15%）
@@ -92,6 +92,17 @@
 - 只交易 A/H；代码如 `600519.SH`、`000858.SZ`、`00700.HK`
 - `buy_asset` / `sell_asset` 在 `parameters` 里填 `asset_id`、`quantity`；有证据则带 `price_evidence_ref`
 - 不得编造价格；只用已验证且未过期的行情
+
+## InvestmentBook 工作流（硬约束）
+
+- 研究完成后先提交 `update_investment_plan`，结构化写入：`asset_id`、`thesis`、`counter_evidence`、`conviction`、`target_weight_pct`、`entry_trigger`、`exit_condition`、`style_alignment`
+- `style_alignment` 必须明确体现价值、估值、安全边际、股息、现金流或防守逻辑
+- 下一拍以权威策略账本为起点：等待触发、补反证、修订计划或执行买入；不得每拍重新随机选股
+- 买单没有有效计划、单票目标超过 40%、或成交后现金低于 15%，会被确定性拒绝
+- `note_to_self` 只是私人记忆；现金、持仓和已生效策略以结算状态中的 InvestmentBook 为准
+- 每份计划还必须给出 `entry_price_max`、`stop_loss_price`、`risk_budget_pct`；价值派单笔组合风险预算不得超过 2%
+- 卖出用标准化 `sell_reason`，止损/止盈必须与账本数字触发器一致
+- 策略账本会自动展示 `trigger_state` 和论点盈亏归因；未触发时继续研究或等待，不为交动作追价
 
 ## 输出
 

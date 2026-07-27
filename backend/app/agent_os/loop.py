@@ -1,6 +1,8 @@
 """AgentLoopSession（Agent 循环会话）：单 tick 内多步工具/代码试跑后再提交 ActionPack。"""
 from __future__ import annotations
 
+import asyncio
+import hashlib
 import json
 import logging
 import time
@@ -9,13 +11,16 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from app.agent_os.loop_step import (
+    compact_tool_output,
     format_step_results_for_prompt,
     is_continue_step,
+    is_suspend_step,
     tool_result_to_dict,
 )
 from app.agent_os.workspace_ops import apply_workspace_writes
 from app.core.interfaces import ActionPack, AgentBrief, AgentLog, ToolRunResult
-from app.contracts.os2 import HarnessStep, HarnessTrace
+from app.core.redaction import redact_credentials
+from app.contracts.os2 import HarnessResearchEvent, HarnessStep, HarnessTrace
 from app.engine.agent_runtime.runtime import AgentContext
 
 logger = logging.getLogger(__name__)
@@ -35,6 +40,15 @@ class AgentLoopSession:
     total_tokens: int = 0
     started_at: float = field(default_factory=time.time)
     finished_at: Optional[float] = None
+    productive_steps: int = 0
+    wall_attempts: int = 0
+    termination_reason: str = ""
+    trace_status: str = "running"
+    research_id: str = ""
+    resumed_from_tick: Optional[int] = None
+    resume_snapshot: Dict[str, Any] = field(default_factory=dict)
+    suspension_summary: str = ""
+    emit_research_events: bool = False
 
     @property
     def has_final_action(self) -> bool:
@@ -52,23 +66,98 @@ class AgentLoopSession:
         raw_response: str,
         tool_result: Optional[Any] = None,
         workspace_written: Optional[List[str]] = None,
+        started_at: Optional[float] = None,
+        finished_at: Optional[float] = None,
     ) -> None:
+        ended = float(finished_at or time.time())
+        duration_ms = int(
+            (tool_result_to_dict(tool_result).get("duration_ms") or 0)
+        )
+        began = float(started_at or (ended - duration_ms / 1000.0))
         self.steps.append({
             "step_index": step_index,
             "kind": kind,
             "raw_response": raw_response,
             "tool_result": tool_result_to_dict(tool_result),
             "workspace_written": list(workspace_written or []),
+            "started_at": began,
+            "finished_at": ended,
         })
 
     def build_user_message(self, base_user_message: str) -> str:
         suffix = format_step_results_for_prompt(self.steps)
         if not suffix:
+            if self.resume_snapshot:
+                return (
+                    base_user_message
+                    + "\n\n### 上一周期挂起的研究（继续推进，不要从头开始）\n"
+                    + self._format_resume_snapshot()
+                )
             return base_user_message
         # The full perception pack already exists in this intra-tick history.
         # Repeating it on every tool step both inflates tokens and buries the
         # newest observation under the original final-action contract.
         return "继续完成同一回合。不要重新陈述世界上下文。" + suffix
+
+    def _format_resume_snapshot(self) -> str:
+        snapshot = self.resume_snapshot or {}
+        lines = []
+        if snapshot.get("summary"):
+            lines.append(f"  研究状态：{snapshot['summary']}")
+        evidence_refs = list(snapshot.get("evidence_refs") or [])
+        if evidence_refs:
+            lines.append("  已有证据：" + "、".join(str(x) for x in evidence_refs[-12:]))
+        for item in list(snapshot.get("recent_steps") or [])[-6:]:
+            if not isinstance(item, dict):
+                continue
+            summary = str(item.get("summary") or "").strip()
+            if summary:
+                lines.append(f"  - {summary}")
+        lines.append("  请基于这些进展继续研究；只有形成完整决策时才提交世界动作。")
+        return "\n".join(lines)
+
+    def to_resume_snapshot(self) -> Dict[str, Any]:
+        """Compact, public-only state used to continue research next tick."""
+        evidence_refs: List[str] = [
+            str(item)
+            for item in (self.resume_snapshot.get("evidence_refs") or [])
+            if str(item)
+        ]
+        recent_steps: List[Dict[str, str]] = [
+            {
+                "kind": str(item.get("kind") or "observe"),
+                "summary": str(item.get("summary") or "")[:500],
+            }
+            for item in (self.resume_snapshot.get("recent_steps") or [])
+            if isinstance(item, dict) and str(item.get("summary") or "").strip()
+        ]
+        for item in self.steps:
+            result = item.get("tool_result") or {}
+            run_id = str(result.get("run_id") or "")
+            if result.get("ok") and run_id and run_id not in evidence_refs:
+                evidence_refs.append(run_id)
+            outputs = result.get("outputs") or []
+            summary = ""
+            if outputs:
+                first = outputs[0]
+                summary = str(
+                    first.get("summary") or first.get("claim") or first
+                    if isinstance(first, dict) else first
+                )
+            if not summary and result.get("errors"):
+                summary = "；".join(str(x) for x in result.get("errors")[:2])
+            if summary:
+                recent_steps.append({
+                    "kind": str(item.get("kind") or "observe"),
+                    "summary": redact_credentials(summary)[:500],
+                })
+        return {
+            "research_id": self.research_id,
+            "suspended_at_tick": self.tick,
+            "summary": self.suspension_summary or "研究尚未完成，等待下一周期继续。",
+            "evidence_refs": evidence_refs[-24:],
+            "recent_steps": recent_steps[-8:],
+        }
 
     def to_harness_trace(
         self,
@@ -80,16 +169,38 @@ class AgentLoopSession:
     ) -> HarnessTrace:
         """Convert the legacy loop session into the OS 2.0 trace contract."""
         trace_steps: List[HarnessStep] = []
+        research_events: List[HarnessResearchEvent] = []
+        trace_finished_at = self.finished_at or time.time()
+        research_id = self.research_id or f"research:{self.agent_id}:{self.tick}"
+        research_events.append(HarnessResearchEvent(
+            event_id=f"{research_id}:tick:{self.tick}:start",
+            research_id=research_id,
+            run_id=run_id or "run_pending",
+            scenario_id=scenario_id or "scenario_unknown",
+            world_tick=self.tick,
+            agent_id=self.agent_id,
+            event_type=(
+                "research_resumed" if self.resumed_from_tick is not None
+                else "research_started"
+            ),
+            status="started",
+            summary=(
+                f"继续 T{self.resumed_from_tick} 挂起的研究"
+                if self.resumed_from_tick is not None else "开始本周期研究"
+            ),
+            metadata={"resumed_from_tick": self.resumed_from_tick},
+            occurred_at=self.started_at,
+        ))
         for index, item in enumerate(self.steps):
             tool_result = item.get("tool_result") or {}
             outputs = tool_result.get("outputs") or []
             summary = ""
             if outputs:
                 first = outputs[0]
-                summary = str(
+                summary = redact_credentials(str(
                     first.get("summary") or first.get("claim") or first
                     if isinstance(first, dict) else first
-                )[:500]
+                ))[:500]
             trace_steps.append(HarnessStep(
                 step_id=f"{self.agent_id}:{self.tick}:step:{index}",
                 index=index,
@@ -102,16 +213,49 @@ class AgentLoopSession:
                 public_summary=summary,
                 details={
                     "source": tool_result.get("source"),
-                    "errors": list(tool_result.get("errors") or []),
+                    "errors": [
+                        redact_credentials(str(error))
+                        for error in (tool_result.get("errors") or [])
+                    ],
                     "raw_response_ref": (
-                        f"agent://{self.agent_id}/cot/tick_{self.tick:03d}_response.txt"
+                        f"agent://{self.agent_id}/harness/tick_{self.tick:03d}_"
+                        f"step_{index + 1:03d}_response.txt"
                     ),
                 },
                 duration_ms=int(tool_result.get("duration_ms") or 0),
+                started_at=float(item.get("started_at") or self.started_at),
+                finished_at=float(item.get("finished_at") or trace_finished_at),
+            ))
+            kind = str(item.get("kind") or "execute_tool")
+            ok = bool(tool_result.get("ok"))
+            if kind == "discover_tool":
+                event_type = "capability_discovered" if ok else "capability_discovery_failed"
+            elif kind in {"write_code", "run_code"}:
+                event_type = "research_code_completed" if ok else "research_code_failed"
+            elif kind == "reflect":
+                event_type = "research_reflected"
+            else:
+                event_type = "evidence_received" if ok else "evidence_rejected"
+            run_ref = str(tool_result.get("run_id") or "")
+            research_events.append(HarnessResearchEvent(
+                event_id=f"{research_id}:tick:{self.tick}:event:{index}",
+                research_id=research_id,
+                run_id=run_id or "run_pending",
+                scenario_id=scenario_id or "scenario_unknown",
+                world_tick=self.tick,
+                agent_id=self.agent_id,
+                event_type=event_type,
+                status="succeeded" if ok else "failed",
+                summary=summary,
+                evidence_refs=[run_ref] if ok and run_ref else [],
+                tool_id=str(tool_result.get("tool_id") or ""),
+                source=str(tool_result.get("source") or ""),
+                metadata={"step_kind": kind},
+                occurred_at=float(item.get("finished_at") or trace_finished_at),
             ))
 
         final_ref = None
-        status = "failed"
+        status = self.trace_status if self.trace_status != "running" else "failed"
         if self.final_action is not None:
             final_ref = f"action:{self.tick}:{self.agent_id}"
             trace_steps.append(HarnessStep(
@@ -122,9 +266,36 @@ class AgentLoopSession:
                 output_refs=[final_ref],
                 public_summary=self.final_action.action_name or self.final_action.action_id,
             ))
-            status = "completed"
+            if self.trace_status == "running":
+                status = "completed"
+        terminal_type = (
+            "research_suspended" if status == "suspended"
+            else "research_completed" if final_ref
+            else "research_interrupted"
+        )
+        terminal_status = (
+            "suspended" if status == "suspended"
+            else "completed" if final_ref
+            else "failed"
+        )
+        research_events.append(HarnessResearchEvent(
+            event_id=f"{research_id}:tick:{self.tick}:terminal",
+            research_id=research_id,
+            run_id=run_id or "run_pending",
+            scenario_id=scenario_id or "scenario_unknown",
+            world_tick=self.tick,
+            agent_id=self.agent_id,
+            event_type=terminal_type,
+            status=terminal_status,
+            summary=(
+                self.suspension_summary
+                if status == "suspended"
+                else self.termination_reason
+            ),
+            metadata={"termination_reason": self.termination_reason},
+            occurred_at=trace_finished_at,
+        ))
 
-        finished_at = self.finished_at or time.time()
         return HarnessTrace(
             trace_id=f"htrace_{self.tick}_{self.agent_id}_{uuid.uuid4().hex[:8]}",
             run_id=run_id or "run_pending",
@@ -135,11 +306,20 @@ class AgentLoopSession:
             perception_ref=f"perception:{self.tick}:{self.agent_id}",
             objective=objective or "Pursue the scenario goal.",
             status=status,
+            termination_reason=self.termination_reason,
             steps=trace_steps,
+            research_events=research_events if self.emit_research_events else [],
             final_action_ref=final_ref,
-            usage={"tokens": float(self.total_tokens)},
+            budget={
+                "max_steps": float(self.max_steps),
+            },
+            usage={
+                "tokens": float(self.total_tokens),
+                "productive_steps": float(self.productive_steps),
+                "wall_attempts": float(self.wall_attempts),
+            },
             started_at=self.started_at,
-            finished_at=finished_at,
+            finished_at=trace_finished_at,
         )
 
 
@@ -160,11 +340,51 @@ class AgentLoopRunner:
     ):
         self._config = config
         self._ctx = loop_context
+        self._tool_failure_counts: Dict[str, int] = {}
+        self._failed_request_counts: Dict[str, int] = {}
 
     def _max_steps(self, runtime_mode: str) -> int:
         if str(runtime_mode).strip().lower() == "benchmark":
             return 1
         return max(1, int(getattr(self._config, "max_steps", 5)))
+
+    def _is_suspendable(self) -> bool:
+        return (
+            str(getattr(self._config, "completion_mode", "require_action"))
+            == "suspendable"
+            and str(getattr(self._config, "on_budget_exhausted", "fallback"))
+            == "suspend"
+        )
+
+    @staticmethod
+    def _suspension_summary(parsed: Optional[Dict[str, Any]] = None) -> str:
+        parsed = parsed or {}
+        return str(
+            parsed.get("public_reasoning_summary_text")
+            or parsed.get("plan")
+            or parsed.get("text")
+            or "研究尚未完成，已保留证据和进度，下一周期继续。"
+        )[:500]
+
+    def _suspend_session(
+        self,
+        session: AgentLoopSession,
+        *,
+        parsed: Optional[Dict[str, Any]] = None,
+        reason: str,
+        tokens: int,
+        productive_steps: int,
+        wall_attempts: int,
+    ) -> None:
+        session.final_action = None
+        session.raw_final_response = session.raw_final_response or ""
+        session.total_tokens = tokens
+        session.productive_steps = productive_steps
+        session.wall_attempts = wall_attempts
+        session.finished_at = time.time()
+        session.trace_status = "suspended"
+        session.termination_reason = reason
+        session.suspension_summary = self._suspension_summary(parsed)
 
     async def run(
         self,
@@ -184,10 +404,32 @@ class AgentLoopRunner:
             agent_id=agent_id,
             tick=tick,
             max_steps=self._max_steps(self._ctx.get("runtime_mode", "")),
+            emit_research_events=(
+                str(
+                    getattr(
+                        self._config, "completion_mode", "require_action"
+                    )
+                ) == "suspendable"
+            ),
         )
+        resume_snapshot = dict(
+            getattr(ctx, "pending_harness_research", None) or {}
+        )
+        if resume_snapshot:
+            session.resume_snapshot = resume_snapshot
+            session.research_id = str(
+                resume_snapshot.get("research_id")
+                or f"research:{agent_id}:{tick}"
+            )
+            prior_tick = resume_snapshot.get("suspended_at_tick")
+            if prior_tick is not None:
+                session.resumed_from_tick = int(prior_tick)
+        else:
+            session.research_id = f"research:{agent_id}:{tick}:{uuid.uuid4().hex[:8]}"
         timeout_sec = float(getattr(self._config, "session_timeout_sec", 60.0))
         deadline = time.monotonic() + timeout_sec
         last_raw = ""
+        last_parsed: Dict[str, Any] = {}
         tokens = 0
         # max_steps counts productive work (tool/code/discover/final), not
         # harness_policy reflections. Policy nacks used to burn the budget and
@@ -198,7 +440,7 @@ class AgentLoopRunner:
         # 连续策略驳回封顶：同一提醒重复 3 次模型仍未产出合规中间步，说明
         # 继续驳回只会原地烧 LLM 调用（真实发生过：单 tick 35 次驳回）。
         # 达到上限后放行走强制终局——订单的真实性由结算层兜底校验，
-        # 无证据的交易在那里会被如实拒单并给出理由。
+        # 无证据或无权限的最终行动会在权威结算层被拒绝并给出理由。
         consecutive_policy_nacks = 0
         max_policy_nacks = 3
         policy_nack_capped = False
@@ -208,10 +450,14 @@ class AgentLoopRunner:
             and wall_attempts < max_wall_attempts
         ):
             wall_attempts += 1
-            if time.monotonic() > deadline:
+            session.wall_attempts = wall_attempts
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
                 logger.info(
                     f"[AgentLoop] {agent_id} tick={tick} 会话超时 {timeout_sec}s"
                 )
+                session.termination_reason = "session_timeout"
+                session.trace_status = "budget_exhausted"
                 break
 
             user_message = session.build_user_message(base_user_message)
@@ -223,28 +469,67 @@ class AgentLoopRunner:
 
             _cq = brief.raw_context.get("challenge_question") if brief.raw_context else None
             _image_urls = (_cq or {}).get("image_data_urls") or []
-            if _image_urls:
-                raw_response = await ctx.provider.complete_multimodal(
-                    system_prompt, user_message, _image_urls,
-                    history=ctx.history + session.intra_tick_messages,
-                    max_tokens=4096,
+            configured_step_timeout = float(
+                getattr(self._config, "step_timeout_sec", 0.0) or 0.0
+            )
+            call_timeout = min(
+                remaining,
+                configured_step_timeout if configured_step_timeout > 0 else remaining,
+            )
+            try:
+                if _image_urls:
+                    raw_response = await asyncio.wait_for(
+                        ctx.provider.complete_multimodal(
+                            system_prompt, user_message, _image_urls,
+                            history=ctx.history + session.intra_tick_messages,
+                            max_tokens=4096,
+                        ),
+                        timeout=call_timeout,
+                    )
+                else:
+                    raw_response = await asyncio.wait_for(
+                        ctx.provider.complete_with_history(
+                            system_prompt, msgs, max_tokens=4096,
+                        ),
+                        timeout=call_timeout,
+                    )
+            except asyncio.TimeoutError:
+                session.termination_reason = "llm_step_timeout"
+                session.trace_status = "budget_exhausted"
+                logger.warning(
+                    "[AgentLoop] %s tick=%s LLM step timeout %.2fs",
+                    agent_id, tick, call_timeout,
                 )
-            else:
-                raw_response = await ctx.provider.complete_with_history(
-                    system_prompt, msgs, max_tokens=4096,
-                )
+                break
             last_raw = raw_response or ""
             session.intra_tick_messages.append(
                 {"role": "user", "content": user_message}
             )
             session.intra_tick_messages.append(
-                {"role": "assistant", "content": last_raw}
+                {
+                    "role": "assistant",
+                    "content": AgentContext._compact_history_content(
+                        last_raw, strip_private_reasoning=True,
+                    ),
+                }
             )
 
             usage = await ctx.provider.get_usage()
             tokens += sum(usage.values())
 
             parsed = parse_response(last_raw, agent_id)
+            last_parsed = parsed
+            session.raw_final_response = last_raw
+            if is_suspend_step(parsed) and self._is_suspendable():
+                self._suspend_session(
+                    session,
+                    parsed=parsed,
+                    reason="research_suspended_by_agent",
+                    tokens=tokens,
+                    productive_steps=productive_steps,
+                    wall_attempts=wall_attempts,
+                )
+                return None, last_raw, tokens, session
             self._apply_scene_harness_policy(parsed, brief, session)
             self._promote_declared_tool_action(parsed, brief, session)
             step_no = len(session.steps) + 1
@@ -257,6 +542,8 @@ class AgentLoopRunner:
                         "放行降级提交（由结算层兜底校验）"
                     )
                     policy_nack_capped = True
+                    session.termination_reason = "policy_nack_capped"
+                    session.trace_status = "blocked"
                     break
                 feedback = ToolRunResult(
                     run_id=f"policy_{tick}_{agent_id}_{step_no}",
@@ -287,14 +574,50 @@ class AgentLoopRunner:
             consecutive_policy_nacks = 0
             if (
                 is_continue_step(parsed)
-                and productive_steps < session.max_steps - 1
+                and (
+                    productive_steps < session.max_steps - 1
+                    or (
+                        self._is_suspendable()
+                        and productive_steps < session.max_steps
+                    )
+                )
             ):
                 pack = build_action_from_parsed(
                     parsed, agent_id, brief, last_raw, partial=True,
                 )
-                written, tool_result = await self._execute_continue_step(
-                    pack, tick, step_no,
+                step_started = time.time()
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    session.termination_reason = "session_timeout"
+                    session.trace_status = "budget_exhausted"
+                    break
+                configured_step_timeout = float(
+                    getattr(self._config, "step_timeout_sec", 0.0) or 0.0
                 )
+                tool_timeout = min(
+                    remaining,
+                    configured_step_timeout
+                    if configured_step_timeout > 0 else remaining,
+                )
+                try:
+                    written, tool_result = await asyncio.wait_for(
+                        self._execute_continue_step_resilient(
+                            pack, tick, step_no,
+                        ),
+                        timeout=tool_timeout,
+                    )
+                except asyncio.TimeoutError:
+                    written = []
+                    tool_result = ToolRunResult(
+                        run_id=f"timeout_{tick}_{agent_id}_{step_no}",
+                        tool_id=(pack.attached_tool_id or "harness_tool"),
+                        owner_id=agent_id,
+                        tick=tick,
+                        ok=False,
+                        errors=[f"harness_step_timeout>{tool_timeout:.2f}s"],
+                        source="harness",
+                        duration_ms=int(tool_timeout * 1000),
+                    )
                 self._record_loop_tool_result(tool_result)
                 step_kind = self._classify_step_kind(pack, written)
                 session.record_step(
@@ -303,20 +626,35 @@ class AgentLoopRunner:
                     raw_response=last_raw,
                     tool_result=tool_result,
                     workspace_written=written,
+                    started_at=step_started,
+                    finished_at=time.time(),
                 )
                 self._emit_step_diagnostic(
                     agent_id, tick, step_no, pack, tool_result, written,
                 )
                 productive_steps += 1
+                session.productive_steps = productive_steps
                 continue
 
-            self._backfill_trade_fields_from_text(parsed)
-            if self._missing_research_categories(parsed, brief, session):
-                self._degrade_trade_for_missing_research(parsed, brief, session)
-            if self._trade_identity_mismatch(parsed, brief, session):
-                self._degrade_trade_for_identity_mismatch(
-                    parsed, brief, session,
+            if is_continue_step(parsed) and not self._is_suspendable():
+                logger.info(
+                    "[AgentLoop] %s tick=%s 到达最后一步仍请求 continue，"
+                    "转为预算耗尽终局动作",
+                    agent_id,
+                    tick,
                 )
+                productive_steps += await self._run_budget_exhausted_hook(
+                    agent_id=agent_id,
+                    tick=tick,
+                    parsed=parsed,
+                    brief=brief,
+                    session=session,
+                    productive_steps=productive_steps,
+                )
+                self._ensure_degraded_final_payload(parsed, brief, session)
+                session.termination_reason = "continue_on_final_step_finalized"
+                session.trace_status = "budget_exhausted"
+            self._prepare_domain_final(parsed, brief, session)
             action = build_action_from_parsed(
                 parsed, agent_id, brief, last_raw, partial=False,
             )
@@ -325,22 +663,22 @@ class AgentLoopRunner:
                 for key, value in parsed["parameters"].items():
                     if key not in action.parameters or action.parameters[key] in (None, ""):
                         action.parameters[key] = value
-            if str(getattr(action, "action_id", "") or "") in {"buy_asset", "sell_asset"}:
-                params = getattr(action, "parameters", {}) or {}
-                if params.get("quantity") in (None, "") or not str(params.get("asset_id") or "").strip():
-                    self._sanitize_incomplete_trade_final(parsed)
-                    action = build_action_from_parsed(
-                        parsed, agent_id, brief, last_raw, partial=False,
-                    )
             self._attach_harness_observations(action, session)
             session.final_action = action
             session.raw_final_response = last_raw
             session.total_tokens = tokens
             session.finished_at = time.time()
+            session.trace_status = "completed"
+            session.termination_reason = "final_action_submitted"
+            session.productive_steps = productive_steps
+            session.wall_attempts = wall_attempts
             return action, last_raw, tokens, session
 
-        if session.final_action is None and session.steps and (
+        if (
+            not self._is_suspendable()
+            and session.final_action is None and session.steps and (
             policy_nack_capped or self._policy_satisfied(brief, session)
+            )
         ):
             logger.info(
                 f"[AgentLoop] {agent_id} tick={tick} 步数用尽，强制最终解析"
@@ -349,29 +687,16 @@ class AgentLoopRunner:
             self._backfill_parameters_from_session(
                 parsed, session, parse_response, agent_id,
             )
-            self._backfill_trade_fields_from_text(parsed)
-            # 自动行情只在「非行情研究已齐、仅差报价」时注入，避免研究未完成却被行情短路。
-            if (
-                not self._has_quote_evidence(brief, session)
-                and self._ready_for_auto_quote(parsed, brief, session)
-            ):
-                injected = await self._try_inject_preferred_quote(
-                    agent_id=agent_id,
-                    tick=tick,
-                    brief=brief,
-                    session=session,
-                    productive_steps=productive_steps,
-                )
-                if injected:
-                    productive_steps += 1
+            productive_steps += await self._run_budget_exhausted_hook(
+                agent_id=agent_id,
+                tick=tick,
+                parsed=parsed,
+                brief=brief,
+                session=session,
+                productive_steps=productive_steps,
+            )
             self._ensure_degraded_final_payload(parsed, brief, session)
-            self._sanitize_incomplete_trade_final(parsed)
-            if self._missing_research_categories(parsed, brief, session):
-                self._degrade_trade_for_missing_research(parsed, brief, session)
-            if self._trade_identity_mismatch(parsed, brief, session):
-                self._degrade_trade_for_identity_mismatch(
-                    parsed, brief, session,
-                )
+            self._prepare_domain_final(parsed, brief, session)
             action = build_action_from_parsed(
                 parsed, agent_id, brief, last_raw, partial=False,
             )
@@ -380,764 +705,107 @@ class AgentLoopRunner:
             session.final_action = action
             session.raw_final_response = last_raw
 
+        if self._is_suspendable() and session.final_action is None:
+            reason = session.termination_reason
+            if not reason or reason in {"policy_nack_capped", "max_steps_exhausted"}:
+                reason = "research_suspended_budget_exhausted"
+            self._suspend_session(
+                session,
+                parsed=last_parsed,
+                reason=reason,
+                tokens=tokens,
+                productive_steps=productive_steps,
+                wall_attempts=wall_attempts,
+            )
+
+        if session.trace_status == "running":
+            if productive_steps >= session.max_steps:
+                session.trace_status = "budget_exhausted"
+                session.termination_reason = "max_steps_exhausted"
+            elif wall_attempts >= max_wall_attempts:
+                session.trace_status = "budget_exhausted"
+                session.termination_reason = "max_wall_attempts_exhausted"
+            elif session.final_action is not None:
+                session.trace_status = "completed"
+                session.termination_reason = "final_action_submitted"
+            else:
+                session.trace_status = "failed"
+                session.termination_reason = "no_final_action"
+
         session.total_tokens = tokens
+        session.productive_steps = productive_steps
+        session.wall_attempts = wall_attempts
         session.finished_at = time.time()
         return session.final_action, last_raw, tokens, session
 
-    @staticmethod
     def _policy_feedback_summary(
+        self,
         session: AgentLoopSession,
         brief: AgentBrief,
         parsed: Optional[Dict[str, Any]] = None,
         attempt: int = 1,
     ) -> str:
-        examples: List[str] = []
+        """Return policy feedback without teaching the OS domain vocabulary."""
+        adapter = self._ctx.get("harness_policy_adapter")
+        feedback = getattr(adapter, "feedback_summary", None)
+        if callable(feedback):
+            try:
+                return str(feedback(self, session, brief, parsed, attempt))
+            except Exception as exc:
+                self._report_policy_error("feedback_summary", exc, session)
+
         failures: List[str] = []
-        sandbox_failed = False
-
-        def _add_capability_example(
-            capability: Dict[str, Any],
-            *,
-            allow_install: bool = True,
-        ) -> None:
-            invocation = capability.get("invocation") or {}
-            if str(invocation.get("operation") or "") == "install_skill":
-                if not allow_install:
-                    return
-                skill_id = str(invocation.get("skill_id") or "")
-                if skill_id:
-                    examples.append(json.dumps({
-                        "agent_loop_step": "continue",
-                        "tool_request": {"skill_install": {"skill_id": skill_id}},
-                    }, ensure_ascii=False))
-                return
-            tool_id = str(
-                invocation.get("tool_id")
-                or capability.get("capability_id")
-                or ""
+        for step in reversed(session.steps):
+            result = step.get("tool_result") or {}
+            if str(result.get("source") or "") == "scenario_harness_policy":
+                continue
+            errors = list(result.get("errors") or [])
+            if errors:
+                failures.append(
+                    "上一步工具失败：" + "；".join(str(item) for item in errors[:3])
+                )
+            break
+        capabilities = [
+            item for item in (
+                ((brief.raw_context or {}).get("agent_sandbox") or {}).get(
+                    "capabilities"
+                ) or []
             )
-            if not tool_id:
-                return
-            schema = capability.get("input_schema") or {}
-            required = list(schema.get("required") or [])
-            arguments = {name: f"<请填写 {name}>" for name in required}
-            # 行情工具给可抄作业的默认 symbols，降低模型不会填参的概率。
-            if "quote" in tool_id.lower() and "symbols" in (
-                schema.get("properties") or {}
-            ):
-                arguments["symbols"] = ["600036.SH", "00700.HK"]
-            elif "quote" in tool_id.lower() and "symbol" in (
-                schema.get("properties") or {}
-            ):
-                arguments["symbol"] = "600036.SH"
-            examples.append(json.dumps({
-                "agent_loop_step": "continue",
-                "tool_request": {"tool_id": tool_id, "arguments": arguments},
-            }, ensure_ascii=False))
-
-        def _is_quote_capability(capability: Dict[str, Any]) -> bool:
-            hay = (
-                f"{capability.get('capability_id') or ''} "
-                f"{capability.get('name') or ''} "
-                f"{(capability.get('invocation') or {}).get('tool_id') or ''}"
-            ).lower()
-            return any(token in hay for token in ("quote", "candlestick", "行情"))
-
-        def _is_install_capability(capability: Dict[str, Any]) -> bool:
-            invocation = capability.get("invocation") or {}
-            return str(invocation.get("operation") or "") == "install_skill"
-
-        missing_categories = AgentLoopRunner._missing_research_categories(
-            parsed or {}, brief, session,
-        )
-        policy = dict((brief.raw_context or {}).get("harness_policy", {}) or {})
-        category_tokens = dict(policy.get("research_category_tokens") or {})
-
-        def _matches_missing(capability: Dict[str, Any]) -> bool:
-            if not missing_categories:
-                return False
-            hay = (
-                f"{capability.get('capability_id') or ''} "
-                f"{capability.get('name') or ''} "
-                f"{capability.get('description') or ''} "
-                f"{(capability.get('invocation') or {}).get('tool_id') or ''}"
-            ).lower()
-            for category in missing_categories:
-                tokens = category_tokens.get(category) or [category]
-                if any(str(token).lower() in hay for token in tokens):
-                    return True
-            return False
-
-        # 1) 优先：sandbox 里 status=ready 且能补齐当前研究缺口的 MCP。
-        sandbox_info = (brief.raw_context or {}).get("agent_sandbox") or {}
-        ready_caps = [
-            item for item in (sandbox_info.get("capabilities") or [])
             if isinstance(item, dict)
             and str(item.get("status") or "") == "ready"
-            and not _is_install_capability(item)
+            and str((item.get("invocation") or {}).get("operation") or "")
+            != "install_skill"
         ]
-        ready_quotes = [item for item in ready_caps if _is_quote_capability(item)]
-        ready_missing = [item for item in ready_caps if _matches_missing(item)]
-        if any(
-            item != "quote" and not item.startswith("non_quote_")
-            for item in missing_categories
-        ):
-            ready_missing.sort(
-                key=lambda item: 1 if _is_quote_capability(item) else 0
+        example = ""
+        if capabilities:
+            capability = capabilities[0]
+            tool_id = str(
+                (capability.get("invocation") or {}).get("tool_id")
+                or capability.get("capability_id") or ""
             )
-        for capability in ready_missing + ready_quotes + ready_caps:
-            _add_capability_example(capability, allow_install=False)
-            if examples:
-                break
-
-        # 2) 场景 preferred_tools 兜底示例（即使尚未 discover 成功）。
-        if not examples:
-            for token in policy.get("preferred_tools") or []:
-                name = str(token).strip()
-                if not name:
-                    continue
-                tool_id = (
-                    name if name.startswith("mcp:")
-                    else f"mcp:longport:{name}"
-                )
-                examples.append(json.dumps({
-                    "agent_loop_step": "continue",
-                    "tool_request": {
-                        "tool_id": tool_id,
-                        "arguments": {"symbols": ["600036.SH", "00700.HK"]},
-                    },
-                }, ensure_ascii=False))
-                break
-
-        # 3) 从最近真实步骤的发现结果取例；跳过未安装 skill，除非没有 MCP。
-        if not examples:
-            discovered_caps: List[Dict[str, Any]] = []
-            for step in reversed(session.steps):
-                result = step.get("tool_result") or {}
-                if str(result.get("source") or "") == "scenario_harness_policy":
-                    continue
-                errors = result.get("errors") or []
-                if errors:
-                    failures.append(
-                        f"上一步 {result.get('source') or '工具'} 失败："
-                        + "；".join(str(item) for item in errors[:3])
-                    )
-                    if str(result.get("source") or "") == "agent_sandbox":
-                        sandbox_failed = True
-                for output in result.get("outputs") or []:
-                    capability = (
-                        output.get("capability") if isinstance(output, dict) else None
-                    )
-                    if isinstance(capability, dict):
-                        discovered_caps.append(capability)
-                if discovered_caps or failures:
-                    break
-            non_install = [
-                item for item in discovered_caps if not _is_install_capability(item)
-            ]
-            missing_first = sorted(
-                non_install,
-                key=lambda item: (
-                    0 if _matches_missing(item) else 1,
-                    0 if _is_quote_capability(item) else 1,
-                ),
+            schema = capability.get("input_schema") or {}
+            arguments = {
+                name: f"<请填写 {name}>"
+                for name in (schema.get("required") or [])
+            }
+            example = json.dumps({
+                "agent_loop_step": "continue",
+                "tool_request": {"tool_id": tool_id, "arguments": arguments},
+            }, ensure_ascii=False)
+        parts = list(failures)
+        if attempt >= 2:
+            parts.append(
+                f"第 {attempt} 次提醒：同一路线连续失败时应切换可用工具。"
             )
-            for capability in missing_first:
-                _add_capability_example(capability, allow_install=False)
-                if examples:
-                    break
-            if not examples:
-                for capability in discovered_caps:
-                    _add_capability_example(capability, allow_install=True)
-                    if examples:
-                        break
-
-        # 4) 沙箱失败时再次强调 ready MCP。
-        if sandbox_failed and isinstance(sandbox_info, dict) and ready_caps:
-            examples = []
-            _add_capability_example(
-                (ready_quotes or ready_caps)[0], allow_install=False,
-            )
-
-        suffix = (
-            " 可直接按这个 JSON 调用已发现能力：" + examples[0]
-            if examples else " 请先搜索能力目录、调用外部工具、安装依赖，或编写并运行代码。"
+        parts.append(
+            "当前尚未满足 Harness 策略要求，请继续取得可验证结果，"
+            "再提交最终行动。"
         )
-        failure_text = (" ".join(failures[:1]) + " ") if failures else ""
-        attempt_text = (
-            f"（第 {attempt} 次提醒，同样的路线连续失败就换一条：改用工具目录里"
-            "即刻可用的外部数据工具，优先 longport_quote 行情。）"
-            if attempt >= 2 else ""
-        )
-        sandbox_hint = (
-            "你的沙箱代码运行环境本身可能有故障（脚本瞬间退出、无任何输出时"
-            "尤其如此）——这不是你的代码写错了，请改走外部工具路线。"
-            if sandbox_failed else ""
-        )
-        missing_hint = ""
-        if missing_categories:
-            labels = dict(policy.get("research_category_labels") or {})
-            names = [str(labels.get(item) or item) for item in missing_categories]
-            missing_hint = (
-                "当前交易研究仍缺少：" + "、".join(names)
-                + "。必须调用对应外部工具取得可验证结果，不能只重复查行情。"
-            )
-        identity_code = AgentLoopRunner._trade_identity_mismatch(
-            parsed or {}, brief, session,
-        )
-        identity_hint = ""
-        if identity_code == "asset_identity_mismatch":
-            identity_hint = (
-                "订单公司名称与已验证行情不一致，请核对代码与名称，"
-                "并按行情返回的真实公司名重新下单。"
-            )
-        elif identity_code == "asset_price_identity_mismatch":
-            identity_hint = (
-                "订单参考价与已验证行情偏差过大，请按最新现价重新估算数量。"
-            )
-        return (
-            failure_text
-            + attempt_text
-            + sandbox_hint
-            + missing_hint
-            + identity_hint
-            +
-            "当前还没有可信的外部事实，不能结束研究。发现能力只说明工具存在，"
-            "不等于已经取得行情、新闻或验证结果；沙箱自行假设的数据也不能替代现实来源。"
-            + suffix
-            + " 拿到带来源、时间和证据 ID 的结果后，再提交最终世界行动。"
-        )
-
-    @staticmethod
-    def _quote_tool_tokens(brief: AgentBrief) -> List[str]:
-        policy = dict((brief.raw_context or {}).get("harness_policy", {}) or {})
-        tokens = [
-            str(item).strip().lower()
-            for item in (
-                policy.get("quote_tools")
-                or policy.get("preferred_quote_tools")
-                or []
-            )
-            if str(item).strip()
-        ]
-        if not tokens:
-            tokens = ["quote", "candlestick"]
-        # 始终把 quote 语义算进去，避免 preferred 写全名时漏匹配。
-        for extra in ("quote", "candlestick"):
-            if extra not in tokens:
-                tokens.append(extra)
-        return tokens
-
-    @classmethod
-    def _step_looks_like_quote(cls, step: Dict[str, Any], brief: AgentBrief) -> bool:
-        result = step.get("tool_result") or {}
-        if not result.get("ok"):
-            return False
-        if str(result.get("source") or "") not in {
-            "mcp", "external_reality", "verified_external",
-        }:
-            return False
-        hay = (
-            f"{result.get('tool_id') or ''} "
-            f"{result.get('mcp_tool_name') or ''}"
-        ).lower()
-        tokens = cls._quote_tool_tokens(brief)
-        if any(token in hay for token in tokens):
-            return True
-        # 输出里带 last_done / quotes 也算行情证据。
-        for output in result.get("outputs") or []:
-            if not isinstance(output, dict):
-                continue
-            blob = json.dumps(output, ensure_ascii=False).lower()
-            if "last_done" in blob or '"quotes"' in blob:
-                return True
-        return False
-
-    @classmethod
-    def _has_quote_evidence(cls, brief: AgentBrief, session: AgentLoopSession) -> bool:
-        return any(cls._step_looks_like_quote(step, brief) for step in session.steps)
-
-    @staticmethod
-    def _normalize_ticker(code: object) -> Tuple[str, str]:
-        s = str(code or "").strip().upper()
-        if not s:
-            return ("", "")
-        num, _, suf = s.partition(".")
-        num = num.lstrip("0") or "0"
-        market = {"SS": "SH", "SH": "SH", "SZ": "SZ", "HK": "HK"}.get(suf, suf)
-        return (num, market)
-
-    @classmethod
-    def _ticker_matches(cls, a: object, b: object) -> bool:
-        (na, ma), (nb, mb) = cls._normalize_ticker(a), cls._normalize_ticker(b)
-        if not na or not nb or na != nb:
-            return False
-        if ma and mb and ma != mb:
-            return False
-        return True
-
-    @classmethod
-    def _result_assets(cls, result: Dict[str, Any]) -> set[str]:
-        """从工具结果抽出标的代码（含无后缀与带后缀）。"""
-        values: List[Any] = []
-        for output in result.get("outputs") or []:
-            if not isinstance(output, dict):
-                continue
-            values.extend([
-                output.get("subject_id"),
-                output.get("symbol"),
-                output.get("asset_id"),
-            ])
-            values.extend(output.get("symbols") or [])
-            for row in output.get("quotes") or []:
-                if isinstance(row, dict):
-                    values.extend([row.get("symbol"), row.get("asset_id")])
-        args = result.get("arguments") or result.get("request_parameters") or {}
-        if isinstance(args, dict):
-            values.append(args.get("symbol"))
-            values.extend(args.get("symbols") or [])
-        return {
-            str(item).strip().upper()
-            for item in values
-            if item not in (None, "")
-        }
-
-    @classmethod
-    def _result_matches_asset(
-        cls, result: Dict[str, Any], asset_id: str,
-    ) -> bool:
-        """结果未声明代码时视为通用证据；声明了则必须与订单标的软匹配。"""
-        if not asset_id:
-            return True
-        assets = cls._result_assets(result)
-        if not assets:
-            return True
-        return any(cls._ticker_matches(item, asset_id) for item in assets)
-
-    @classmethod
-    def _ordered_asset_id(cls, parsed: Dict[str, Any]) -> str:
-        params = parsed.get("parameters") if isinstance(
-            parsed.get("parameters"), dict,
-        ) else {}
-        return str(params.get("asset_id") or "").strip().upper()
-
-    @classmethod
-    def _research_categories_from_result(
-        cls,
-        result: Dict[str, Any],
-        brief: AgentBrief,
-        *,
-        asset_id: str = "",
-    ) -> set[str]:
-        """Classify a verified tool result into scenario-declared research domains."""
-        if not isinstance(result, dict) or not result.get("ok"):
-            return set()
-        if str(result.get("source") or "") not in {
-            "mcp", "external_reality", "verified_external",
-        }:
-            return set()
-        if asset_id and not cls._result_matches_asset(result, asset_id):
-            return set()
-        policy = dict((brief.raw_context or {}).get("harness_policy", {}) or {})
-        token_map = dict(policy.get("research_category_tokens") or {})
-        blob = json.dumps(result, ensure_ascii=False, default=str).lower()
-        categories: set[str] = set()
-        # 新工具会显式返回 research_categories；仍保留 token 匹配兼容旧工具。
-        for output in result.get("outputs") or []:
-            if not isinstance(output, dict):
-                continue
-            declared = output.get("research_categories") or []
-            if isinstance(declared, str):
-                declared = [declared]
-            categories.update(
-                str(item).strip()
-                for item in declared
-                if str(item).strip()
-            )
-        for category, raw_tokens in token_map.items():
-            tokens = raw_tokens if isinstance(raw_tokens, list) else [raw_tokens]
-            if any(str(token).lower() in blob for token in tokens if str(token)):
-                categories.add(str(category))
-        if cls._step_looks_like_quote({"tool_result": result}, brief):
-            categories.add("quote")
-        return categories
-
-    @classmethod
-    def _research_categories(
-        cls,
-        brief: AgentBrief,
-        session: AgentLoopSession,
-        *,
-        asset_id: str = "",
-    ) -> set[str]:
-        categories: set[str] = set()
-        for step in session.steps:
-            categories.update(
-                cls._research_categories_from_result(
-                    step.get("tool_result") or {}, brief, asset_id=asset_id,
-                )
-            )
-        policy = dict((brief.raw_context or {}).get("harness_policy", {}) or {})
-        for observation in policy.get("prior_verified_observations") or []:
-            if not isinstance(observation, dict):
-                continue
-            subject = str(observation.get("subject_id") or "").strip()
-            if (
-                asset_id
-                and subject
-                and not cls._ticker_matches(subject, asset_id)
-            ):
-                normalized = observation.get("normalized_value") or {}
-                obs_assets = set()
-                if isinstance(normalized, dict):
-                    obs_assets = {
-                        str(item).strip().upper()
-                        for item in (
-                            [normalized.get("symbol"), normalized.get("asset_id")]
-                            + list(normalized.get("symbols") or [])
-                        )
-                        if item not in (None, "")
-                    }
-                if obs_assets and not any(
-                    cls._ticker_matches(item, asset_id) for item in obs_assets
-                ):
-                    continue
-                if not obs_assets and not cls._ticker_matches(subject, asset_id):
-                    continue
-            raw = observation.get("raw_value")
-            if isinstance(raw, dict):
-                categories.update(
-                    cls._research_categories_from_result(
-                        raw, brief, asset_id=asset_id,
-                    )
-                )
-            normalized = observation.get("normalized_value") or {}
-            if isinstance(normalized, dict):
-                declared = normalized.get("research_categories") or []
-                if isinstance(declared, str):
-                    declared = [declared]
-                categories.update(
-                    str(item).strip()
-                    for item in declared
-                    if str(item).strip()
-                )
-        return categories
-
-    @classmethod
-    def _missing_research_categories(
-        cls,
-        parsed: Dict[str, Any],
-        brief: AgentBrief,
-        session: AgentLoopSession,
-    ) -> List[str]:
-        policy = dict((brief.raw_context or {}).get("harness_policy", {}) or {})
-        requirements = dict(policy.get("research_requirements") or {})
-        if not requirements.get("enabled"):
-            return []
-        action_id = str(
-            parsed.get("action_id") or parsed.get("intent") or ""
-        ).strip()
-        trade_actions = set(
-            str(item) for item in (
-                requirements.get("trade_actions") or ["buy_asset"]
-            )
-        )
-        if action_id not in trade_actions:
-            return []
-        asset_id = cls._ordered_asset_id(parsed)
-        categories = cls._research_categories(
-            brief, session, asset_id=asset_id,
-        )
-        missing: List[str] = []
-        if requirements.get("require_quote") and "quote" not in categories:
-            missing.append("quote")
-        by_agent = dict(requirements.get("by_agent") or {})
-        role_rules = dict(by_agent.get(brief.agent_id) or {})
-        for category in role_rules.get("required") or []:
-            category = str(category)
-            if category and category not in categories:
-                missing.append(category)
-        for group in role_rules.get("any_of") or []:
-            options = [str(item) for item in (group or []) if str(item)]
-            if options and not any(item in categories for item in options):
-                # 反馈列出首选项；满足组内任意一类即可。
-                missing.append(options[0])
-        declared_domains = set(
-            str(item) for item in (
-                policy.get("research_category_tokens") or {}
-            )
-        )
-        non_quote = {
-            item for item in categories
-            if item != "quote" and (
-                not declared_domains or item in declared_domains
-            )
-        }
-        minimum = max(
-            0, int(requirements.get("minimum_non_quote_categories", 0) or 0)
-        )
-        if len(non_quote) < minimum:
-            missing.append(f"non_quote_{minimum}")
-        minimum_results = max(
-            0, int(requirements.get("minimum_non_quote_results", 0) or 0)
-        )
-        non_quote_results = 0
-        for step in session.steps:
-            result_categories = cls._research_categories_from_result(
-                step.get("tool_result") or {}, brief, asset_id=asset_id,
-            )
-            if result_categories - {"quote"}:
-                non_quote_results += 1
-        for observation in policy.get("prior_verified_observations") or []:
-            if not isinstance(observation, dict):
-                continue
-            subject = str(observation.get("subject_id") or "").strip()
-            normalized = observation.get("normalized_value") or {}
-            if asset_id and subject and not cls._ticker_matches(subject, asset_id):
-                obs_assets = set()
-                if isinstance(normalized, dict):
-                    obs_assets = {
-                        str(item).strip().upper()
-                        for item in (
-                            [normalized.get("symbol"), normalized.get("asset_id")]
-                            + list(normalized.get("symbols") or [])
-                        )
-                        if item not in (None, "")
-                    }
-                if obs_assets and not any(
-                    cls._ticker_matches(item, asset_id) for item in obs_assets
-                ):
-                    continue
-                if not obs_assets:
-                    continue
-            declared = (
-                normalized.get("research_categories") or []
-                if isinstance(normalized, dict) else []
-            )
-            if isinstance(declared, str):
-                declared = [declared]
-            raw = observation.get("raw_value") or {}
-            prior_categories = set(str(item) for item in declared if str(item))
-            if isinstance(raw, dict):
-                prior_categories.update(
-                    cls._research_categories_from_result(
-                        raw, brief, asset_id=asset_id,
-                    )
-                )
-            if prior_categories - {"quote"}:
-                non_quote_results += 1
-        if non_quote_results < minimum_results:
-            missing.append(f"non_quote_results_{minimum_results}")
-        return list(dict.fromkeys(missing))
-
-    @classmethod
-    def _verified_quote_identity(
-        cls,
-        brief: AgentBrief,
-        session: AgentLoopSession,
-        asset_id: str,
-    ) -> Dict[str, Any]:
-        """从本拍行情工具结果提取订单标的的名称与价格。"""
-        if not asset_id:
-            return {}
-        name = ""
-        price = None
-        for step in session.steps:
-            if not cls._step_looks_like_quote(step, brief):
-                continue
-            result = step.get("tool_result") or {}
-            if not cls._result_matches_asset(result, asset_id):
-                continue
-            for output in result.get("outputs") or []:
-                if not isinstance(output, dict):
-                    continue
-                rows = []
-                if isinstance(output.get("quotes"), list):
-                    rows.extend(
-                        row for row in output["quotes"] if isinstance(row, dict)
-                    )
-                rows.append(output)
-                for row in rows:
-                    sym = str(
-                        row.get("symbol") or row.get("asset_id") or ""
-                    ).strip()
-                    if sym and not cls._ticker_matches(sym, asset_id):
-                        continue
-                    for key in (
-                        "name_cn", "name_zh", "name", "name_en", "display_name",
-                    ):
-                        candidate = str(row.get(key) or "").strip()
-                        if candidate and not cls._ticker_matches(candidate, asset_id):
-                            name = candidate
-                            break
-                    for key in (
-                        "last_done", "price", "current_price",
-                        "regularMarketPrice", "close",
-                    ):
-                        raw = row.get(key)
-                        if raw in (None, ""):
-                            continue
-                        try:
-                            price = float(raw)
-                        except (TypeError, ValueError):
-                            continue
-                        break
-        out: Dict[str, Any] = {}
-        if name:
-            out["name"] = name
-        if price is not None:
-            out["price"] = price
-        return out
-
-    @classmethod
-    def _names_compatible(cls, claimed: object, verified: object) -> bool:
-        left = str(claimed or "").strip()
-        right = str(verified or "").strip()
-        if not left or not right:
-            return True
-        if left == right or left in right or right in left:
-            return True
-        suffixes = ("股份有限公司", "有限公司", "股份公司", "股份", "集团", "控股")
-        a, b = left, right
-        for suffix in suffixes:
-            if a.endswith(suffix):
-                a = a[: -len(suffix)]
-            if b.endswith(suffix):
-                b = b[: -len(suffix)]
-        a, b = a.strip(), b.strip()
-        if not a or not b:
-            return False
-        return a == b or a in b or b in a
-
-    @classmethod
-    def _trade_identity_mismatch(
-        cls,
-        parsed: Dict[str, Any],
-        brief: AgentBrief,
-        session: AgentLoopSession,
-    ) -> str:
-        """下单声称的名称/参考价与已验证行情不一致时返回原因码。"""
-        action_id = str(
-            parsed.get("action_id") or parsed.get("intent") or ""
-        ).strip()
-        if action_id not in {"buy_asset", "sell_asset"}:
-            return ""
-        params = parsed.get("parameters") if isinstance(
-            parsed.get("parameters"), dict,
-        ) else {}
-        asset_id = cls._ordered_asset_id(parsed)
-        if not asset_id:
-            return ""
-        quote = cls._verified_quote_identity(brief, session, asset_id)
-        claimed_name = ""
-        for key in (
-            "asset_name", "name", "name_cn", "display_name", "security_name",
-        ):
-            candidate = str(params.get(key) or "").strip()
-            if candidate:
-                claimed_name = candidate
-                break
-        verified_name = str(quote.get("name") or "").strip()
-        if (
-            claimed_name
-            and verified_name
-            and not cls._names_compatible(claimed_name, verified_name)
-        ):
-            return "asset_identity_mismatch"
-        expected_price = None
-        for key in ("expected_price", "limit_price", "reference_price"):
-            raw = params.get(key)
-            if raw in (None, ""):
-                continue
-            try:
-                expected_price = float(raw)
-            except (TypeError, ValueError):
-                continue
-            break
-        quote_price = quote.get("price")
-        if expected_price is not None and quote_price is not None:
-            try:
-                verified = float(quote_price)
-            except (TypeError, ValueError):
-                verified = 0.0
-            if verified > 0 and abs(expected_price - verified) / verified > 0.35:
-                return "asset_price_identity_mismatch"
-        return ""
-
-    @classmethod
-    def _degrade_trade_for_identity_mismatch(
-        cls,
-        parsed: Dict[str, Any],
-        brief: AgentBrief,
-        session: AgentLoopSession,
-    ) -> None:
-        reason_code = cls._trade_identity_mismatch(parsed, brief, session)
-        if not reason_code:
-            return
-        if reason_code == "asset_identity_mismatch":
-            reason = (
-                "本拍下单的公司名称与已验证行情不一致，"
-                "系统降级为观望，避免买错标的。"
-            )
+        if example:
+            parts.append("可直接调用：" + example)
         else:
-            reason = (
-                "本拍下单参考价与已验证行情偏差过大，"
-                "系统降级为观望，请按最新行情重新估算数量。"
-            )
-        parsed["agent_loop_step"] = "final"
-        parsed["action_id"] = "wait_and_review"
-        parsed["intent"] = "wait_and_review"
-        parsed["text"] = reason
-        parsed["character_monologue"] = reason[:40]
-        parsed["plan"] = reason
-
-    @classmethod
-    def _ready_for_auto_quote(
-        cls,
-        parsed: Dict[str, Any],
-        brief: AgentBrief,
-        session: AgentLoopSession,
-    ) -> bool:
-        """自动补行情仅在交易意图已齐非行情研究时放行。"""
-        policy = dict((brief.raw_context or {}).get("harness_policy", {}) or {})
-        requirements = dict(policy.get("research_requirements") or {})
-        if not requirements.get("enabled"):
-            return True
-        action_id = str(
-            parsed.get("action_id") or parsed.get("intent") or ""
-        ).strip()
-        trade_actions = set(
-            str(item) for item in (
-                requirements.get("trade_actions") or ["buy_asset"]
-            )
-        )
-        if action_id not in trade_actions:
-            return False
-        missing = cls._missing_research_categories(parsed, brief, session)
-        return (not missing) or missing == ["quote"]
-
-    @classmethod
-    def _degrade_trade_for_missing_research(
-        cls,
-        parsed: Dict[str, Any],
-        brief: AgentBrief,
-        session: AgentLoopSession,
-    ) -> None:
-        missing = cls._missing_research_categories(parsed, brief, session)
-        if not missing:
-            return
-        reason = (
-            "本拍研究证据未齐（缺少: "
-            + "、".join(missing)
-            + "），系统降级为观望，避免无研究下单。"
-        )
-        parsed["agent_loop_step"] = "final"
-        parsed["action_id"] = "wait_and_review"
-        parsed["intent"] = "wait_and_review"
-        parsed["text"] = reason
-        parsed["character_monologue"] = reason[:40]
-        parsed["plan"] = reason
-
+            parts.append("请先发现并调用状态为 ready 的能力。")
+        return " ".join(parts)
     @classmethod
     def _has_trusted_external(cls, brief: AgentBrief, session: AgentLoopSession) -> bool:
         trusted_sources = {"mcp", "external_reality", "verified_external"}
@@ -1148,20 +816,24 @@ class AgentLoopRunner:
             for item in session.steps
         )
 
-    @staticmethod
-    def _policy_satisfied(brief: AgentBrief, session: AgentLoopSession) -> bool:
+    def _policy_satisfied(
+        self, brief: AgentBrief, session: AgentLoopSession,
+    ) -> bool:
         policy = dict((brief.raw_context or {}).get("harness_policy", {}) or {})
         if not policy.get("require_verified_external_result"):
             return True
-        # 强制终局路径无法再可靠判断模型最终会否下单；保持严格兜底，
-        # 只有已取得行情才允许从步数耗尽状态提交。
-        if policy.get("require_verified_quote"):
-            return AgentLoopRunner._has_quote_evidence(brief, session)
-        return AgentLoopRunner._has_trusted_external(brief, session)
+        adapter = self._ctx.get("harness_policy_adapter")
+        policy_check = getattr(adapter, "policy_satisfied", None)
+        if callable(policy_check):
+            try:
+                return bool(policy_check(self, brief, session))
+            except Exception as exc:
+                self._report_policy_error("policy_satisfied", exc, session)
+                return False
+        return self._has_trusted_external(brief, session)
 
-    @classmethod
     def _requires_more_harness_work(
-        cls,
+        self,
         parsed: Dict[str, Any],
         brief: AgentBrief,
         session: AgentLoopSession,
@@ -1176,25 +848,54 @@ class AgentLoopRunner:
         if minimum > 0 and completed < minimum:
             return not is_continue_step(parsed)
         if policy.get("require_verified_external_result"):
-            if not cls._has_trusted_external(brief, session):
+            if not self._has_trusted_external(brief, session):
                 return not is_continue_step(parsed)
-        action_id = str(
-            parsed.get("action_id") or parsed.get("intent") or ""
-        ).strip()
-        if (
-            policy.get("require_verified_quote")
-            and action_id in {"buy_asset", "sell_asset"}
-            and not cls._has_quote_evidence(brief, session)
-        ):
-            return not is_continue_step(parsed)
-        if cls._missing_research_categories(parsed, brief, session):
-            return not is_continue_step(parsed)
-        if cls._trade_identity_mismatch(parsed, brief, session):
-            return not is_continue_step(parsed)
+        adapter = self._ctx.get("harness_policy_adapter")
+        if adapter is not None:
+            try:
+                if adapter.requires_more_work(self, parsed, brief, session):
+                    return not is_continue_step(parsed)
+            except Exception as exc:
+                self._report_policy_error("requires_more_work", exc, session)
         return False
 
-    @staticmethod
+    def _prepare_domain_final(
+        self, parsed: Dict[str, Any], brief: AgentBrief,
+        session: AgentLoopSession,
+    ) -> None:
+        adapter = self._ctx.get("harness_policy_adapter")
+        if adapter is not None:
+            try:
+                adapter.prepare_final(self, parsed, brief, session)
+            except Exception as exc:
+                self._report_policy_error("prepare_final", exc, session)
+
+    async def _run_budget_exhausted_hook(
+        self, *, agent_id: str, tick: int, parsed: Dict[str, Any],
+        brief: AgentBrief,
+        session: AgentLoopSession, productive_steps: int,
+    ) -> int:
+        adapter = self._ctx.get("harness_policy_adapter")
+        hook = getattr(adapter, "on_budget_exhausted", None)
+        if not callable(hook):
+            return 0
+        try:
+            added = await hook(
+                self,
+                agent_id=agent_id,
+                tick=tick,
+                parsed=parsed,
+                brief=brief,
+                session=session,
+                productive_steps=productive_steps,
+            )
+        except Exception as exc:
+            self._report_policy_error("on_budget_exhausted", exc, session)
+            return 0
+        return max(0, int(added or 0))
+
     def _ensure_degraded_final_payload(
+        self,
         parsed: Dict[str, Any],
         brief: AgentBrief,
         session: AgentLoopSession,
@@ -1211,11 +912,24 @@ class AgentLoopRunner:
             parsed["action_id"] = "wait_and_review"
             parsed["intent"] = "wait_and_review"
             action_id = "wait_and_review"
+        adapter = self._ctx.get("harness_policy_adapter")
+        reason_hook = getattr(adapter, "degraded_final_reason", None)
+        english = str(
+            (brief.raw_context or {}).get("scenario_locale")
+            or (brief.raw_context or {}).get("audience_language")
+            or ""
+        ).lower().startswith("en")
         reason = (
-            "本拍未能取得有效期内已验证行情，系统降级为观望，保留现金等待下一拍。"
-            if not AgentLoopRunner._has_quote_evidence(brief, session)
-            else "本拍研究步骤已达上限，按已有证据提交当前决策。"
+            "The execution budget for this cycle was exhausted, so the system "
+            "submitted a safe fallback action and will continue next cycle."
+            if english else
+            "本轮执行预算已用尽，系统提交安全降级动作，等待下一轮继续。"
         )
+        if callable(reason_hook):
+            try:
+                reason = str(reason_hook(self, brief, session))
+            except Exception as exc:
+                self._report_policy_error("degraded_final_reason", exc, session)
         if not str(parsed.get("text") or "").strip():
             parsed["text"] = reason
         if not str(parsed.get("character_monologue") or "").strip():
@@ -1225,7 +939,7 @@ class AgentLoopRunner:
 
     @staticmethod
     def _ensure_degraded_action_text(action: ActionPack) -> None:
-        reason = "本拍未能取得有效期内已验证行情，系统降级为观望。"
+        reason = "本轮执行预算已用尽，系统提交安全降级动作。"
         if not str(getattr(action, "text", "") or "").strip():
             action.text = reason
         if not str(getattr(action, "character_monologue", "") or "").strip():
@@ -1235,101 +949,6 @@ class AgentLoopRunner:
         if not str(getattr(action, "action_id", "") or "").strip():
             action.action_id = "wait_and_review"
 
-    async def _try_inject_preferred_quote(
-        self,
-        *,
-        agent_id: str,
-        tick: int,
-        brief: AgentBrief,
-        session: AgentLoopSession,
-        productive_steps: int,
-    ) -> bool:
-        """封顶后 OS 代跑一次 preferred quote，避免空 wait 浪费整拍。"""
-        if productive_steps >= session.max_steps:
-            return False
-        tool_id, arguments = self._resolve_preferred_quote_call(brief, session)
-        if not tool_id:
-            return False
-        pack = ActionPack(
-            agent_id=agent_id,
-            action_id="harness_auto_quote",
-            parsed_ok=True,
-            tool_request={"tool_id": tool_id, "arguments": arguments},
-            attached_tool_id=tool_id,
-        )
-        step_no = len(session.steps) + 1
-        written, tool_result = await self._execute_continue_step(
-            pack, tick, step_no,
-        )
-        self._record_loop_tool_result(tool_result)
-        session.record_step(
-            step_index=step_no,
-            kind="execute_tool",
-            raw_response="[os_injected_preferred_quote]",
-            tool_result=tool_result,
-            workspace_written=written,
-        )
-        self._emit_step_diagnostic(
-            agent_id, tick, step_no, pack, tool_result, written,
-        )
-        ok = bool(tool_result and tool_result.ok)
-        logger.info(
-            f"[AgentLoop] {agent_id} tick={tick} 封顶后注入 {tool_id} "
-            f"{'成功' if ok else '失败'}"
-        )
-        return ok
-
-    @classmethod
-    def _resolve_preferred_quote_call(
-        cls,
-        brief: AgentBrief,
-        session: AgentLoopSession,
-    ) -> Tuple[str, Dict[str, Any]]:
-        policy = dict((brief.raw_context or {}).get("harness_policy", {}) or {})
-        preferred = [
-            str(item).strip()
-            for item in (
-                policy.get("quote_tools")
-                or policy.get("preferred_quote_tools")
-                or ["longport_quote"]
-            )
-            if str(item).strip()
-        ]
-        sandbox_info = (brief.raw_context or {}).get("agent_sandbox") or {}
-        ready = [
-            item for item in (sandbox_info.get("capabilities") or [])
-            if isinstance(item, dict) and str(item.get("status") or "") == "ready"
-        ]
-        for token in preferred:
-            token_l = token.lower()
-            for item in ready:
-                hay = (
-                    f"{item.get('capability_id') or ''} "
-                    f"{item.get('name') or ''} "
-                    f"{(item.get('invocation') or {}).get('tool_id') or ''}"
-                ).lower()
-                if token_l not in hay and "quote" not in hay:
-                    continue
-                tool_id = str(
-                    (item.get("invocation") or {}).get("tool_id")
-                    or item.get("capability_id")
-                    or ""
-                )
-                if not tool_id:
-                    continue
-                schema = item.get("input_schema") or {}
-                props = schema.get("properties") or {}
-                if "symbols" in props:
-                    return tool_id, {"symbols": ["600036.SH", "00700.HK"]}
-                if "symbol" in props:
-                    return tool_id, {"symbol": "600036.SH"}
-                return tool_id, {}
-        # 无 ready 目录时仍尝试默认 longport_quote。
-        for token in preferred:
-            name = token if ":" in token else f"mcp:longport:{token}"
-            if "quote" in name.lower() or token.lower().endswith("quote"):
-                return name, {"symbols": ["600036.SH", "00700.HK"]}
-        return "", {}
 
     @staticmethod
     def _backfill_parameters_from_session(
@@ -1340,8 +959,7 @@ class AgentLoopRunner:
     ) -> None:
         """强制终局时，用本回合早先响应里同一动作的结构化参数补齐缺失键。
 
-        步数用尽的最后一份回复常常只剩散文（模型在重压下不再输出参数块），
-        导致"文本里明说买 100 股、parameters 却缺 quantity"而被拒单。
+        步数用尽的最后一份回复可能只剩自然语言而缺少结构化参数。
         只补缺失键、不覆盖已有值；只回捞与最终动作同 action/intent 的响应。
         """
         target_action = str(
@@ -1372,124 +990,6 @@ class AgentLoopRunner:
         if merged:
             parsed["parameters"] = merged
 
-    @staticmethod
-    def _backfill_trade_fields_from_text(parsed: Dict[str, Any]) -> None:
-        """从独白/正文里捞 asset_id / quantity，补齐残缺买单。"""
-        action_id = str(parsed.get("action_id") or parsed.get("intent") or "")
-        if action_id not in {"buy_asset", "sell_asset"}:
-            return
-        params = dict(parsed.get("parameters") or {})
-        blob = " ".join(
-            str(parsed.get(key) or "")
-            for key in ("text", "plan", "character_monologue", "public_reasoning")
-        )
-        if not params.get("asset_id"):
-            import re
-            match = re.search(
-                r"\b(\d{5,6}\.(?:SH|SZ|SS|HK)|0?\d{3,4}\.HK)\b",
-                blob,
-                flags=re.IGNORECASE,
-            )
-            if match:
-                code = match.group(1).upper()
-                if code.endswith(".SS"):
-                    code = code[:-3] + ".SH"
-                params["asset_id"] = code
-        if not params.get("asset_name"):
-            import re
-            name = ""
-            code_pat = r"(?:\d{5,6}\.(?:SH|SZ|SS|HK)|0?\d{3,4}\.HK)"
-            match = re.search(
-                rf"(?:买入|卖出|加仓|减仓|建仓)\s*([一-龥]{{2,8}})\s*[（(]\s*{code_pat}",
-                blob,
-                flags=re.IGNORECASE,
-            )
-            if match:
-                name = match.group(1).strip()
-            if not name:
-                match = re.search(
-                    rf"{code_pat}\s*[（(]\s*([一-龥]{{2,8}})",
-                    blob,
-                    flags=re.IGNORECASE,
-                )
-                if match:
-                    name = match.group(1).strip()
-            if not name:
-                match = re.search(
-                    rf"([一-龥]{{2,8}})\s*[（(]\s*{code_pat}",
-                    blob,
-                    flags=re.IGNORECASE,
-                )
-                if match:
-                    candidate = match.group(1).strip()
-                    banned = ("买入", "卖出", "加仓", "减仓", "建仓", "约", "按", "元", "股")
-                    if not any(token in candidate for token in banned):
-                        name = candidate
-            if not name:
-                match = re.search(
-                    r"(?:买入|卖出|加仓|减仓|建仓)\s*([一-龥]{2,8})",
-                    blob,
-                )
-                if match:
-                    name = match.group(1).strip()
-            for suffix in ("股票", "股份", "股"):
-                if name.endswith(suffix) and len(name) > len(suffix) + 1:
-                    name = name[: -len(suffix)]
-            if name:
-                params["asset_name"] = name
-        if params.get("expected_price") in (None, "") and params.get(
-            "limit_price"
-        ) in (None, ""):
-            import re
-            match = re.search(
-                r"(?:约|按|单价|现价|价格)\s*[：:]?\s*"
-                r"(\d+(?:\.\d+)?)\s*元",
-                blob,
-            )
-            if match:
-                try:
-                    params["expected_price"] = float(match.group(1))
-                except (TypeError, ValueError):
-                    pass
-        if params.get("quantity") in (None, ""):
-            import re
-            match = re.search(
-                r"(?:买入|卖出|加仓|减仓|建仓|数量|qty|quantity)\s*"
-                r"[：:]?\s*(\d+(?:\.\d+)?)\s*股",
-                blob,
-                flags=re.IGNORECASE,
-            )
-            if not match:
-                match = re.search(r"(\d+(?:\.\d+)?)\s*股", blob)
-            if match:
-                try:
-                    params["quantity"] = float(match.group(1))
-                except (TypeError, ValueError):
-                    pass
-        if params:
-            parsed["parameters"] = params
-
-    @staticmethod
-    def _sanitize_incomplete_trade_final(parsed: Dict[str, Any]) -> None:
-        """残缺买卖单不得作为最终动作放行——降级为观望，避免 quantity_missing 空转。"""
-        action_id = str(parsed.get("action_id") or parsed.get("intent") or "")
-        if action_id not in {"buy_asset", "sell_asset"}:
-            return
-        params = parsed.get("parameters") if isinstance(parsed.get("parameters"), dict) else {}
-        has_qty = params.get("quantity") not in (None, "")
-        has_asset = bool(str(params.get("asset_id") or "").strip())
-        if has_qty and has_asset:
-            return
-        reason = (
-            "本拍买卖指令缺少标的或数量，系统降级为观望，避免无效拒单。"
-        )
-        parsed["action_id"] = "wait_and_review"
-        parsed["intent"] = "wait_and_review"
-        parsed["agent_loop_step"] = "final"
-        parsed["parameters"] = {}
-        parsed["text"] = reason
-        parsed["character_monologue"] = reason[:40]
-        parsed["plan"] = reason
 
     @staticmethod
     def _build_policy_placeholder(agent_id: str) -> ActionPack:
@@ -1511,7 +1011,7 @@ class AgentLoopRunner:
         existing_request = parsed.get("tool_request") or {}
         if AgentLoopRunner._discovery_request(existing_request):
             return
-        # 首步必须先看完整研究能力目录；直接请求报价也不能跳过发现。
+        # 场景可要求首步先检查完整能力目录，不能用直接调用绕过发现。
         query = str(
             policy.get("discovery_query")
             or parsed.get("text")
@@ -1586,8 +1086,8 @@ class AgentLoopRunner:
                 }
             }
 
-    @staticmethod
     def _attach_harness_observations(
+        self,
         action: ActionPack,
         session: AgentLoopSession,
     ) -> None:
@@ -1606,40 +1106,32 @@ class AgentLoopRunner:
         if observations:
             action.parameters = dict(action.parameters or {})
             action.parameters["harness_observations"] = observations
-            # 买卖单若未显式带 price_evidence_ref，默认挂上本回合最近一次
-            # 行情类 MCP 观测，避免「查到了价却忘了引用」导致拒单。
-            action_id = str(getattr(action, "action_id", "") or "")
-            if (
-                action_id in {"buy_asset", "sell_asset"}
-                and not str(action.parameters.get("price_evidence_ref") or "").strip()
-            ):
-                chosen = ""
-                for obs in reversed(observations):
-                    tool_id = str(obs.get("tool_id") or "").lower()
-                    source = str(obs.get("source") or "").lower()
-                    if source not in {"mcp", "external_reality", "verified_external"}:
-                        continue
-                    if any(
-                        key in tool_id
-                        for key in ("quote", "candlestick", "chart", "price")
-                    ) or source in {"external_reality", "verified_external"}:
-                        chosen = str(obs.get("run_id") or "")
-                        if chosen:
-                            break
-                if not chosen:
-                    for obs in reversed(observations):
-                        if str(obs.get("source") or "") in {
-                            "mcp", "external_reality", "verified_external"
-                        }:
-                            chosen = str(obs.get("run_id") or "")
-                            if chosen:
-                                break
-                if chosen:
-                    action.parameters["price_evidence_ref"] = chosen
-                    if chosen not in action.evidence_refs:
-                        action.evidence_refs = list(action.evidence_refs or []) + [
-                            chosen
-                        ]
+        adapter = self._ctx.get("harness_policy_adapter")
+        enrich = getattr(adapter, "enrich_final_action", None)
+        if callable(enrich):
+            try:
+                enrich(self, action, session)
+            except Exception as exc:
+                self._report_policy_error("enrich_final_action", exc, session)
+
+    def _report_policy_error(
+        self, hook: str, exc: Exception, session: AgentLoopSession,
+    ) -> None:
+        """Isolate a trusted scenario extension failure from loop mechanics."""
+        logger.exception(
+            "[AgentLoop] scenario policy hook failed hook=%s agent=%s tick=%s",
+            hook, session.agent_id, session.tick,
+        )
+        sink = self._ctx.get("diagnostic_sink")
+        if callable(sink):
+            sink({
+                "event_type": "harness_policy_error",
+                "hook": hook,
+                "agent_id": session.agent_id,
+                "tick": session.tick,
+                "error_type": type(exc).__name__,
+                "error": str(exc)[:500],
+            })
 
     @staticmethod
     def _classify_step_kind(action: ActionPack, written: List[str]) -> str:
@@ -1930,6 +1422,15 @@ class AgentLoopRunner:
                 mcp_server_id=dynamic_mcp["server_id"],
                 mcp_tool_name=dynamic_mcp["tool_name"],
                 source="mcp",
+                failure_class=(
+                    str(output.get("failure_class") or "") or None
+                    if isinstance(output, dict) else None
+                ),
+                retryable=(
+                    bool(output.get("retryable"))
+                    if isinstance(output, dict) and "retryable" in output
+                    else None
+                ),
             )
         action_runtime = self._ctx.get("action_runtime")
         state = self._ctx.get("state")
@@ -1960,6 +1461,286 @@ class AgentLoopRunner:
             runtime_mode=str(self._ctx.get("runtime_mode") or "entertainment"),
         )
         return written, result
+
+    async def _execute_continue_step_resilient(
+        self,
+        action: ActionPack,
+        tick: int,
+        step_index: int,
+    ) -> Tuple[List[str], Optional[ToolRunResult]]:
+        """Retry transient read-side failures and open a per-session circuit.
+
+        Harness intermediate operations are observations; final world actions
+        never pass through this method, so they are never replayed.
+        """
+        key = self._tool_reliability_key(action)
+        fingerprint = self._tool_request_fingerprint(action)
+        if self._failed_request_counts.get(fingerprint, 0) > 0:
+            repeated = ToolRunResult(
+                run_id=f"repeat_{tick}_{action.agent_id}_{step_index}",
+                tool_id=key,
+                owner_id=action.agent_id,
+                tick=tick,
+                ok=False,
+                errors=[f"repeated_failed_method:{key}"],
+                source="harness",
+                failure_class="method_exhausted",
+                retryable=False,
+                request_fingerprint=fingerprint,
+            )
+            return [], await self._attach_tool_recovery(
+                action, repeated, failure_class="method_exhausted",
+                retryable=False,
+            )
+        threshold = max(
+            1, int(getattr(
+                self._config, "tool_circuit_breaker_threshold", 3,
+            ) or 3),
+        )
+        if self._tool_failure_counts.get(key, 0) >= threshold:
+            circuit = ToolRunResult(
+                run_id=f"circuit_{tick}_{action.agent_id}_{step_index}",
+                tool_id=key,
+                owner_id=action.agent_id,
+                tick=tick,
+                ok=False,
+                errors=[f"tool_circuit_open:{key}"],
+                source="harness",
+                failure_class="method_exhausted",
+                retryable=False,
+                request_fingerprint=fingerprint,
+            )
+            return [], await self._attach_tool_recovery(
+                action, circuit, failure_class="method_exhausted",
+                retryable=False,
+            )
+
+        attempts = max(
+            1, int(getattr(self._config, "tool_max_attempts", 2) or 2),
+        )
+        backoff = max(
+            0.0,
+            float(getattr(
+                self._config, "tool_retry_backoff_sec", 0.25,
+            ) or 0.0),
+        )
+        last_written: List[str] = []
+        last_result: Optional[ToolRunResult] = None
+        for attempt in range(1, attempts + 1):
+            last_written, last_result = await self._execute_continue_step(
+                action, tick, step_index,
+            )
+            if last_result is None or last_result.ok:
+                self._tool_failure_counts[key] = 0
+                return last_written, last_result
+            failure_class, retryable = self._classify_tool_failure(last_result)
+            if not retryable:
+                self._tool_failure_counts[key] = (
+                    self._tool_failure_counts.get(key, 0) + 1
+                )
+                self._failed_request_counts[fingerprint] = (
+                    self._failed_request_counts.get(fingerprint, 0) + 1
+                )
+                last_result.request_fingerprint = fingerprint
+                return last_written, await self._attach_tool_recovery(
+                    action, last_result,
+                    failure_class=failure_class, retryable=False,
+                )
+            if attempt < attempts:
+                sink = self._ctx.get("diagnostic_sink")
+                if callable(sink):
+                    sink({
+                        "event_type": "agent_loop_tool_retry",
+                        "tick": tick,
+                        "agent_id": action.agent_id,
+                        "step_index": step_index,
+                        "tool_id": key,
+                        "attempt": attempt,
+                        "errors": list(last_result.errors or [])[:5],
+                    })
+                if backoff:
+                    await asyncio.sleep(backoff * (2 ** (attempt - 1)))
+
+        self._tool_failure_counts[key] = (
+            self._tool_failure_counts.get(key, 0) + 1
+        )
+        if last_result is not None:
+            self._failed_request_counts[fingerprint] = (
+                self._failed_request_counts.get(fingerprint, 0) + 1
+            )
+            last_result.request_fingerprint = fingerprint
+            failure_class, retryable = self._classify_tool_failure(last_result)
+            last_result = await self._attach_tool_recovery(
+                action, last_result,
+                failure_class=failure_class, retryable=retryable,
+            )
+        return last_written, last_result
+
+    @staticmethod
+    def _tool_reliability_key(action: ActionPack) -> str:
+        request = action.tool_request if isinstance(
+            action.tool_request, dict,
+        ) else {}
+        nested = request.get("capability_request") or {}
+        return str(
+            action.attached_tool_id
+            or request.get("tool_id")
+            or nested.get("operation")
+            or "harness_tool"
+        )
+
+    @staticmethod
+    def _classify_tool_failure(
+        result: ToolRunResult,
+    ) -> Tuple[str, bool]:
+        """Classify a failed observation without importing domain semantics."""
+        if result.failure_class:
+            return str(result.failure_class), bool(result.retryable)
+        source = str(result.source or "").lower()
+        blob = " ".join(str(item).lower() for item in result.errors or [])
+        if any(marker in blob for marker in (
+            "invalid_response_json", "expecting value", "jsondecode",
+            "content_type", "empty_response", "response_contract",
+        )):
+            return "data_format", False
+        if any(marker in blob for marker in (
+            "url_not_allowed", "invalid argument", "invalid symbol",
+            "required", "unknown_tool", "unsupported",
+        )):
+            return "invalid_request", False
+        if any(marker in blob for marker in (
+            "401", "403", "credential", "unauthorized", "forbidden",
+            "permission", "api key",
+        )):
+            return "permission", False
+        if any(marker in blob for marker in (
+            "not found", "404", "no data", "empty dataset",
+        )):
+            return "data_unavailable", False
+        transient_markers = (
+            "timeout", "timed out", "readtimeout", "connect", "eof",
+            "temporar", "rate_limit", "429", "502", "503", "504",
+            "connection reset", "connection aborted",
+        )
+        retryable = (
+            source in {
+                "mcp", "capability_broker", "external_reality",
+                "verified_external",
+            }
+            and any(marker in blob for marker in transient_markers)
+        )
+        return ("transient_transport", True) if retryable else (
+            "tool_execution", False
+        )
+
+    @classmethod
+    def _is_transient_tool_failure(cls, result: ToolRunResult) -> bool:
+        """Backward-compatible predicate used by existing health tests."""
+        return cls._classify_tool_failure(result)[1]
+
+    @staticmethod
+    def _tool_request_fingerprint(action: ActionPack) -> str:
+        request = action.tool_request if isinstance(
+            action.tool_request, dict,
+        ) else {}
+        canonical = json.dumps(
+            {
+                "tool": AgentLoopRunner._tool_reliability_key(action),
+                "arguments": request.get("arguments") or {},
+                "operation": (
+                    (request.get("capability_request") or {}).get("operation")
+                    if isinstance(request.get("capability_request"), dict)
+                    else None
+                ),
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            default=str,
+        )
+        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:20]
+
+    async def _attach_tool_recovery(
+        self,
+        action: ActionPack,
+        result: ToolRunResult,
+        *,
+        failure_class: str,
+        retryable: bool,
+    ) -> ToolRunResult:
+        """Expose executable alternatives so the next Agent step can re-plan."""
+        result.failure_class = failure_class
+        result.retryable = retryable
+        failed_id = self._tool_reliability_key(action)
+        alternatives: List[Dict[str, Any]] = []
+        broker = self._ctx.get("capability_broker")
+        if broker is not None:
+            brief = getattr(self, "_active_brief", None)
+            policy = dict(
+                ((getattr(brief, "raw_context", None) or {}).get(
+                    "harness_policy"
+                ) or {})
+            )
+            preferred = [
+                str(item) for item in policy.get("preferred_tools") or []
+                if str(item)
+            ]
+            try:
+                candidates = await broker.discover(
+                    failed_id,
+                    max_results=max(8, len(preferred)),
+                    preferred_tools=preferred,
+                )
+                for candidate in candidates:
+                    payload = (
+                        candidate.model_dump(mode="json")
+                        if hasattr(candidate, "model_dump") else dict(candidate)
+                    )
+                    capability_id = str(
+                        payload.get("capability_id") or ""
+                    )
+                    invocation = payload.get("invocation") or {}
+                    invocation_tool = str(invocation.get("tool_id") or "")
+                    if failed_id in {capability_id, invocation_tool}:
+                        continue
+                    alternatives.append(payload)
+                    if len(alternatives) >= 5:
+                        break
+            except Exception as exc:
+                logger.info(
+                    "[AgentLoop] alternative discovery skipped tool=%s: %s",
+                    failed_id, exc,
+                )
+        result.alternative_tool_ids = [
+            str(item.get("capability_id") or "")
+            for item in alternatives if item.get("capability_id")
+        ]
+        result.outputs.append({
+            "summary": (
+                f"The method {failed_id} failed ({failure_class}). "
+                "Do not repeat the identical request. "
+                + (
+                    "Retry only with changed parameters or switch method."
+                    if retryable else
+                    "Switch data source, tool, parameters, or narrow the research question."
+                )
+            ),
+            "failure_class": failure_class,
+            "retryable": retryable,
+            "failed_method": failed_id,
+            "alternative_capabilities": alternatives,
+        })
+        sink = self._ctx.get("diagnostic_sink")
+        if callable(sink):
+            sink({
+                "event_type": "agent_loop_tool_recovery",
+                "tick": result.tick,
+                "agent_id": result.owner_id,
+                "tool_id": failed_id,
+                "failure_class": failure_class,
+                "retryable": retryable,
+                "alternative_tool_ids": result.alternative_tool_ids,
+            })
+        return result
 
     def _record_loop_tool_result(self, result: Optional[ToolRunResult]) -> None:
         """Mirror AgentLoop intermediate tool results into the unified L4 ledger."""
@@ -2181,8 +1962,7 @@ class AgentLoopRunner:
             "errors": tr.get("errors", [])[:5],
             "outputs_preview": [
                 str(
-                    (o.get("claim") or o.get("summary") or o)
-                    if isinstance(o, dict) else o
+                    compact_tool_output(o) if isinstance(o, dict) else o
                 )[:200]
                 for o in (tr.get("outputs") or [])[:2]
             ],

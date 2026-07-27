@@ -26,6 +26,26 @@ research_requirements:
       required: [catalyst]
       any_of:
         - [fund_flow, industry]
+investment_policy:
+  enabled: true
+  version: 3
+  require_verified_evidence: true
+  require_numeric_risk_plan: true
+  require_sell_reason: true
+  # 旧版固定 fixture 没有策略动作；回放保持原成交语义。新 V2 fixture 可显式开启。
+  enforce_in_replay: false
+  reversal_cooldown_ticks: 2
+  by_agent:
+    investor_a:
+      style: value
+      max_single_position_pct: 40
+      min_cash_pct: 15
+      max_risk_budget_pct: 2
+    investor_b:
+      style: growth
+      max_single_position_pct: 50
+      min_cash_pct: 5
+      max_risk_budget_pct: 3
 # 港股成交价为 HKD；组合账本以 CNY 计，用固定近似汇率折算（引擎注入结算上下文）。
 fx_rates:
   HKD: 0.92
@@ -74,6 +94,16 @@ operator_trace:
       kind: action
       description: buy_asset / sell_asset / wait_and_review 等场景动作进入世界账本。
       next_label: 组合账本处理
+    - id: strategy_book
+      label: 投资策略账本
+      kind: activity
+      description: 记录主线、反证、目标仓位、入场触发和退出纪律，并与真实持仓自动对账。
+      next_label: 约束交易
+    - id: attribution
+      label: 策略执行与归因
+      kind: portfolio
+      description: 对照数字化入场/退出触发器，记录计划修订、成交纪律及每条论点的已实现与未实现盈亏。
+      next_label: 进入专业评测
     - id: fill
       label: 成交/拒单
       kind: settlement
@@ -95,6 +125,9 @@ execution:
     mode: deterministic_verifier
     provider_id: portfolio_order_validator
   routes:
+    update_investment_plan:
+      mode: deterministic_verifier
+      provider_id: investment_book_validator
     buy_asset:
       mode: hybrid
       provider_id: portfolio_mark_to_market
@@ -103,6 +136,11 @@ execution:
       provider_id: portfolio_mark_to_market
 
 providers:
+  - id: investment_book_validator
+    authority: deterministic_verifier
+    verifier_id: investment_book_validator
+    rule_version: capital_market.investment_book.v3
+    handles: [action_resolved]
   - id: portfolio_order_validator
     authority: deterministic_verifier
     verifier_id: portfolio_order_validator
@@ -110,13 +148,13 @@ providers:
     handles: [action_resolved]
   - id: portfolio_mark_to_market
     authority: hybrid
-    rule_version: capital_market.portfolio_mark_to_market.v2
+    rule_version: capital_market.portfolio_mark_to_market.v3
     component_modes: [external_reality, deterministic_verifier]
     handles: [trade_executed, market_price_closed, action_resolved, finalize]
   - id: portfolio_cash_ledger
     authority: deterministic_verifier
     verifier_id: portfolio_ledger
-    rule_version: capital_market.portfolio_mark_to_market.v2
+    rule_version: capital_market.portfolio_mark_to_market.v3
     handles: [finalize]
 victory:
   provider_id: portfolio_mark_to_market
@@ -136,6 +174,11 @@ display_values:
   cash: 可用现金
   market_value: 持仓市值
   position_count: 持仓数量
+  strategy_discipline_score: 策略纪律分
+  plan_revision_count: 计划修订次数
+  planned_trade_count: 按计划成交次数
+  strategy_rejection_count: 策略拒绝次数
+  active_thesis_count: 活动投资论点数
 metric_bindings:
   metric_portfolio_value: {value: portfolio_value, transform: identity}
   metric_portfolio_pnl: {value: pnl, transform: identity}
@@ -144,6 +187,7 @@ metric_bindings:
   metric_max_drawdown: {value: drawdown_pct, transform: identity}
   metric_risk_adjusted_return: {value: risk_adjusted_excess_return, transform: identity}
   metric_turnover: {value: turnover_pct, transform: identity}
+  metric_strategy_discipline: {value: strategy_discipline_score, transform: identity}
 resource_bindings:
   cash: {value: cash}
 observations:

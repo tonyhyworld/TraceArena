@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 import yaml
 from pydantic import BaseModel, Field, field_validator
@@ -91,8 +91,24 @@ class AgentBriefingConfig(BaseModel):
 class AgentLoopConfig(BaseModel):
     """D 轨：单 tick 内 Agent 多步循环（调工具 → 看结果 → 再决策）。"""
     enabled: bool = False
-    max_steps: int = 5
-    session_timeout_sec: float = 60.0
+    max_steps: int = Field(default=5, ge=1, le=64)
+    session_timeout_sec: float = Field(default=60.0, gt=0, le=3600)
+    # Legacy scenes require one world action from every invoked agent.  A
+    # research-heavy scene may opt into ``suspendable`` so productive harness
+    # work can finish a tick without being rewritten into a fallback action.
+    completion_mode: Literal["require_action", "suspendable"] = "require_action"
+    # ``fallback`` preserves the historical forced-final behavior.  ``suspend``
+    # is only meaningful with completion_mode=suspendable and carries the
+    # research state into the next tick instead of submitting to the world.
+    on_budget_exhausted: Literal["fallback", "suspend"] = "fallback"
+    # A single provider/tool call must never be able to outlive the whole
+    # harness session.  Zero means "use the remaining session budget".
+    step_timeout_sec: float = Field(default=0.0, ge=0, le=3600)
+    # Generic transient-tool recovery.  Only read-only harness operations are
+    # retried; final world actions are never replayed by this mechanism.
+    tool_max_attempts: int = Field(default=2, ge=1, le=10)
+    tool_retry_backoff_sec: float = Field(default=0.25, ge=0, le=60)
+    tool_circuit_breaker_threshold: int = Field(default=3, ge=1, le=100)
 
 
 class ExternalAgentConfig(BaseModel):
@@ -113,10 +129,18 @@ class FrameworkConfig(BaseModel):
     # 时间控制
     tick_interval_sec: float = 10.0    # 世界推进节拍（秒）
     agent_timeout_sec: float = 8.0     # Agent 每回合最长思考时间
+    # Global provider backpressure.  A scenario may declare many agents, but
+    # opening every model connection at once amplifies rate limits and socket
+    # exhaustion.  Queued agents still share the tick deadline.
+    agent_concurrency_limit: int = Field(default=8, ge=1, le=256)
+    # Cancellation is cooperative; allow provider cleanup/finally blocks a
+    # bounded grace period without letting a hostile task stall the engine.
+    agent_cancel_grace_sec: float = Field(default=1.0, ge=0, le=30)
     runtime_mode: str = "story"  # story / replay / benchmark / data_factory（兼容旧 entertainment）
     random_seed: Optional[int] = None
     headless: bool = False
     provider_health_check: bool = True
+    provider_health_timeout_sec: float = Field(default=10.0, gt=0, le=300)
 
     # 子系统配置
     director: DirectorConfig = Field(default_factory=DirectorConfig)

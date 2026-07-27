@@ -32,7 +32,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from app.core.path_safety import path_beneath, safe_path_component
+from app.core.redaction import redact_credentials
+from app.core.atomic_io import atomic_write_text
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +53,9 @@ class AgentWorkspace:
         self, run_dir: Path, agent_id: str, agent_name: str,
         long_term_root: Path = LONG_TERM_ROOT,
     ):
-        self.agent_id = safe_path_component(agent_id, label="agent_id")
+        self.agent_id = agent_id
         self.agent_name = agent_name
-        self.dir = path_beneath(run_dir, "agents", self.agent_id)
+        self.dir = run_dir / "agents" / agent_id
         self.cot_dir = self.dir / "cot"
         self.harness_dir = self.dir / "harness"
         self.dir.mkdir(parents=True, exist_ok=True)
@@ -103,7 +104,7 @@ class AgentWorkspace:
         data = (content or "").encode("utf-8")
         if len(data) > max_bytes:
             raise ValueError(f"代码文件超过大小限制 {max_bytes} 字节")
-        path = path_beneath(self.code_dir, name)
+        path = self.code_dir / name
         if not path.is_file():
             existing = self.list_code_files()
             if len(existing) >= max_files:
@@ -113,14 +114,14 @@ class AgentWorkspace:
 
     def read_code_file(self, filename: str) -> str:
         name = self._normalize_code_filename(filename)
-        path = path_beneath(self.code_dir, name)
+        path = self.code_dir / name
         if not path.is_file():
             raise FileNotFoundError(name)
         return path.read_text(encoding="utf-8")
 
     def delete_code_file(self, filename: str) -> None:
         name = self._normalize_code_filename(filename)
-        path = path_beneath(self.code_dir, name)
+        path = self.code_dir / name
         if path.is_file():
             path.unlink()
 
@@ -168,9 +169,7 @@ class AgentWorkspace:
 
     @property
     def long_term_path(self) -> Path:
-        return path_beneath(
-            self._long_term_root, self.agent_id, "long_term_memory.md"
-        )
+        return self._long_term_root / self.agent_id / "long_term_memory.md"
 
     def read_long_term(self) -> str:
         """读取本 agent 在所有过往局的总结记忆。新 agent 返回空串。"""
@@ -258,20 +257,23 @@ class AgentWorkspace:
         """
         try:
             stem = f"tick_{tick:03d}"
-            (self.cot_dir / f"{stem}_prompt.md").write_text(
+            safe_system_prompt = redact_credentials(system_prompt)
+            safe_user_message = redact_credentials(user_message)
+            safe_raw_response = redact_credentials(raw_response)
+            atomic_write_text(
+                self.cot_dir / f"{stem}_prompt.md",
                 f"# Tick {tick} · {self.agent_name} · 注入的 Prompt\n\n"
-                f"## System Prompt\n\n```\n{system_prompt}\n```\n\n"
-                f"## User Message\n\n```\n{user_message}\n```\n",
-                encoding="utf-8",
+                f"## System Prompt\n\n```\n{safe_system_prompt}\n```\n\n"
+                f"## User Message\n\n```\n{safe_user_message}\n```\n",
             )
-            (self.cot_dir / f"{stem}_response.txt").write_text(
-                raw_response or "(空响应)",
-                encoding="utf-8",
+            atomic_write_text(
+                self.cot_dir / f"{stem}_response.txt",
+                safe_raw_response or "(空响应)",
             )
             if decision is not None:
-                (self.cot_dir / f"{stem}_decision.json").write_text(
+                atomic_write_text(
+                    self.cot_dir / f"{stem}_decision.json",
                     json.dumps(decision, ensure_ascii=False, indent=2, default=str),
-                    encoding="utf-8",
                 )
         except Exception as exc:
             logger.warning(f"[AgentWorkspace] CoT 落盘失败 {self.agent_id} tick={tick}: {exc}")
@@ -285,11 +287,29 @@ class AgentWorkspace:
         else:
             raise TypeError("trace must be a HarnessTrace or dict")
         path = self.harness_dir / f"tick_{tick:03d}.json"
-        path.write_text(
+        atomic_write_text(
+            path,
             json.dumps(payload, ensure_ascii=False, indent=2, default=str),
-            encoding="utf-8",
         )
         return path
+
+    def save_harness_step_io(
+        self, tick: int, steps: List[Dict[str, Any]],
+    ) -> List[Path]:
+        """Persist every intra-tick model response referenced by HarnessTrace."""
+        paths: List[Path] = []
+        for index, step in enumerate(steps, 1):
+            path = self.harness_dir / (
+                f"tick_{tick:03d}_step_{index:03d}_response.txt"
+            )
+            atomic_write_text(
+                path,
+                redact_credentials(
+                    str(step.get("raw_response") or "(empty response)")
+                ),
+            )
+            paths.append(path)
+        return paths
 
 
 # ── Charter 渲染 ───────────────────────────────────────────────────────

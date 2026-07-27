@@ -1,0 +1,69 @@
+scenario_path: ./scenarios/capital_market_us
+runtime_mode: story
+tick_interval_sec: 10.0
+agent_timeout_sec: 60.0
+provider_health_check: true
+# 启动探测只验证连通性，不占用回合；共享同一上游账号的角色合并探测。
+# DeepSeek 推理模型偶有十余秒首 token 延迟，30 秒可避免把正常抖动误报为故障。
+provider_health_timeout_sec: 30.0
+agents:
+  - id: investor_a
+    name: 稳健基金
+    provider: deepseek
+    model: deepseek-v4-pro
+    color: "#4cc9f0"
+    extra:
+      temperature: 0.6
+      max_tokens: 2500
+  - id: investor_b
+    name: 进取基金
+    provider: deepseek
+    model: deepseek-v4-pro
+    color: "#ffbe0b"
+    extra:
+      temperature: 0.8
+      max_tokens: 2500
+director:
+  provider: deepseek
+  model: deepseek-v4-pro
+  enabled: true
+judge:
+  # 投资结果由真实行情 + 确定性组合账本结算，不评价动作“聪不聪明”。
+  enabled: false
+  max_tokens: 1200
+  timeout_seconds: 30
+sandbox:
+  enabled: true
+  timeout_sec: 5.0
+  max_artifacts_per_agent: 8
+  max_code_lines: 200
+  process_backend: python_audit
+  allow_network: true
+  allow_package_install: true
+  process_timeout_sec: 45.0
+  package_install_timeout_sec: 180.0
+mcp:
+  enabled: true
+  servers_path: ./mcp_servers.yaml
+tts:
+  enabled: false
+  voice_id: presenter_male
+  speed: 1.0
+  timeout_sec: 20.0
+log_dir: ./runs
+agent_loop:
+  enabled: true
+  max_steps: 8
+  # 投资研究可以跨 tick 延续；预算用尽时保存研究轨迹，不再强制伪装成
+  # wait_and_review 世界动作。其他场景未声明时仍沿用 require_action/fallback。
+  completion_mode: suspendable
+  on_budget_exhausted: suspend
+  # 多源投资研究需要容纳模型思考、行情、财报和反证路径。单步仍有硬超时，
+  # 整拍预算耗尽时保存研究进度并跨拍续跑，不伪造交易动作。
+  session_timeout_sec: 180.0
+  step_timeout_sec: 40.0
+  tool_max_attempts: 2
+  tool_retry_backoff_sec: 0.25
+  tool_circuit_breaker_threshold: 3
+external_agent:
+  turn_timeout_ms: 180000

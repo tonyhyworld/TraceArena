@@ -312,6 +312,12 @@ class ToolRunResult(BaseModel):
     duration_ms: Optional[float] = None                           # MCP 等外部调用耗时
     mcp_server_id: Optional[str] = None                           # MCP 服务端标识
     mcp_tool_name: Optional[str] = None                           # MCP 工具名
+    # Harness 韧性元数据。这里只描述故障性质和可用替代能力，不包含任何
+    # 场景业务判断；Agent 可据此换工具、换数据源或降低研究目标。
+    failure_class: Optional[str] = None
+    retryable: Optional[bool] = None
+    request_fingerprint: Optional[str] = None
+    alternative_tool_ids: List[str] = Field(default_factory=list)
 
 
 class EvidenceEntry(BaseModel):

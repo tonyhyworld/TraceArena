@@ -175,6 +175,41 @@ class TraceRecorder:
             )
         return self._exported_run_dir
 
+    def append_terminal_settlements(
+        self, tick: int, settlements: Optional[List[Any]] = None
+    ) -> None:
+        """Persist post-tick victory records into replayable trace state."""
+        rows = [_dump(item) for item in (settlements or [])]
+        if not rows:
+            return
+        target = next(
+            (item for item in reversed(self._tick_records) if item.get("tick") == tick),
+            None,
+        )
+        if target is None:
+            target = {
+                "tick": tick,
+                "os2_world_actions": [],
+                "os2_external_observations": [],
+                "os2_world_events": [],
+                "os2_settlements": [],
+                "os2_director_plan": None,
+                "director_harness_trace": None,
+                "world_snapshot": {},
+            }
+            self._tick_records.append(target)
+        known = {
+            str(item.get("settlement_id") or "")
+            for item in target["os2_settlements"]
+            if isinstance(item, dict)
+        }
+        target["os2_settlements"].extend(
+            item for item in rows
+            if str(item.get("settlement_id") or "") not in known
+        )
+        if self._recorder and hasattr(self._recorder, "append_terminal_settlements"):
+            self._recorder.append_terminal_settlements(tick, rows)
+
     def flush_partial(self) -> Optional[str]:
         """把已录制的 ticks/ledgers 增量落盘（不做终局 finalize）。
 

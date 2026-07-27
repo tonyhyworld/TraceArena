@@ -908,7 +908,12 @@ class ScenarioBootKernel:
             raise ScenarioLoadError(f"场景语言包必须是对象: {path}")
 
         def _merge_text(target: Any, overlay: Any) -> None:
-            """Recursively replace text while preserving executable contracts."""
+            """Recursively replace presentation text while preserving contracts.
+
+            Dictionaries are traversed, scalar strings may be replaced, and
+            lists may only be replaced when both sides are text-only lists.
+            Numeric values, IDs and executable configuration are never copied.
+            """
             if not isinstance(target, dict) or not isinstance(overlay, dict):
                 return
             for key, value in overlay.items():
@@ -917,9 +922,17 @@ class ScenarioBootKernel:
                     target[key] = value
                 elif isinstance(value, dict) and isinstance(current, dict):
                     _merge_text(current, value)
-                elif isinstance(value, list) and isinstance(current, list) and all(isinstance(item, str) for item in value) and all(isinstance(item, str) for item in current):
+                elif (
+                    isinstance(value, list) and isinstance(current, list)
+                    and all(isinstance(item, str) for item in value)
+                    and all(isinstance(item, str) for item in current)
+                ):
                     target[key] = list(value)
-                elif isinstance(value, list) and isinstance(current, list) and all(isinstance(item, dict) for item in value) and all(isinstance(item, dict) for item in current):
+                elif (
+                    isinstance(value, list) and isinstance(current, list)
+                    and all(isinstance(item, dict) for item in value)
+                    and all(isinstance(item, dict) for item in current)
+                ):
                     by_id = {str(item.get("id") or ""): item for item in current}
                     for item_overlay in value:
                         item_id = str(item_overlay.get("id") or "")

@@ -1,0 +1,37 @@
+bindings:
+  characters:
+    investor_a: investor_a_render
+    investor_b: investor_b_render
+  locations: {}
+  objects:
+    portfolio_book: portfolio_book_render
+    risk_dashboard: risk_dashboard_render
+  actions:
+    update_investment_plan: action_update_investment_plan_render
+    buy_asset: action_buy_asset_render
+    sell_asset: action_sell_asset_render
+    wait_and_review: action_wait_and_review_render
+  tools:
+    us_quote: tool_market_quote_render
+    us_valuation_metrics: tool_valuation_render
+    us_financial_statements: tool_financial_statement_render
+    us_sec_filings: tool_company_filing_render
+    us_company_news: tool_company_news_render
+    us_earnings_calendar: tool_company_filing_render
+    us_macro_indicators: tool_macro_indicator_render
+    us_sector_indicators: tool_supply_demand_render
+    us_options_chain: tool_market_depth_render
+  metrics:
+    metric_portfolio_value: metric_portfolio_value_render
+    metric_portfolio_pnl: metric_portfolio_pnl_render
+    metric_portfolio_return: metric_portfolio_return_render
+    metric_excess_return: metric_excess_return_render
+    metric_max_drawdown: metric_max_drawdown_render
+    metric_risk_adjusted_return: metric_risk_adjusted_return_render
+    metric_turnover: metric_turnover_render
+    metric_strategy_discipline: metric_strategy_discipline_render
+  outcomes:
+    investment_plan_rejected: outcome_investment_plan_rejected_render
+    portfolio_marked_to_market: outcome_portfolio_marked_render
+    order_rejected: outcome_order_rejected_render
+    trade_executed: outcome_order_filled_render

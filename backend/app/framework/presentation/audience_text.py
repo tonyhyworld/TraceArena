@@ -98,3 +98,109 @@ def sanitize_audience_text(
     result = re.sub(r"([，；、])(?=[。！？])", "", result)
     result = re.sub(r"\s+", " ", result)
     return result.strip(" ，,；;：:")
+
+
+_CJK_RE = re.compile(r"[\u3400-\u9fff]")
+_EN_PUBLIC_TERMS = {
+    "稳健基金说": "Stable fund says",
+    "成长基金说": "Growth fund says",
+    "稳健基金": "Stable fund",
+    "成长基金": "Growth fund",
+    "导演": "Director",
+    "系统": "System",
+    "每位": "each",
+    "两位": "two",
+    "资深投资经理": "experienced investment manager",
+    "投资经理": "investment manager",
+    "投资策略": "investment strategy",
+    "投资判断": "investment thesis",
+    "验证证据": "verified evidence",
+    "可验证证据": "verifiable evidence",
+    "获得": "obtain",
+    "提交了": " submitted ",
+    "提交": "submitted",
+    "等待": "wait",
+    "进入": "enter",
+    "开盘": "market open",
+    "风险": "risk",
+    "控制": "control",
+    "价值": "value",
+    "估值": "valuation",
+    "股息率": "dividend yield",
+    "资产负债表": "balance sheet",
+    "利润表": "income statement",
+    "现金流": "cash flow",
+    "待入场": "awaiting entry",
+    "演出缓冲补充中": "filling presentation buffer",
+    "回合": "cycle",
+    "已完成": "completed",
+    "本回合结算结果": "Settlement result this cycle",
+    "风格自检与该投资经理的既定策略不一致": (
+        "Style self-check is inconsistent with this manager's stated strategy"
+    ),
+    "投资计划状态不是允许的标准状态": (
+        "Investment plan status is not an allowed standard status"
+    ),
+    "可用": "Allowed",
+    "外部证据": "External evidence",
+    "行情": "market data",
+    "已接入观测": "connected observations",
+    "这些观测支撑本回合结算": (
+        "These observations support this cycle's settlement"
+    ),
+    "未验证项不会当作成交依据": (
+        "Unverified items are not used as fill evidence"
+    ),
+    "结算": "settlement",
+    "世界已记录": "World event recorded",
+    "中国石化": "Sinopec",
+    "工商银行": "ICBC",
+    "农业银行": "Agricultural Bank of China",
+    "招商银行": "China Merchants Bank",
+    "京东方": "BOE Technology",
+    "长信科技": "Changxin Technology",
+    "全志科技": "Allwinner Technology",
+    "华天科技": "Huatian Technology",
+    "东方日升": "Risen Energy",
+    "易成新能": "Yicheng New Energy",
+    "腾讯控股": "Tencent",
+}
+
+
+def contains_cjk(text: object) -> bool:
+    return bool(_CJK_RE.search(str(text or "")))
+
+
+def enforce_english_audience_text(
+    text: object,
+    *,
+    fallback: str = "",
+) -> str:
+    """Best-effort public English guard for UI-facing fields.
+
+    This is intentionally conservative: it translates common scenario/public
+    terms, normalizes Chinese punctuation, then removes any remaining CJK glyphs
+    so an en-US session never renders mixed-language public narration.
+    """
+    result = str(text or "")
+    if not result:
+        return fallback
+    for zh, en in sorted(
+        _EN_PUBLIC_TERMS.items(), key=lambda item: len(item[0]), reverse=True
+    ):
+        result = result.replace(zh, en)
+    result = (
+        result.replace("：", ": ")
+        .replace("；", "; ")
+        .replace("，", ", ")
+        .replace("。", ". ")
+        .replace("、", ", ")
+        .replace("“", '"')
+        .replace("”", '"')
+        .replace("（", "(")
+        .replace("）", ")")
+    )
+    result = _CJK_RE.sub("", result)
+    result = re.sub(r"\s+([,.;:!?])", r"\1", result)
+    result = re.sub(r"\s+", " ", result).strip(" ,.;:")
+    return result or fallback

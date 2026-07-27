@@ -73,6 +73,52 @@ def _is_network_fallback(action: Any) -> bool:
     return False
 
 
+def _is_provider_unavailable_text(text: Any) -> bool:
+    """Whether an error string indicates provider transport/quota failure.
+
+    This is intentionally broad and credential-safe: if a model provider is
+    unavailable, a professional evaluation should pause instead of converting
+    the outage into an investment decision.
+    """
+    lowered = str(text or "").lower()
+    if not lowered:
+        return False
+    markers = (
+        "providererror",
+        "provider_unavailable",
+        "connecterror",
+        "readtimeout",
+        "provider_circuit_open",
+        "请求失败",
+        "网络异常",
+        "http 429",
+        "rate_limit",
+        "quota",
+        "用量上限",
+        "余额",
+    )
+    # Harness/turn deadlines, tool timeouts and data-source failures are not
+    # provider outages. They must remain recoverable inside the Agent loop.
+    non_provider_markers = (
+        "agent_turn_timeout",
+        "agent_runtime_unavailable",
+        "harness_step_timeout",
+        "tool_circuit_open",
+        "repeated_failed_method",
+    )
+    if any(marker in lowered for marker in non_provider_markers):
+        return False
+    return any(marker in lowered for marker in markers)
+
+
+class ProviderUnavailablePause(RuntimeError):
+    """Recoverable runtime pause caused by model provider unavailability."""
+
+    def __init__(self, message: str, *, tick: int = 0):
+        super().__init__(message)
+        self.tick = int(tick or 0)
+
+
 class EngineOS:
     """
     七层 OS 架构中枢调度器。
@@ -139,8 +185,19 @@ class EngineOS:
             external_turn_timeout_ms=int(
                 getattr(cfg.external_agent, "turn_timeout_ms", 120_000)
             ),
+            concurrency_limit=int(
+                getattr(cfg, "agent_concurrency_limit", 8)
+            ),
+            cancellation_grace_sec=float(
+                getattr(cfg, "agent_cancel_grace_sec", 1.0)
+            ),
+        )
+        from app.agent_os.policy import load_scenario_harness_policy
+        self._harness_policy_adapter = load_scenario_harness_policy(
+            scenario.scenario_dir
         )
         self._user_id: str = ""
+        self._provider_startup_health: Dict[str, Dict[str, Any]] = {}
 
         # L4: Action Runtime
         self._action_runtime = ActionRuntime()
@@ -177,6 +234,7 @@ class EngineOS:
             getattr(scenario.presentation.render, "bindings", {}) or {},
             scenario.presentation.render,
             getattr(self._runtime.vocabulary, "terminology", {}) or {},
+            locale=str(getattr(self._runtime, "locale", "") or self._cfg.scenario_locale or "zh-CN"),
         )
         self._last_os2_director_plan: Optional[Any] = None
         self._tick_pipeline = TickPipeline(self)
@@ -633,11 +691,33 @@ class EngineOS:
             agents_out.append(item)
         return {
             "scenario_name": self.scenario_directory_name,
+            "scenario_locale": str(getattr(self._runtime, "locale", "") or self._cfg.scenario_locale or "zh-CN"),
             "tick_interval_sec": self._cfg.tick_interval_sec,
             "agent_timeout_sec": self._cfg.agent_timeout_sec,
             "director_enabled": self._cfg.director.enabled,
             "agents": agents_out,
         }
+
+    def apply_locale(self, locale: str) -> None:
+        """Apply a UI language preference to the active runtime for subsequent cycles.
+
+        This does not rebuild the world or rewrite historical logs.  It updates
+        the runtime language used by prompt assembly, fallback text, event
+        summaries, and settlement context from the next cycle onward.
+        """
+        if locale not in {"zh-CN", "en-US"}:
+            raise ValueError(f"Unsupported locale: {locale}")
+        self._cfg.scenario_locale = locale
+        try:
+            self._runtime.locale = locale
+        except Exception:
+            pass
+        director = getattr(self, "_os2_director", None)
+        if director is not None and hasattr(director, "set_locale"):
+            try:
+                director.set_locale(locale)
+            except Exception:
+                pass
 
     def localized_scenario(self, locale: Optional[str] = None) -> LoadedScenario:
         """Return a presentation-localized view without changing runtime state."""
@@ -877,10 +957,19 @@ class EngineOS:
         settlements: List[Any],
     ) -> None:
         pending_root = state.internal.setdefault("pending_action_intents", {})
+        rejection_streaks = state.internal.setdefault(
+            "settlement_rejection_streaks", {}
+        )
         for agent_id, action in (actions or {}).items():
             if action is None:
                 continue
             actual_id = str(getattr(action, "action_id", "") or "")
+            current_streak = rejection_streaks.get(str(agent_id)) or {}
+            if (
+                current_streak
+                and str(current_streak.get("action_id") or "") != actual_id
+            ):
+                rejection_streaks.pop(str(agent_id), None)
             existing = [
                 item for item in list(pending_root.get(agent_id, []) or [])
                 if int(item.get("expires_tick", tick) or tick) >= tick
@@ -922,6 +1011,27 @@ class EngineOS:
                 }
                 if outcome not in followup_outcomes:
                     continue
+                explanation = str(
+                    getattr(record, "explanation", "")
+                    or "上一回合行动未完成结算。"
+                )
+                signature = (
+                    f"{getattr(source_action, 'action_id', '')}:"
+                    f"{outcome}:{explanation}"
+                )
+                previous = rejection_streaks.get(str(agent_id)) or {}
+                repeat_count = (
+                    int(previous.get("count", 0) or 0) + 1
+                    if previous.get("signature") == signature else 1
+                )
+                rejection_streaks[str(agent_id)] = {
+                    "signature": signature,
+                    "count": repeat_count,
+                    "tick": tick,
+                    "action_id": str(
+                        getattr(source_action, "action_id", "") or ""
+                    ),
+                }
                 pending_root.setdefault(str(agent_id), []).append({
                     "tick": tick,
                     "expires_tick": tick + 3,
@@ -941,7 +1051,9 @@ class EngineOS:
                     ),
                     "source": "settlement_rejection",
                     "reason": outcome or "rejected",
-                    "message": str(getattr(record, "explanation", "") or "上一回合行动未完成结算。"),
+                    "message": explanation,
+                    "repeat_count": repeat_count,
+                    "retry_blocked_until_change": repeat_count >= 2,
                 })
 
     def _current_round_phase(self, tick: int) -> Dict[str, Any]:
@@ -967,11 +1079,12 @@ class EngineOS:
                 }
         cfg = getattr(self, "_cfg", None)
         if rm is not None and str(getattr(cfg, "runtime_mode", "story")) == "replay":
-            # Deterministic offline fixtures provide their own historical market
-            # phase. Replay must not depend on the host wall clock or weekday.
+            # Recorded actions are authoritative in deterministic replay.
+            # Current scene pacing and the host wall clock must not reject an
+            # action that already occurred in the recorded trajectory.
             base["live_window_open"] = True
-            if "tradable" not in base:
-                base["tradable"] = True
+            base["tradable"] = True
+            base["phase_source"] = "recorded_replay"
         elif rm is not None:
             is_open, closed_reason = rm.live_window.is_open()
             base["live_window_open"] = bool(is_open)
@@ -1202,41 +1315,167 @@ class EngineOS:
         })
 
     async def _check_provider_health(self) -> None:
-        """启动时轻量级检查 Provider 可用性（全部并行，不阻塞启动）"""
+        """Probe each upstream provider account once and retain operator evidence.
+
+        Multiple agent slots commonly share the same provider/model/account.
+        Probing every slot concurrently creates avoidable load and can produce
+        contradictory startup results, so equivalent slots share one probe.
+        Startup probes are advisory: transient latency must not be reported as
+        a failed simulation before any tick has run.
+        """
         from app.providers.mock import MockProvider
+        from app.core.redaction import redact_credentials
         import asyncio
 
-        async def _check_one(slot: Any) -> None:
+        groups: Dict[str, List[Any]] = {}
+        for slot in self._cfg.agents:
             ctx = self._agent_runtime.get_context(slot.id)
-            if not ctx or not ctx.provider:
-                return
-            if isinstance(ctx.provider, MockProvider):
-                return
+            provider = getattr(ctx, "provider", None) if ctx else None
+            if provider is None:
+                self._provider_startup_health[slot.id] = {
+                    "status": "missing", "checked_at": time.time(),
+                }
+                continue
+            if isinstance(provider, MockProvider):
+                self._provider_startup_health[slot.id] = {
+                    "status": "mock", "checked_at": time.time(),
+                }
+                continue
+            identity_fn = getattr(provider, "health_check_identity", None)
+            identity = (
+                str(identity_fn())
+                if callable(identity_fn)
+                else f"instance:{id(provider)}"
+            )
+            groups.setdefault(identity, []).append(slot)
+
+        async def _check_group(slots: List[Any]) -> None:
+            slot = slots[0]
+            ctx = self._agent_runtime.get_context(slot.id)
+            provider = ctx.provider
+            started = time.monotonic()
             try:
                 await asyncio.wait_for(
-                    ctx.provider.complete("test", "回复OK"),
-                    timeout=10.0,
+                    provider.complete(
+                        "You are a service health probe.",
+                        "Reply with OK only.",
+                        temperature=0.0,
+                        max_tokens=4,
+                    ),
+                    timeout=float(
+                        getattr(self._cfg, "provider_health_timeout_sec", 30.0)
+                        or 30.0
+                    ),
                 )
-                logger.info(f"[EngineOS] Provider 健康检查通过: {slot.provider}/{slot.model}")
+                result = {
+                    "status": "healthy",
+                    "checked_at": time.time(),
+                    "latency_ms": int((time.monotonic() - started) * 1000),
+                }
+                for grouped_slot in slots:
+                    self._provider_startup_health[grouped_slot.id] = dict(result)
+                logger.info(
+                    "[EngineOS] Provider 健康检查通过: %s/%s shared_slots=%s",
+                    slot.provider, slot.model,
+                    [grouped_slot.id for grouped_slot in slots],
+                )
             except Exception as e:
-                logger.warning(f"[EngineOS] Provider {slot.provider} 健康检查失败: {e}")
+                message = str(e) or f"{type(e).__name__}({e!r})"
+                safe_error = redact_credentials(message)[:500]
+                is_timeout = isinstance(e, (asyncio.TimeoutError, TimeoutError))
+                result = {
+                    "status": "degraded" if is_timeout else "unhealthy",
+                    "checked_at": time.time(),
+                    "latency_ms": int((time.monotonic() - started) * 1000),
+                    "error": safe_error,
+                }
+                for grouped_slot in slots:
+                    self._provider_startup_health[grouped_slot.id] = dict(result)
+                logger.warning(
+                    "[EngineOS] Provider %s 启动探测%s: %s shared_slots=%s",
+                    slot.provider, "超时" if is_timeout else "失败", safe_error,
+                    [grouped_slot.id for grouped_slot in slots],
+                )
+                for grouped_slot in slots:
+                    self._write_diagnostic({
+                        "event_type": "provider_health_check",
+                        "agent_id": grouped_slot.id,
+                        **self._provider_startup_health[grouped_slot.id],
+                    })
                 await self._emit("viewer", {
-                    "type": "engine_error",
+                    "type": "engine_warning",
                     "action": "provider_health_check",
-                    "error": f"Provider {slot.provider} 健康检查失败: {e}",
+                    "message": (
+                        f"Provider {slot.provider} 启动响应较慢；"
+                        "本次探测不影响开局，首个真实请求将继续核验。"
+                        if is_timeout else
+                        f"Provider {slot.provider} 当前不可用: {safe_error}"
+                    ),
                     "tick": 0,
                 })
 
-        # 收集所有 provider 并行检查（agent + director 共用同一 provider 时去重）
-        seen = set()
-        tasks = []
-        for slot in self._cfg.agents:
-            key = (slot.provider, slot.model)
-            if key not in seen:
-                seen.add(key)
-                tasks.append(_check_one(slot))
+        tasks = [_check_group(slots) for slots in groups.values()]
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
+
+    def get_harness_runtime_health(self) -> Dict[str, Any]:
+        state = self._world_state.state
+        providers = self._agent_runtime.provider_health_snapshot()
+        harness_window = self._agent_runtime.harness_health_snapshot()
+        startup_checks = dict(self._provider_startup_health)
+        scheduling = (
+            self._agent_runtime.scheduling_snapshot()
+            if callable(getattr(
+                self._agent_runtime, "scheduling_snapshot", None
+            )) else {}
+        )
+        reasons: List[str] = []
+        for agent_id, snapshot in providers.items():
+            if bool(snapshot.get("circuit_open")):
+                reasons.append(f"provider_circuit_open:{agent_id}")
+        for agent_id, snapshot in startup_checks.items():
+            if str(snapshot.get("status") or "").lower() == "unhealthy":
+                reasons.append(f"provider_startup_unhealthy:{agent_id}")
+        cancellation_pending = int(
+            scheduling.get("cancellation_pending", 0) or 0
+        )
+        if cancellation_pending:
+            reasons.append(
+                f"scheduler_cancellation_pending:{cancellation_pending}"
+            )
+
+        metrics = dict(harness_window.get("metrics", {}) or {})
+        thresholds = dict(harness_window.get("thresholds", {}) or {})
+        turns = int(metrics.get("turns", 0) or 0)
+        minimum_turns = int(thresholds.get("min_turns", 30) or 30)
+        enough_samples = turns >= minimum_turns
+        if enough_samples and not bool(harness_window.get("passed")):
+            failed_checks = [
+                name for name, passed
+                in dict(harness_window.get("checks", {}) or {}).items()
+                if not passed
+            ]
+            reasons.extend(f"harness_slo_failed:{name}" for name in failed_checks)
+
+        ready = not reasons and bool(harness_window.get("passed"))
+        if ready:
+            status = "ready"
+        elif not enough_samples and not reasons:
+            status = "warming_up"
+            reasons.append(f"harness_samples:{turns}/{minimum_turns}")
+        else:
+            status = "unhealthy"
+        return {
+            "run_id": self._trace.run_id,
+            "tick": int(getattr(state, "tick", 0) or 0),
+            "ready": ready,
+            "status": status,
+            "reasons": reasons,
+            "providers": providers,
+            "startup_checks": startup_checks,
+            "scheduling": scheduling,
+            "harness_window": harness_window,
+        }
 
     def _init_agent_platform_state(self, state: Any, agent_ids: List[str]) -> None:
         """P0/P1: 初始化每个 Agent 的底座运行时状态"""
@@ -1782,6 +2021,28 @@ class EngineOS:
                     success = await self._buffer.push(self._pending_package)
                     if success:
                         self._pending_package = None
+
+            except ProviderUnavailablePause as e:
+                current_tick = int(getattr(e, "tick", 0) or (
+                    self._world_state.state.tick if self._world_state.state else 0
+                ))
+                logger.warning("[EngineOS] provider 不可用，已暂停当前局: %s", e)
+                self._pending_package = None
+                self._running = False
+                self._world_state.set_running(False)
+                await self._emit("viewer", {
+                    "type": "simulation_paused",
+                    "reason": "provider_unavailable",
+                    "message": str(e),
+                    "tick": current_tick,
+                })
+                await self._emit("viewer", {
+                    "type": "engine_warning",
+                    "action": "provider_unavailable_pause",
+                    "message": str(e),
+                    "tick": current_tick,
+                })
+                return
 
             except Exception as e:
                 consecutive_failures += 1
@@ -2494,7 +2755,9 @@ class EngineOS:
         return labels
 
     def _write_diagnostic(self, item: Dict[str, Any]) -> None:
-        """追加结构化诊断日志；不含API Key，但保留完整模型输出。"""
+        """Append a credential-redacted structured operational diagnostic."""
+        from app.core.redaction import redact_structure
+
         record = {
             "run_id": self._trace.run_id,
             "timestamp": time.time(),
@@ -2502,7 +2765,11 @@ class EngineOS:
         }
         with self._diagnostic_path.open("a", encoding="utf-8") as handle:
             handle.write(
-                json.dumps(record, ensure_ascii=False, default=str) + "\n"
+                json.dumps(
+                    redact_structure(record),
+                    ensure_ascii=False,
+                    default=str,
+                ) + "\n"
             )
 
     def _apply_interaction_metric_delta(
@@ -3439,6 +3706,7 @@ class EngineOS:
                     "sandbox_id": sandbox_snapshot["sandbox_id"],
                     "scope": sandbox_snapshot["scope"],
                     "capabilities": sandbox_snapshot["capabilities"],
+                    "policy": sandbox_snapshot.get("policy", {}),
                 }
 
         # 已部署常驻宝器（Artifact）摘要，供 agent 知晓自己上线的程序
@@ -3609,6 +3877,20 @@ class EngineOS:
                 brief.raw_context["agent_loop_max_steps"] = int(
                     getattr(self._cfg.agent_loop, "max_steps", 5)
                 )
+                brief.raw_context["agent_loop_completion_mode"] = str(
+                    getattr(
+                        self._cfg.agent_loop,
+                        "completion_mode",
+                        "require_action",
+                    )
+                )
+                brief.raw_context["agent_loop_on_budget_exhausted"] = str(
+                    getattr(
+                        self._cfg.agent_loop,
+                        "on_budget_exhausted",
+                        "fallback",
+                    )
+                )
                 prompt_cfg = getattr(self._loaded, "prompt_contract", {}) or {}
                 if isinstance(prompt_cfg.get("prompt_contract"), dict):
                     prompt_cfg = prompt_cfg["prompt_contract"]
@@ -3660,6 +3942,14 @@ class EngineOS:
 
         for brief in briefs.values():
             brief.raw_context["run_id"] = self._trace.run_id
+            scenario_locale = str(
+                getattr(self._runtime, "locale", "") or self._cfg.scenario_locale or "zh-CN"
+            )
+            brief.raw_context["scenario_locale"] = scenario_locale
+            # Runtime locale is the source of truth for agent-facing language.
+            # The base scenario prompt_contract may be authored in zh-CN; do
+            # not let that stale contract override an active en-US UI/runtime.
+            brief.raw_context["audience_language"] = scenario_locale
 
         loop_context = None
         if loop_enabled:
@@ -3686,13 +3976,24 @@ class EngineOS:
                     scene_tools=list(self._runtime.tools_cfg or []),
                 ),
                 "agent_sandboxes": self._agent_sandboxes,
+                "harness_policy_adapter": getattr(
+                    self, "_harness_policy_adapter", None,
+                ),
             }
 
         # ━━ L3: Agent 运行时 — 并发收集所有 agent 动作 ━━
         ctx.tool_run_start_index = len(self._action_runtime.tool_runs)
         collect_timeout = max(
             float(self._cfg.agent_timeout_sec),
-            float(getattr(self._cfg.agent_loop, "session_timeout_sec", 60.0))
+            (
+                float(getattr(
+                    self._cfg.agent_loop, "session_timeout_sec", 60.0,
+                ))
+                + float(getattr(
+                    self._cfg, "agent_cancel_grace_sec", 1.0,
+                ))
+                + 1.0
+            )
             if loop_enabled else 0.0,
             float(getattr(self._cfg.external_agent, "turn_timeout_ms", 120_000)) / 1000.0
             if any(str(getattr(s, "driver", "llm")).strip().lower() == "agent" for s in self._cfg.agents)
@@ -3706,6 +4007,41 @@ class EngineOS:
         self._last_actions = actions or {}
         self._store_logs(logs)
         await self._broadcast_logs(logs)
+        provider_blocked_agents: List[str] = []
+        for aid, action in (actions or {}).items():
+            parse_errors = getattr(action, "parse_errors", []) or []
+            action_error_text = " ".join(str(item) for item in parse_errors)
+            if (
+                _is_network_fallback(action)
+                and _is_provider_unavailable_text(action_error_text)
+            ):
+                provider_blocked_agents.append(aid)
+        for log in logs:
+            if _is_provider_unavailable_text(getattr(log, "error", "")):
+                provider_blocked_agents.append(log.agent_id)
+        provider_blocked_agents = sorted(set(provider_blocked_agents))
+        if provider_blocked_agents:
+            names = [
+                self._role_names.get(aid, aid)
+                for aid in provider_blocked_agents
+            ]
+            message = (
+                "Provider 不可用，本回合已暂停，未进入交易结算；"
+                f"受影响角色：{', '.join(names)}"
+            )
+            self._write_diagnostic({
+                "event_type": "provider_unavailable_pause",
+                "tick": tick,
+                "agent_ids": provider_blocked_agents,
+                "message": message,
+            })
+            await self._emit("viewer", {
+                "type": "engine_warning",
+                "action": "provider_unavailable_pause",
+                "message": message,
+                "tick": tick,
+            })
+            raise ProviderUnavailablePause(message, tick=tick)
         for log in logs:
             self._write_diagnostic({
                 "event_type": "agent_turn_completed",
@@ -4384,7 +4720,10 @@ class EngineOS:
         except Exception:
             pass
 
-        self._pending_package.agent_logs = [log.model_dump() for log in logs]
+        from app.core.redaction import redact_structure
+        self._pending_package.agent_logs = [
+            redact_structure(log.model_dump()) for log in logs
+        ]
 
         # 记忆压缩（每 10 tick）
         if tick % 10 == 0:
@@ -4570,6 +4909,9 @@ class EngineOS:
                 if self._pending_package is not None:
                     self._apply_os2_director_plan(self._pending_package)
             logger.info(f"[EngineOS] 游戏结束，胜者: {state.winner_id}")
+            state.internal["harness_health_report"] = (
+                self._agent_runtime.harness_health_snapshot()
+            )
             run_dir = self._trace.finalize(state)
             if run_dir and self._replay_recorder:
                 from pathlib import Path
@@ -5290,6 +5632,166 @@ class EngineOS:
         loaded = getattr(self, "_loaded", None)
         settlement_cfg = getattr(loaded, "settlement_cfg", {}) or {}
 
+        def append_harness_observation(
+            raw_tool_result: Dict[str, Any],
+            agent_id: str,
+        ) -> str:
+            """Commit verified research evidence even without a world action."""
+            if (
+                not isinstance(raw_tool_result, dict)
+                or not raw_tool_result.get("ok")
+            ):
+                return ""
+            observation_id = str(raw_tool_result.get("run_id") or "")
+            if not observation_id:
+                return ""
+            if observation_runtime.get(observation_id):
+                return observation_id
+            outputs = list(raw_tool_result.get("outputs") or [])
+            normalized = (
+                outputs[0]
+                if outputs and isinstance(outputs[0], dict)
+                else {"summary": str(outputs[0]) if outputs else ""}
+            )
+            source_name = str(
+                raw_tool_result.get("source") or "agent_tool"
+            )
+            trusted_external = source_name in {
+                "mcp", "external_reality", "verified_external"
+            }
+            observation = ExternalObservation(
+                observation_id=observation_id,
+                run_id=run_id,
+                scenario_id=scenario_id,
+                world_tick=tick,
+                provider_id=source_name,
+                observation_type="agent_tool_result",
+                subject_id=str(
+                    normalized.get("asset_id")
+                    or normalized.get("symbol")
+                    or agent_id
+                ),
+                raw_value=dict(raw_tool_result),
+                normalized_value=dict(normalized),
+                unit=str(normalized.get("unit") or ""),
+                source_uri=str(
+                    normalized.get("source_uri")
+                    or f"agent-tool://{observation_id}"
+                ),
+                source_hash=observation_runtime.content_hash(raw_tool_result),
+                request_parameters={},
+                observed_at=time.time(),
+                freshness_status="fresh" if trusted_external else "unknown",
+                verification_status=(
+                    "verified" if trusted_external else "pending"
+                ),
+                confidence=float(
+                    normalized.get(
+                        "confidence", 1.0 if trusted_external else 0.0
+                    )
+                    or 0.0
+                ),
+            )
+            observation_runtime.append(observation)
+            observations.append(observation)
+            return observation_id
+
+        # A suspended harness has no WorldAction to carry its tool results.
+        # Persist those results directly into the observation ledger so the
+        # next tick can reuse verified evidence instead of merely seeing a
+        # narrative summary with dead evidence IDs.
+        suspended_agents = {
+            str(log.agent_id)
+            for log in logs
+            if isinstance(getattr(log, "harness_trace", None), dict)
+            and str(log.harness_trace.get("status") or "") == "suspended"
+        }
+        suspended_tool_activity: Dict[str, List[Dict[str, Any]]] = {
+            agent_id: [] for agent_id in suspended_agents
+        }
+        if suspended_agents:
+            for raw_tool_result in (
+                getattr(self._action_runtime, "tool_runs", []) or []
+            ):
+                payload = (
+                    raw_tool_result.model_dump(mode="json")
+                    if hasattr(raw_tool_result, "model_dump")
+                    else dict(raw_tool_result)
+                    if isinstance(raw_tool_result, dict)
+                    else {}
+                )
+                owner_id = str(payload.get("owner_id") or "")
+                result_tick = int(payload.get("tick", -1) or -1)
+                if owner_id in suspended_agents and result_tick == tick:
+                    append_harness_observation(payload, owner_id)
+                    if str(payload.get("source") or "") != "capability_broker":
+                        outputs = list(payload.get("outputs") or [])
+                        first = outputs[0] if outputs else ""
+                        summary = (
+                            str(
+                                first.get("summary")
+                                or first.get("claim")
+                                or first
+                            )
+                            if isinstance(first, dict) else str(first)
+                        )
+                        suspended_tool_activity[owner_id].append({
+                            "tool_id": str(payload.get("tool_id") or ""),
+                            "source": str(payload.get("source") or ""),
+                            "ok": bool(payload.get("ok")),
+                            "summary": summary[:260],
+                            "output_refs": [
+                                str(payload.get("run_id") or "")
+                            ] if payload.get("run_id") else [],
+                        })
+
+        for agent_id in sorted(suspended_agents):
+            log = log_map.get(agent_id)
+            trace = (
+                log.harness_trace
+                if log is not None
+                and isinstance(getattr(log, "harness_trace", None), dict)
+                else {}
+            )
+            events = list(trace.get("research_events") or [])
+            terminal = next(
+                (
+                    item for item in reversed(events)
+                    if str(item.get("event_type") or "")
+                    == "research_suspended"
+                ),
+                {},
+            )
+            summary = str(
+                terminal.get("summary")
+                or "研究进度已保存，下一周期继续。"
+            )
+            evidence_refs = [
+                ref
+                for item in suspended_tool_activity.get(agent_id, [])
+                for ref in item.get("output_refs", [])
+                if ref
+            ]
+            agent_activities.append(AgentActivityFact(
+                activity_id=f"activity:{tick}:{agent_id}:research",
+                run_id=run_id,
+                scenario_id=scenario_id,
+                world_tick=tick,
+                agent_id=agent_id,
+                harness_trace_ref=str(
+                    trace.get("trace_id") or f"htrace:{tick}:{agent_id}"
+                ),
+                action_type="research",
+                action_label="研究进行中",
+                public_intent="继续核验信息并形成完整决策",
+                public_reasoning_summary=summary,
+                tool_activity=suspended_tool_activity.get(agent_id, [])[:6],
+                evidence_refs=evidence_refs,
+                observation_refs=evidence_refs,
+                status="suspended",
+                visibility="public",
+            ))
+
         for raw_event in list(
             getattr(self, "_pending_os2_system_events", []) or []
         ):
@@ -5369,46 +5871,22 @@ class EngineOS:
                 os2_action.parameters.get("harness_observations", []) or []
             )
             for raw_tool_result in harness_observations:
-                if not isinstance(raw_tool_result, dict) or not raw_tool_result.get("ok"):
-                    continue
-                observation_id = str(raw_tool_result.get("run_id") or "")
-                if not observation_id or observation_runtime.get(observation_id):
-                    continue
-                outputs = list(raw_tool_result.get("outputs") or [])
-                normalized = outputs[0] if outputs and isinstance(outputs[0], dict) else {
-                    "summary": str(outputs[0]) if outputs else ""
-                }
-                source_name = str(raw_tool_result.get("source") or "agent_tool")
-                trusted_external = source_name in {
-                    "mcp", "external_reality", "verified_external"
-                }
-                observed_at = time.time()
-                observation = ExternalObservation(
-                    observation_id=observation_id,
-                    run_id=run_id,
-                    scenario_id=scenario_id,
-                    world_tick=tick,
-                    provider_id=source_name,
-                    observation_type="agent_tool_result",
-                    subject_id=str(normalized.get("asset_id") or normalized.get("symbol") or agent_id),
-                    raw_value=dict(raw_tool_result),
-                    normalized_value=dict(normalized),
-                    unit=str(normalized.get("unit") or ""),
-                    source_uri=str(normalized.get("source_uri") or f"agent-tool://{observation_id}"),
-                    source_hash=observation_runtime.content_hash(raw_tool_result),
-                    request_parameters={},
-                    observed_at=observed_at,
-                    freshness_status="fresh" if trusted_external else "unknown",
-                    verification_status="verified" if trusted_external else "pending",
-                    confidence=float(
-                        normalized.get("confidence", 1.0 if trusted_external else 0.0)
-                        or 0.0
-                    ),
+                observation_id = append_harness_observation(
+                    raw_tool_result, str(agent_id),
                 )
-                observation_runtime.append(observation)
-                observations.append(observation)
-                observation_refs.append(observation_id)
+                if observation_id:
+                    observation_refs.append(observation_id)
             for evidence_ref in os2_action.evidence_refs:
+                # Research may have been committed on an earlier suspended
+                # tick without a WorldAction.  Reuse that authoritative
+                # observation directly; it need not also exist in a
+                # scene-specific legacy registry.
+                existing_observation = observation_runtime.get(
+                    str(evidence_ref)
+                )
+                if existing_observation is not None:
+                    observation_refs.append(str(evidence_ref))
+                    continue
                 observation_cfg: Dict[str, Any] = {}
                 raw_source: Any = None
                 for declared in settlement_cfg.get("observations", []) or []:
@@ -5685,7 +6163,9 @@ class EngineOS:
                 },
                 visibility="public",
                 public_summary=(interaction_fact.get("summary") or (
-                    f"{self._display_name(str(agent_id))}提交了“{action_label}”。"
+                    f"{self._display_name(str(agent_id))} submitted “{action_label}”."
+                    if str(getattr(self._runtime, "locale", "") or "").lower().startswith("en")
+                    else f"{self._display_name(str(agent_id))}提交了“{action_label}”。"
                 )),
             )
             world_events.append(event)
@@ -5706,10 +6186,16 @@ class EngineOS:
             world_tick=tick,
             world_state={
                 "agent_ids": list(getattr(state, "agent_ids", []) or []),
+                "runtime_mode": str(
+                    getattr(
+                        getattr(self, "_cfg", None), "runtime_mode", ""
+                    ) or ""
+                ),
                 "agent_names": {
                     agent_id: self._display_name(agent_id)
                     for agent_id in list(getattr(state, "agent_ids", []) or [])
                 },
+                "locale": str(getattr(self._runtime, "locale", "") or "zh-CN"),
                 "alive_agent_ids": list(
                     getattr(state, "alive_agent_ids", []) or []
                 ),
@@ -5729,6 +6215,9 @@ class EngineOS:
                 ),
                 "research_requirements": dict(
                     settlement_cfg.get("research_requirements") or {}
+                ),
+                "investment_policy": dict(
+                    settlement_cfg.get("investment_policy") or {}
                 ),
                 "fx_rates": dict(settlement_cfg.get("fx_rates") or {}),
                 "trading_universe": dict(
@@ -5773,6 +6262,12 @@ class EngineOS:
                 from app.engine.presentation.director_runtime import DirectorRuntime
                 loaded = getattr(self, "_loaded", None)
                 presentation = getattr(loaded, "presentation", None)
+                cfg = getattr(self, "_cfg", None)
+                locale = str(
+                    getattr(self._runtime, "locale", "")
+                    or getattr(cfg, "scenario_locale", "")
+                    or "zh-CN"
+                )
                 director_runtime = DirectorRuntime(
                     getattr(
                         getattr(presentation, "render", None),
@@ -5785,8 +6280,16 @@ class EngineOS:
                         "terminology",
                         {},
                     ) or {},
+                    locale=locale,
                 )
                 self._os2_director = director_runtime
+            elif hasattr(director_runtime, "set_locale"):
+                cfg = getattr(self, "_cfg", None)
+                director_runtime.set_locale(str(
+                    getattr(self._runtime, "locale", "")
+                    or getattr(cfg, "scenario_locale", "")
+                    or "zh-CN"
+                ))
             director_plan = director_runtime.build_plan(
                 run_id=run_id,
                 scenario_id=scenario_id,
@@ -6541,7 +7044,31 @@ class EngineOS:
         if int(getattr(state, "tick", 0) or 0) <= 0 and not has_world_facts:
             self._detach_run_logfile()
             return
+        administrative_interrupts = {
+            "server_shutdown", "scenario_switch", "capacity_evict",
+            "idle_timeout",
+        }
+        if reason in administrative_interrupts and not state.is_game_over:
+            state.internal["run_termination"] = {
+                "status": "interrupted",
+                "reason": reason,
+                "tick": int(getattr(state, "tick", 0) or 0),
+            }
+            self._write_diagnostic({
+                "event_type": "run_interrupted",
+                "tick": int(getattr(state, "tick", 0) or 0),
+                "reason": reason,
+            })
+            self._finalize_run_archive(state)
+            return
         self._settle_terminal(state, self._runtime.audit_cfg or {}, reason)
+        self._finalize_run_archive(state)
+
+    def _finalize_run_archive(self, state: Any) -> None:
+        """Persist a completed or interrupted run without inventing outcomes."""
+        state.internal["harness_health_report"] = (
+            self._agent_runtime.harness_health_snapshot()
+        )
         run_dir = self._trace.finalize(state)
         if run_dir and self._replay_recorder:
             from pathlib import Path

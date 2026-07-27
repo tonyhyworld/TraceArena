@@ -41,6 +41,38 @@ class ReplayRecorder:
             "tool_runs": tool_runs or [],
         })
 
+    def append_terminal_settlements(
+        self, tick: int, settlements: Optional[List[Dict]] = None
+    ) -> None:
+        """Keep post-tick terminal settlement facts in deterministic replay."""
+        rows = list(settlements or [])
+        if not rows:
+            return
+        target = next(
+            (item for item in reversed(self._tick_traces) if item.get("tick") == tick),
+            None,
+        )
+        if target is None:
+            target = {
+                "tick": tick,
+                "world_actions": [],
+                "external_observations": [],
+                "world_events": [],
+                "settlements": [],
+                "director_plan": None,
+                "tool_runs": [],
+            }
+            self._tick_traces.append(target)
+        known = {
+            str(item.get("settlement_id") or "")
+            for item in target["settlements"]
+            if isinstance(item, dict)
+        }
+        target["settlements"].extend(
+            item for item in rows
+            if str(item.get("settlement_id") or "") not in known
+        )
+
     def export(self) -> Dict[str, Any]:
         return {
             "run_id": self._run_id,

@@ -1,0 +1,17 @@
+audit:
+  # 专业评测默认覆盖 1 小时观察窗口；tick_limit 是异常保护上限。
+  tick_limit: 120
+  fallback_action_id: wait_and_review
+  termination:
+    any:
+      - {type: wall_clock_seconds, value: 3600}
+      - {type: tick_limit, value: 120}
+  final_report:
+    include_metric_timeline: true
+    include_state_delta_summary: false
+    include_key_actions: true
+    include_capability_summary: false
+    include_decisive_source_refs: true
+  world_goals_title: 评测目标
+  world_goals_footer: 评测覆盖 1 小时观察窗口；统一计入佣金与滑点，最终按风险调整后超额收益形成专业评测结果。
+  world_goals: []

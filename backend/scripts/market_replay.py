@@ -43,6 +43,11 @@ _VOLATILE_REPLAY_FIELDS = frozenset({
     "received_at",
     "occurred_at",
     "created_at",
+    "command_id",
+    "start_ms",
+    "duration_ms",
+    "narrative_summary",
+    "director_plan",
 })
 
 # Agents run concurrently, so records produced within the same tick can arrive
@@ -62,6 +67,7 @@ _ORDER_INDEPENDENT_REPLAY_LISTS = frozenset({
     "source_settlement_refs",
     "subject_ids",
     "target_ids",
+    "commands",
 })
 
 

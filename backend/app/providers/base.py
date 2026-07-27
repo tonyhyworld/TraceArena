@@ -11,6 +11,7 @@ import re
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
+from app.core.json_extraction import extract_first_json_object
 from app.core.interfaces import ActionOption, ActionPack
 
 
@@ -86,6 +87,23 @@ class LLMProvider(ABC):
         """返回最近一次调用的 token 用量，不支持的 Provider 返回空"""
         return {}
 
+    def health_snapshot(self) -> Dict[str, Any]:
+        """Return credential-free runtime health for operator observability."""
+        return {
+            "provider": self.provider_name,
+            "model": self.model_name,
+            "circuit_open": False,
+        }
+
+    def health_check_identity(self) -> str:
+        """Return a credential-free identity used to coalesce startup probes.
+
+        Providers that share the same upstream endpoint, model and credential
+        should override this method.  The conservative default keeps probes
+        instance-local so custom providers are never merged accidentally.
+        """
+        return f"{self.provider_name}:{self.model_name}:instance:{id(self)}"
+
     # ------------------------------------------------------------------
     # ActionPack 解析（可覆盖，默认用通用 JSON 解析）
     # ------------------------------------------------------------------
@@ -146,12 +164,4 @@ class LLMProvider(ABC):
     @staticmethod
     def _extract_json(text: str) -> Dict[str, Any]:
         """从任意文本里提取第一个 JSON 对象，容忍 markdown 代码块"""
-        # 去掉 ```json ... ``` 包装
-        text = re.sub(r"```(?:json)?\s*", "", text).replace("```", "")
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if not match:
-            return {}
-        try:
-            return json.loads(match.group())
-        except json.JSONDecodeError:
-            return {}
+        return extract_first_json_object(text)
